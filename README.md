@@ -1,0 +1,2 @@
+# webgoopy
+webgpu python bindings
