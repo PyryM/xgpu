@@ -150,3 +150,14 @@ for (const s of structs) {
   console.log(s.name);
   console.log(s.entries.map((e) => `[${e.name}] [${e.type}]`).join("\n"))
 }
+
+// TODO/THOUGHTS:
+// * most structs should become classes that are effectively
+//   immutable after construction (have inner .cdata)
+// * ALT: just map everything with getters/setters into cdata mutations?
+//   getting/setting will incur some overhead, but will maybe support
+//   some patterns people might want to use?
+// * a small number of structs need to be mutated
+//   (e.g., limits structs which are mutated to return limits)
+// * a few structs have count - then - array constructions, should
+//   handle passing these as actual arrays
