@@ -96,34 +96,34 @@ typedef struct WGPUBindGroupEntry {
 } WGPUBindGroupEntry WGPU_STRUCTURE_ATTRIBUTE;
 `;
 
-interface CStructEntry {
+interface ConcreteCStructEntry {
   name: string;
   type: string;
 }
 
-interface CStruct {
+interface ConcreteCStruct {
   name: string;
   rawBody: string;
-  entries: CStructEntry[]
+  entries: ConcreteCStructEntry[];
 }
 
-function parseStructEntry(entry: string): CStructEntry {
+function parseStructEntry(entry: string): ConcreteCStructEntry {
   const matched = entry.match(/(.*) ([A-Za-z0-9_]+)$/);
-  if(!matched) {
+  if (!matched) {
     throw new Error(`Unable to parse: "${entry}"`);
   }
   const [_wholeMatch, type, name] = matched;
-  return {name, type}
+  return { name, type };
 }
 
-function findConcreteStructs(src: string): CStruct[] {
-  const res: CStruct[] = [];
+function findConcreteStructs(src: string): ConcreteCStruct[] {
+  const res: ConcreteCStruct[] = [];
   const reg = /typedef struct ([a-zA-Z0-9]*) \{([^\}]*)\}/g;
   for (const m of src.matchAll(reg)) {
     const [_wholeMatch, name, rawBody] = m;
-    const entries: CStructEntry[] = [];
-    for(const line of rawBody.split(";")) {
-      if(line.trim().length > 0) {
+    const entries: ConcreteCStructEntry[] = [];
+    for (const line of rawBody.split(";")) {
+      if (line.trim().length > 0) {
         entries.push(parseStructEntry(line.trim()));
       }
     }
@@ -148,8 +148,103 @@ function findOpaquePointers(src: string): Set<string> {
 const structs = findConcreteStructs(SRC);
 for (const s of structs) {
   console.log(s.name);
-  console.log(s.entries.map((e) => `[${e.name}] [${e.type}]`).join("\n"))
+  console.log(s.entries.map((e) => `[${e.name}] [${e.type}]`).join("\n"));
 }
+
+interface CStructField {
+  name: string;
+  pytype: string;
+  prop(): string;
+  arg(): string;
+}
+
+interface CStruct {
+  pytype: string;
+  cdefinition: string;
+  fields: CStructField[];
+}
+
+const KNOWN_PYTPES: { [k: string]: string } = {
+  uint64_t: "int",
+  uint32_t: "int",
+  uint16_t: "int",
+  uint8_t: "int",
+  int64_t: "int",
+  int32_t: "int",
+  int16_t: "int",
+  int8_t: "int",
+  float: "float",
+  double: "float",
+};
+
+function pytypeOf(ctype: string): string {
+  const pytype = KNOWN_PYTPES[ctype];
+  if (pytype === undefined) {
+    throw new Error(`Don't know pytype of ${ctype}!`);
+  }
+  return pytype;
+}
+
+class PrimitiveField implements CStructField {
+  pytype: string;
+
+  constructor(public name: string, public ctype: string) {
+    this.pytype = pytypeOf(ctype);
+  }
+
+  arg(): string {
+    return `${this.name}: ${this.pytype}`;
+  }
+
+  prop(): string {
+    return `
+@property
+def ${this.name}(self) -> ${this.pytype}:
+    return self._cdata.${this.name}
+
+@${this.name}.setter
+def ${this.name}(self, v: ${this.pytype}):
+    self._cdata.${this.name} = v`;
+  }
+}
+
+function indent(n: number, lines: string | string[]): string {
+  if (typeof lines === "string") {
+    lines = lines.replaceAll("\r", "").split("\n");
+  }
+  return lines.map((l) => `${" ".repeat(4 * n)}${l}`).join("\n");
+}
+
+function emitWrapperClass(cs: CStruct): string {
+  return `
+class ${cs.pytype}:
+    def __init__(self, ${cs.fields.map((f) => f.arg()).join(", ")}):
+${indent(
+  2,
+  cs.fields.map((f) => `self.${f.name} = ${f.name}`)
+)}
+  
+${cs.fields.map((f) => indent(1, f.prop())).join("\n")}
+`;
+}
+
+const example: CStruct = {
+  cdefinition: `
+typedef struct WGPUExtent3D {
+  uint32_t width;
+  uint32_t height;
+  uint32_t depthOrArrayLayers;
+} WGPUExtent3D WGPU_STRUCTURE_ATTRIBUTE;
+  `,
+  pytype: "Extent3D",
+  fields: [
+    new PrimitiveField("width", "uint32_t"),
+    new PrimitiveField("height", "uint32_t"),
+    new PrimitiveField("depthOrArrayLayers", "uint32_t"),
+  ],
+};
+
+console.log(emitWrapperClass(example));
 
 // TODO/THOUGHTS:
 // * most structs should become classes that are effectively
