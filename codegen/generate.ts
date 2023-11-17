@@ -65,6 +65,32 @@ function emitEnum(src: CEnum): string {
   return frags.join("\n");
 }
 
+type TypeInfo =
+  | { kind: "enum"; info: CEnum }
+  | { kind: "opaque"; ctype: string }
+  | { kind: "struct" }
+  | { kind: "primitive"; ctype: string };
+
+class ApiInfo {
+  opaques: Set<string> = new Set();
+  enums: Map<string, CEnum> = new Map();
+
+  constructor() {}
+
+  typeInfo(ctype: string): TypeInfo {
+    const opaque = this.opaques.has(ctype);
+    const enumt = this.enums.get(ctype);
+
+    if(opaque) {
+      return {kind: "opaque", ctype}
+    } else if(enumt) {
+      return {kind: "enum", info: enumt}
+    } else {
+      return {kind: "primitive", ctype}
+    }
+  }
+}
+
 const EXAMPLE = `
 typedef struct WGPUAdapterImpl* WGPUAdapter WGPU_OBJECT_ATTRIBUTE;
 typedef struct WGPUBindGroupImpl* WGPUBindGroup WGPU_OBJECT_ATTRIBUTE;
@@ -159,6 +185,7 @@ interface CStructField {
 }
 
 interface CStruct {
+  ctype: string;
   pytype: string;
   cdefinition: string;
   fields: CStructField[];
@@ -215,10 +242,19 @@ function indent(n: number, lines: string | string[]): string {
   return lines.map((l) => `${" ".repeat(4 * n)}${l}`).join("\n");
 }
 
+function ptrTo(ctype: string): string {
+  return `${ctype} *`
+}
+
+function ffiNew(ctype: string): string {
+  return `ffi.new("${ptrTo(ctype)}")`
+}
+
 function emitWrapperClass(cs: CStruct): string {
   return `
 class ${cs.pytype}:
     def __init__(self, ${cs.fields.map((f) => f.arg()).join(", ")}):
+        self._cdata = ${ffiNew(cs.ctype)}
 ${indent(
   2,
   cs.fields.map((f) => `self.${f.name} = ${f.name}`)
@@ -237,6 +273,7 @@ typedef struct WGPUExtent3D {
 } WGPUExtent3D WGPU_STRUCTURE_ATTRIBUTE;
   `,
   pytype: "Extent3D",
+  ctype: "WGPUExtent3D",
   fields: [
     new PrimitiveField("width", "uint32_t"),
     new PrimitiveField("height", "uint32_t"),
