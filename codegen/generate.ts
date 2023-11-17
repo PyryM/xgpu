@@ -293,3 +293,5 @@ console.log(emitWrapperClass(example));
 //   (e.g., limits structs which are mutated to return limits)
 // * a few structs have count - then - array constructions, should
 //   handle passing these as actual arrays
+// * methods tacked onto opaque pointer classes! (or I guess
+//   concrete structs as well...). e.g., wgpuDeviceGetLimits -> device.getLimits
