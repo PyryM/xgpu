@@ -29,14 +29,18 @@ class CEnum implements CType {
   pointer: boolean = false;
   primitive: boolean = true;
 
-  constructor(public cName: string, public pyName: string, public values: CEnumVal[]){}
+  constructor(
+    public cName: string,
+    public pyName: string,
+    public values: CEnumVal[]
+  ) {}
 
   wrap(val: string): string {
-    return `${this.pyName}(${val})`
+    return `${this.pyName}(${val})`;
   }
 
   unwrap(val: string): string {
-    return `int(val)`
+    return `int(val)`;
   }
 
   emit(): string {
@@ -78,7 +82,7 @@ function findEnums(src: string): CEnum[] {
   for (const m of src.matchAll(enumExp)) {
     const [_wholeMatch, name, body] = m;
     const entries = body.split(",").map((e) => parseEnumEntry(name.trim(), e));
-    res.push(new CEnum(name.trim(), pyName(name.trim()),  entries));
+    res.push(new CEnum(name.trim(), pyName(name.trim()), entries));
   }
 
   return res;
@@ -203,13 +207,6 @@ interface CStructField {
   arg(): string;
 }
 
-interface CStruct {
-  ctype: string;
-  pytype: string;
-  cdefinition: string;
-  fields: CStructField[];
-}
-
 function identity(v: string): string {
   return v;
 }
@@ -308,38 +305,59 @@ function ffiNew(ctype: string): string {
   return `ffi.new("${ptrTo(ctype)}")`;
 }
 
-function emitWrapperClass(cs: CStruct): string {
-  return `
-class ${cs.pytype}:
-    def __init__(self, ${cs.fields.map((f) => f.arg()).join(", ")}):
-        self._cdata = ${ffiNew(cs.ctype)}
+class CStruct implements CType {
+  opaque: boolean = false;
+  pointer: boolean = true;
+  primitive: boolean = false;
+
+  constructor(
+    public cName: string,
+    public pyName: string,
+    public cdef: string,
+    public fields: CStructField[]
+  ) {}
+
+  wrap(val: string): string {
+    return `${val}._cdata`;
+  }
+
+  unwrap(val: string): string {
+    throw new Error(`Cannot unwrap a CStruct!`);
+  }
+
+  emit(): string {
+    return `
+class ${this.pyName}:
+    def __init__(self, ${this.fields.map((f) => f.arg()).join(", ")}):
+        self._cdata = ${ffiNew(this.cName)}
 ${indent(
   2,
-  cs.fields.map((f) => `self.${f.name} = ${f.name}`)
+  this.fields.map((f) => `self.${f.name} = ${f.name}`)
 )}
   
-${cs.fields.map((f) => indent(1, f.prop())).join("\n")}
+${this.fields.map((f) => indent(1, f.prop())).join("\n")}
 `;
+  }
 }
 
-const example: CStruct = {
-  cdefinition: `
+const example = new CStruct(
+  "WGPUExtent3D",
+  "Extent3D",
+  `
 typedef struct WGPUExtent3D {
   uint32_t width;
   uint32_t height;
   uint32_t depthOrArrayLayers;
 } WGPUExtent3D WGPU_STRUCTURE_ATTRIBUTE;
   `,
-  pytype: "Extent3D",
-  ctype: "WGPUExtent3D",
-  fields: [
+  [
     new ValueField("width", PRIMITIVES.uint32_t),
     new ValueField("height", PRIMITIVES.uint32_t),
     new ValueField("depthOrArrayLayers", PRIMITIVES.uint32_t),
-  ],
-};
+  ]
+);
 
-console.log(emitWrapperClass(example));
+console.log(example.emit());
 
 // TODO/THOUGHTS:
 // * most structs should become classes that are effectively
