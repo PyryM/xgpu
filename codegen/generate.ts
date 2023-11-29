@@ -1,17 +1,51 @@
 import { readFileSync } from "fs";
 
-console.log("Hello via Bun!");
-
 const SRC = readFileSync("codegen/webgpu.h").toString("utf8");
+
+interface CType {
+  opaque: boolean;
+  pointer: boolean;
+  primitive: boolean;
+  pyName: string;
+  cName: string;
+  wrap(val: string): string;
+  unwrap(val: string): string;
+}
 
 interface CEnumVal {
   name: string;
   val: string;
 }
 
-interface CEnum {
-  name: string;
-  entries: CEnumVal[];
+function sanitizeIdent(ident: string): string {
+  if (!ident.match(/^[a-zA-Z]/) || ident === "None") {
+    ident = "_" + ident;
+  }
+  return ident;
+}
+
+class CEnum implements CType {
+  opaque: boolean = false;
+  pointer: boolean = false;
+  primitive: boolean = true;
+
+  constructor(public cName: string, public pyName: string, public values: CEnumVal[]){}
+
+  wrap(val: string): string {
+    return `${this.pyName}(${val})`
+  }
+
+  unwrap(val: string): string {
+    return `int(val)`
+  }
+
+  emit(): string {
+    let frags: string[] = [`class ${this.pyName}(IntEnum):`];
+    for (const { name, val } of this.values) {
+      frags.push(`    ${sanitizeIdent(name)} = ${val}`);
+    }
+    return frags.join("\n");
+  }
 }
 
 function removePrefix(s: string, prefix: string): string {
@@ -33,6 +67,10 @@ function parseEnumEntry(parentName: string, entry: string): CEnumVal {
   return { name: cleanup(name, parentName), val };
 }
 
+function pyName(ident: string): string {
+  return removePrefix(ident, "WGPU");
+}
+
 function findEnums(src: string): CEnum[] {
   let res: CEnum[] = [];
 
@@ -40,29 +78,10 @@ function findEnums(src: string): CEnum[] {
   for (const m of src.matchAll(enumExp)) {
     const [_wholeMatch, name, body] = m;
     const entries = body.split(",").map((e) => parseEnumEntry(name.trim(), e));
-    res.push({ name: name.trim(), entries });
+    res.push(new CEnum(name.trim(), pyName(name.trim()),  entries));
   }
 
   return res;
-}
-
-function pyName(ident: string): string {
-  return removePrefix(ident, "WGPU");
-}
-
-function sanitizeIdent(ident: string): string {
-  if (!ident.match(/^[a-zA-Z]/) || ident === "None") {
-    ident = "_" + ident;
-  }
-  return ident;
-}
-
-function emitEnum(src: CEnum): string {
-  let frags: string[] = [`class ${pyName(src.name)}(IntEnum):`];
-  for (const { name, val } of src.entries) {
-    frags.push(`    ${sanitizeIdent(name)} = ${val}`);
-  }
-  return frags.join("\n");
 }
 
 type TypeInfo =
@@ -81,12 +100,12 @@ class ApiInfo {
     const opaque = this.opaques.has(ctype);
     const enumt = this.enums.get(ctype);
 
-    if(opaque) {
-      return {kind: "opaque", ctype}
-    } else if(enumt) {
-      return {kind: "enum", info: enumt}
+    if (opaque) {
+      return { kind: "opaque", ctype };
+    } else if (enumt) {
+      return { kind: "enum", info: enumt };
     } else {
-      return {kind: "primitive", ctype}
+      return { kind: "primitive", ctype };
     }
   }
 }
@@ -165,11 +184,11 @@ function findOpaquePointers(src: string): Set<string> {
   return opaques;
 }
 
-// const enums = findEnums(SRC);
-// for (const e of enums) {
-//   console.log(emitEnum(e));
-//   console.log("");
-// }
+const enums = findEnums(SRC);
+for (const e of enums) {
+  console.log(e.emit());
+  console.log("");
+}
 
 const structs = findConcreteStructs(SRC);
 for (const s of structs) {
@@ -179,7 +198,7 @@ for (const s of structs) {
 
 interface CStructField {
   name: string;
-  pytype: string;
+  ctype: CType;
   prop(): string;
   arg(): string;
 }
@@ -191,47 +210,86 @@ interface CStruct {
   fields: CStructField[];
 }
 
-const KNOWN_PYTPES: { [k: string]: string } = {
-  uint64_t: "int",
-  uint32_t: "int",
-  uint16_t: "int",
-  uint8_t: "int",
-  int64_t: "int",
-  int32_t: "int",
-  int16_t: "int",
-  int8_t: "int",
-  float: "float",
-  double: "float",
-};
-
-function pytypeOf(ctype: string): string {
-  const pytype = KNOWN_PYTPES[ctype];
-  if (pytype === undefined) {
-    throw new Error(`Don't know pytype of ${ctype}!`);
-  }
-  return pytype;
+function identity(v: string): string {
+  return v;
 }
 
-class PrimitiveField implements CStructField {
-  pytype: string;
+// class Primitive implements CType {
+//   opaque: boolean = false;
+//   primitive: boolean = true;
 
-  constructor(public name: string, public ctype: string) {
-    this.pytype = pytypeOf(ctype);
-  }
+//   constructor(public cName: string, public pyName: string, public pointer: boolean = false) {}
+
+//   wrap(val: string): string {
+//     if(this.)
+//   }
+
+//   unwrap(val: string): string {
+
+//   }
+// }
+
+function prim(cName: string, pyName: string): CType {
+  return {
+    cName,
+    pyName,
+    primitive: true,
+    opaque: false,
+    pointer: false,
+    wrap: identity,
+    unwrap: identity,
+  };
+}
+
+const PRIMITIVES: { [k: string]: CType } = {
+  uint64_t: prim("uint64_t", "int"),
+  uint32_t: prim("uint32_t", "int"),
+  uint16_t: prim("uint16_t", "int"),
+  uint8_t: prim("uint8_t", "int"),
+  int64_t: prim("int64_t", "int"),
+  int32_t: prim("int32_t", "int"),
+  int16_t: prim("int16_t", "int"),
+  int8_t: prim("int8_t", "int"),
+  float: prim("float", "float"),
+  double: prim("double", "float"),
+};
+
+class ValueField implements CStructField {
+  constructor(public name: string, public ctype: CType) {}
 
   arg(): string {
-    return `${this.name}: ${this.pytype}`;
+    return `${this.name}: ${this.ctype.pyName}`;
   }
 
   prop(): string {
     return `
 @property
-def ${this.name}(self) -> ${this.pytype}:
+def ${this.name}(self) -> ${this.ctype.pyName}:
     return self._cdata.${this.name}
 
 @${this.name}.setter
-def ${this.name}(self, v: ${this.pytype}):
+def ${this.name}(self, v: ${this.ctype.pyName}):
     self._cdata.${this.name} = v`;
+  }
+}
+
+class PointerField implements CStructField {
+  constructor(public name: string, public ctype: CType) {}
+
+  arg(): string {
+    return `${this.name}: ${this.ctype.pyName}`;
+  }
+
+  prop(): string {
+    return `
+@property
+def ${this.name}(self) -> ${this.ctype.pyName}:
+    return self._${this.name}
+
+@${this.name}.setter
+def ${this.name}(self, v: ${this.ctype.pyName}):
+    self._${this.name} = v
+    self._cdata.${this.name} = ${this.ctype.unwrap("v")}`;
   }
 }
 
@@ -243,11 +301,11 @@ function indent(n: number, lines: string | string[]): string {
 }
 
 function ptrTo(ctype: string): string {
-  return `${ctype} *`
+  return `${ctype} *`;
 }
 
 function ffiNew(ctype: string): string {
-  return `ffi.new("${ptrTo(ctype)}")`
+  return `ffi.new("${ptrTo(ctype)}")`;
 }
 
 function emitWrapperClass(cs: CStruct): string {
@@ -275,9 +333,9 @@ typedef struct WGPUExtent3D {
   pytype: "Extent3D",
   ctype: "WGPUExtent3D",
   fields: [
-    new PrimitiveField("width", "uint32_t"),
-    new PrimitiveField("height", "uint32_t"),
-    new PrimitiveField("depthOrArrayLayers", "uint32_t"),
+    new ValueField("width", PRIMITIVES.uint32_t),
+    new ValueField("height", PRIMITIVES.uint32_t),
+    new ValueField("depthOrArrayLayers", PRIMITIVES.uint32_t),
   ],
 };
 
