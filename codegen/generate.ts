@@ -3,13 +3,12 @@ import { readFileSync } from "fs";
 const SRC = readFileSync("codegen/webgpu.h").toString("utf8");
 
 interface CType {
-  opaque: boolean;
-  pointer: boolean;
-  primitive: boolean;
+  kind: "opaque" | "enum" | "primitive" | "struct"
   pyName: string;
   cName: string;
   wrap(val: string): string;
   unwrap(val: string): string;
+  emit?(): string;
 }
 
 interface CEnumVal {
@@ -25,9 +24,7 @@ function sanitizeIdent(ident: string): string {
 }
 
 class CEnum implements CType {
-  opaque: boolean = false;
-  pointer: boolean = false;
-  primitive: boolean = true;
+  kind: "enum" = "enum"
 
   constructor(
     public cName: string,
@@ -75,41 +72,18 @@ function pyName(ident: string): string {
   return removePrefix(ident, "WGPU");
 }
 
-function findEnums(src: string): CEnum[] {
-  let res: CEnum[] = [];
-
-  const enumExp = /typedef enum ([a-zA-Z0-9]*) \{([^\}]*)\}/g;
-  for (const m of src.matchAll(enumExp)) {
-    const [_wholeMatch, name, body] = m;
-    const entries = body.split(",").map((e) => parseEnumEntry(name.trim(), e));
-    res.push(new CEnum(name.trim(), pyName(name.trim()), entries));
-  }
-
-  return res;
-}
-
-type TypeInfo =
-  | { kind: "enum"; info: CEnum }
-  | { kind: "opaque"; ctype: string }
-  | { kind: "struct" }
-  | { kind: "primitive"; ctype: string };
-
 class ApiInfo {
-  opaques: Set<string> = new Set();
-  enums: Map<string, CEnum> = new Map();
+  types: Map<string, CType> = new Map();
 
   constructor() {}
 
-  typeInfo(ctype: string): TypeInfo {
-    const opaque = this.opaques.has(ctype);
-    const enumt = this.enums.get(ctype);
-
-    if (opaque) {
-      return { kind: "opaque", ctype };
-    } else if (enumt) {
-      return { kind: "enum", info: enumt };
-    } else {
-      return { kind: "primitive", ctype };
+  findEnums(src: string) {  
+    const enumExp = /typedef enum ([a-zA-Z0-9]*) \{([^\}]*)\}/g;
+    for (const m of src.matchAll(enumExp)) {
+      const [_wholeMatch, name, body] = m;
+      const entries = body.split(",").map((e) => parseEnumEntry(name.trim(), e));
+      const cName = name.trim();
+      this.types.set(cName, new CEnum(cName, pyName(cName), entries));
     }
   }
 }
@@ -188,10 +162,13 @@ function findOpaquePointers(src: string): Set<string> {
   return opaques;
 }
 
-const enums = findEnums(SRC);
-for (const e of enums) {
-  console.log(e.emit());
-  console.log("");
+const api = new ApiInfo();
+api.findEnums(SRC);
+for (const [name, ctype] of api.types.entries()) {
+  if(ctype.emit) {
+    console.log(ctype.emit());
+    console.log("");
+  }
 }
 
 const structs = findConcreteStructs(SRC);
@@ -230,9 +207,7 @@ function prim(cName: string, pyName: string): CType {
   return {
     cName,
     pyName,
-    primitive: true,
-    opaque: false,
-    pointer: false,
+    kind: "primitive",
     wrap: identity,
     unwrap: identity,
   };
@@ -306,9 +281,7 @@ function ffiNew(ctype: string): string {
 }
 
 class CStruct implements CType {
-  opaque: boolean = false;
-  pointer: boolean = true;
-  primitive: boolean = false;
+  kind: "struct" = "struct"
 
   constructor(
     public cName: string,
