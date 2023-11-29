@@ -72,6 +72,15 @@ function pyName(ident: string): string {
   return removePrefix(ident, "WGPU");
 }
 
+function parseStructEntry(entry: string): {name: string, type: string} {
+  const matched = entry.match(/(.*) ([A-Za-z0-9_]+)$/);
+  if (!matched) {
+    throw new Error(`Unable to parse: "${entry}"`);
+  }
+  const [_wholeMatch, type, name] = matched;
+  return { name, type };
+}
+
 class ApiInfo {
   types: Map<string, CType> = new Map();
 
@@ -87,6 +96,7 @@ class ApiInfo {
       ["int8_t", "int"],
       ["float", "float"],
       ["double", "float"],
+      ["ERROR", "int"],
     ];
     for (const [cName, pyName] of PRIMITIVES) {
       this.types.set(cName, {
@@ -126,9 +136,38 @@ class ApiInfo {
     }
   }
 
+  _createField(name: string, ctype: string): CStructField {
+    const type = this.types.get(ctype) ?? this.types.get("ERROR")!;
+    if(type.kind === "opaque" || type.kind === "struct") {
+      return new PointerField(name, type)
+    } else {
+      return new ValueField(name, type)
+    }
+  }
+
+  _addStruct(cdef: string, cName: string, body: string) {
+    const fields: CStructField[] = [];
+    for (const line of body.split(";")) {
+      if (line.trim().length > 0) {
+        const {name, type} = parseStructEntry(line.trim());
+        fields.push(this._createField(name, type));
+      }
+    }
+    this.types.set(cName, new CStruct(cName, pyName(cName), cdef, fields));
+  }
+
+  findConcreteStructs(src: string) {
+    const reg = /typedef struct ([a-zA-Z0-9]*) \{([^\}]*)\}/g;
+    for (const m of src.matchAll(reg)) {
+      const [cdef, name, rawBody] = m;
+      this._addStruct(cdef, name, rawBody);
+    }
+  }
+
   parse(src: string) {
     this.findOpaquePointers(src);
     this.findEnums(src);
+    this.findConcreteStructs(src);
   }
 }
 
@@ -162,57 +201,6 @@ typedef struct WGPUBindGroupEntry {
     WGPU_NULLABLE WGPUTextureView textureView;
 } WGPUBindGroupEntry WGPU_STRUCTURE_ATTRIBUTE;
 `;
-
-interface ConcreteCStructEntry {
-  name: string;
-  type: string;
-}
-
-interface ConcreteCStruct {
-  name: string;
-  rawBody: string;
-  entries: ConcreteCStructEntry[];
-}
-
-function parseStructEntry(entry: string): ConcreteCStructEntry {
-  const matched = entry.match(/(.*) ([A-Za-z0-9_]+)$/);
-  if (!matched) {
-    throw new Error(`Unable to parse: "${entry}"`);
-  }
-  const [_wholeMatch, type, name] = matched;
-  return { name, type };
-}
-
-function findConcreteStructs(src: string): ConcreteCStruct[] {
-  const res: ConcreteCStruct[] = [];
-  const reg = /typedef struct ([a-zA-Z0-9]*) \{([^\}]*)\}/g;
-  for (const m of src.matchAll(reg)) {
-    const [_wholeMatch, name, rawBody] = m;
-    const entries: ConcreteCStructEntry[] = [];
-    for (const line of rawBody.split(";")) {
-      if (line.trim().length > 0) {
-        entries.push(parseStructEntry(line.trim()));
-      }
-    }
-    res.push({ name: name.trim(), rawBody, entries });
-  }
-  return res;
-}
-
-const api = new ApiInfo();
-api.parse(SRC);
-for (const [name, ctype] of api.types.entries()) {
-  if (ctype.emit) {
-    console.log(ctype.emit());
-    console.log("");
-  }
-}
-
-const structs = findConcreteStructs(SRC);
-for (const s of structs) {
-  console.log(s.name);
-  console.log(s.entries.map((e) => `[${e.name}] [${e.type}]`).join("\n"));
-}
 
 interface CStructField {
   name: string;
@@ -286,11 +274,11 @@ class CStruct implements CType {
   ) {}
 
   wrap(val: string): string {
-    return `${val}._cdata`;
+    return `raise ValueError("This property cannot be queried!")`
   }
 
   unwrap(val: string): string {
-    throw new Error(`Cannot unwrap a CStruct!`);
+    return `${val}._cdata`;
   }
 
   emit(): string {
@@ -308,26 +296,26 @@ ${this.fields.map((f) => indent(1, f.prop())).join("\n")}
   }
 }
 
-const uint32 = api.types.get("uint32_t")!;
+// const uint32 = api.types.get("uint32_t")!;
 
-const example = new CStruct(
-  "WGPUExtent3D",
-  "Extent3D",
-  `
-typedef struct WGPUExtent3D {
-  uint32_t width;
-  uint32_t height;
-  uint32_t depthOrArrayLayers;
-} WGPUExtent3D WGPU_STRUCTURE_ATTRIBUTE;
-  `,
-  [
-    new ValueField("width", uint32),
-    new ValueField("height", uint32),
-    new ValueField("depthOrArrayLayers", uint32),
-  ]
-);
+// const example = new CStruct(
+//   "WGPUExtent3D",
+//   "Extent3D",
+//   `
+// typedef struct WGPUExtent3D {
+//   uint32_t width;
+//   uint32_t height;
+//   uint32_t depthOrArrayLayers;
+// } WGPUExtent3D WGPU_STRUCTURE_ATTRIBUTE;
+//   `,
+//   [
+//     new ValueField("width", uint32),
+//     new ValueField("height", uint32),
+//     new ValueField("depthOrArrayLayers", uint32),
+//   ]
+// );
 
-console.log(example.emit());
+// console.log(example.emit());
 
 // TODO/THOUGHTS:
 // * most structs should become classes that are effectively
@@ -341,3 +329,12 @@ console.log(example.emit());
 //   handle passing these as actual arrays
 // * methods tacked onto opaque pointer classes! (or I guess
 //   concrete structs as well...). e.g., wgpuDeviceGetLimits -> device.getLimits
+
+const api = new ApiInfo();
+api.parse(SRC);
+for (const [name, ctype] of api.types.entries()) {
+  if (ctype.emit) {
+    console.log(ctype.emit());
+    console.log("");
+  }
+}
