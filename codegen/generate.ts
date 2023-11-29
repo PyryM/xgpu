@@ -3,7 +3,7 @@ import { readFileSync } from "fs";
 const SRC = readFileSync("codegen/webgpu.h").toString("utf8");
 
 interface CType {
-  kind: "opaque" | "enum" | "primitive" | "struct"
+  kind: "opaque" | "enum" | "primitive" | "struct";
   pyName: string;
   cName: string;
   wrap(val: string): string;
@@ -24,7 +24,7 @@ function sanitizeIdent(ident: string): string {
 }
 
 class CEnum implements CType {
-  kind: "enum" = "enum"
+  kind: "enum" = "enum";
 
   constructor(
     public cName: string,
@@ -75,16 +75,60 @@ function pyName(ident: string): string {
 class ApiInfo {
   types: Map<string, CType> = new Map();
 
-  constructor() {}
+  constructor() {
+    const PRIMITIVES: [string, string][] = [
+      ["uint64_t", "int"],
+      ["uint32_t", "int"],
+      ["uint16_t", "int"],
+      ["uint8_t", "int"],
+      ["int64_t", "int"],
+      ["int32_t", "int"],
+      ["int16_t", "int"],
+      ["int8_t", "int"],
+      ["float", "float"],
+      ["double", "float"],
+    ];
+    for (const [cName, pyName] of PRIMITIVES) {
+      this.types.set(cName, {
+        cName,
+        pyName,
+        kind: "primitive",
+        wrap: (v) => v,
+        unwrap: (v) => v,
+      });
+    }
+  }
 
-  findEnums(src: string) {  
+  findEnums(src: string) {
     const enumExp = /typedef enum ([a-zA-Z0-9]*) \{([^\}]*)\}/g;
     for (const m of src.matchAll(enumExp)) {
       const [_wholeMatch, name, body] = m;
-      const entries = body.split(",").map((e) => parseEnumEntry(name.trim(), e));
+      const entries = body
+        .split(",")
+        .map((e) => parseEnumEntry(name.trim(), e));
       const cName = name.trim();
       this.types.set(cName, new CEnum(cName, pyName(cName), entries));
     }
+  }
+
+  findOpaquePointers(src: string) {
+    const reg = /typedef struct ([a-zA-Z0-9]+)\* ([a-zA-Z]+)([^;]*);/g;
+    for (const m of src.matchAll(reg)) {
+      const [_wholeMatch, _implName, cName, _extra] = m;
+      this.types.set(cName, {
+        cName,
+        pyName: cName,
+        kind: "opaque",
+        wrap: (v) => v,
+        unwrap: (v) => v,
+        emit: () => `#opaque ${cName}`
+      });
+    }
+  }
+
+  parse(src: string) {
+    this.findOpaquePointers(src);
+    this.findEnums(src);
   }
 }
 
@@ -155,17 +199,10 @@ function findConcreteStructs(src: string): ConcreteCStruct[] {
   return res;
 }
 
-function findOpaquePointers(src: string): Set<string> {
-  throw new Error("NYI!");
-  const opaques: Set<string> = new Set();
-  const reg = /typedef struct [a-zA-Z0-9]*\* /g;
-  return opaques;
-}
-
 const api = new ApiInfo();
-api.findEnums(SRC);
+api.parse(SRC);
 for (const [name, ctype] of api.types.entries()) {
-  if(ctype.emit) {
+  if (ctype.emit) {
     console.log(ctype.emit());
     console.log("");
   }
@@ -183,48 +220,6 @@ interface CStructField {
   prop(): string;
   arg(): string;
 }
-
-function identity(v: string): string {
-  return v;
-}
-
-// class Primitive implements CType {
-//   opaque: boolean = false;
-//   primitive: boolean = true;
-
-//   constructor(public cName: string, public pyName: string, public pointer: boolean = false) {}
-
-//   wrap(val: string): string {
-//     if(this.)
-//   }
-
-//   unwrap(val: string): string {
-
-//   }
-// }
-
-function prim(cName: string, pyName: string): CType {
-  return {
-    cName,
-    pyName,
-    kind: "primitive",
-    wrap: identity,
-    unwrap: identity,
-  };
-}
-
-const PRIMITIVES: { [k: string]: CType } = {
-  uint64_t: prim("uint64_t", "int"),
-  uint32_t: prim("uint32_t", "int"),
-  uint16_t: prim("uint16_t", "int"),
-  uint8_t: prim("uint8_t", "int"),
-  int64_t: prim("int64_t", "int"),
-  int32_t: prim("int32_t", "int"),
-  int16_t: prim("int16_t", "int"),
-  int8_t: prim("int8_t", "int"),
-  float: prim("float", "float"),
-  double: prim("double", "float"),
-};
 
 class ValueField implements CStructField {
   constructor(public name: string, public ctype: CType) {}
@@ -281,7 +276,7 @@ function ffiNew(ctype: string): string {
 }
 
 class CStruct implements CType {
-  kind: "struct" = "struct"
+  kind: "struct" = "struct";
 
   constructor(
     public cName: string,
@@ -313,6 +308,8 @@ ${this.fields.map((f) => indent(1, f.prop())).join("\n")}
   }
 }
 
+const uint32 = api.types.get("uint32_t")!;
+
 const example = new CStruct(
   "WGPUExtent3D",
   "Extent3D",
@@ -324,9 +321,9 @@ typedef struct WGPUExtent3D {
 } WGPUExtent3D WGPU_STRUCTURE_ATTRIBUTE;
   `,
   [
-    new ValueField("width", PRIMITIVES.uint32_t),
-    new ValueField("height", PRIMITIVES.uint32_t),
-    new ValueField("depthOrArrayLayers", PRIMITIVES.uint32_t),
+    new ValueField("width", uint32),
+    new ValueField("height", uint32),
+    new ValueField("depthOrArrayLayers", uint32),
   ]
 );
 
