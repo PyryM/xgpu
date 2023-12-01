@@ -9,6 +9,8 @@ interface CType {
   wrap(val: string): string;
   unwrap(val: string): string;
   emit?(): string;
+  cdef?(): string
+  precdef?(): string
 }
 
 interface CEnumVal {
@@ -38,6 +40,10 @@ class CEnum implements CType {
 
   unwrap(val: string): string {
     return `int(${val})`;
+  }
+
+  precdef(): string {
+    return `typedef uint32_t ${this.cName};`
   }
 
   emit(): string {
@@ -315,6 +321,10 @@ class COpaque implements CType {
     return `${val}._cdata`
   }
 
+  precdef(): string {
+    return `typedef struct ${this.cName}Impl* ${this.cName};`
+  }
+
   emit(): string {
     return `
 class ${this.pyName}:
@@ -330,7 +340,7 @@ class CStruct implements CType {
   constructor(
     public cName: string,
     public pyName: string,
-    public cdef: string,
+    public _cdef: string,
     public fields: CStructField[]
   ) {}
 
@@ -340,6 +350,14 @@ class CStruct implements CType {
 
   unwrap(val: string): string {
     return `${val}._cdata`;
+  }
+
+  precdef(): string {
+    return `struct ${this.cName};`
+  }
+
+  cdef(): string {
+    return `${this._cdef} ${this.cName};`
   }
 
   emit(): string {
@@ -390,20 +408,44 @@ ${this.fields.map((f) => indent(1, f.prop())).join("\n")}
 //   handle passing these as actual arrays
 // * methods tacked onto opaque pointer classes! (or I guess
 //   concrete structs as well...). e.g., wgpuDeviceGetLimits -> device.getLimits
-
-const PREAMBLE = `
-from enum import IntEnum
-from cffi import ffi
-`
+// * horrible chained struct stuff
 
 const api = new ApiInfo();
 api.parse(SRC);
 
-const frags: string[] = [PREAMBLE];
+const predefFrags: string[] = [];
+const cdefFrags: string[] = [];
+const pyFrags: string[] = [];
+
 for (const [name, ctype] of api.types.entries()) {
+  if (ctype.precdef) {
+    predefFrags.push(ctype.precdef());
+  }
+
+  if (ctype.cdef) {
+    cdefFrags.push(ctype.cdef());
+  }
+
   if (ctype.emit) {
-    frags.push(ctype.emit());
+    pyFrags.push(ctype.emit());
   }
 }
 
-writeFileSync("webgoo.py", frags.join("\n"))
+const finalOutput = `
+from enum import IntEnum
+from cffi import FFI
+
+ffi = FFI()
+ffi.cdef("""
+typedef uint32_t WGPUFlags;
+typedef uint32_t WGPUBool;
+
+${predefFrags.join("\n")}
+
+${cdefFrags.join("\n")}
+""")
+
+${pyFrags.join("\n")}
+`
+
+writeFileSync("webgoo.py", finalOutput)
