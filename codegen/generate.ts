@@ -527,7 +527,6 @@ ${indent(
   2,
   this.fields.map((f) => `self.${f.name} = ${f.name}`)
 )}
-  
 ${this.fields.map((f) => indent(1, f.prop())).join("\n")}
 `;
   }
