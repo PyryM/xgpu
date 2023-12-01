@@ -231,37 +231,6 @@ class ApiInfo {
   }
 }
 
-const EXAMPLE = `
-typedef struct WGPUAdapterImpl* WGPUAdapter WGPU_OBJECT_ATTRIBUTE;
-typedef struct WGPUBindGroupImpl* WGPUBindGroup WGPU_OBJECT_ATTRIBUTE;
-typedef struct WGPUBindGroupLayoutImpl* WGPUBindGroupLayout WGPU_OBJECT_ATTRIBUTE;
-typedef struct WGPUBufferImpl* WGPUBuffer WGPU_OBJECT_ATTRIBUTE;
-typedef struct WGPUCommandBufferImpl* WGPUCommandBuffer WGPU_OBJECT_ATTRIBUTE;
-typedef struct WGPUCommandEncoderImpl* WGPUCommandEncoder WGPU_OBJECT_ATTRIBUTE;
-
-typedef struct WGPUAdapterProperties {
-    WGPUChainedStructOut * nextInChain;
-    uint32_t vendorID;
-    char const * vendorName;
-    char const * architecture;
-    uint32_t deviceID;
-    char const * name;
-    char const * driverDescription;
-    WGPUAdapterType adapterType;
-    WGPUBackendType backendType;
-} WGPUAdapterProperties WGPU_STRUCTURE_ATTRIBUTE;
-
-typedef struct WGPUBindGroupEntry {
-    WGPUChainedStruct const * nextInChain;
-    uint32_t binding;
-    WGPU_NULLABLE WGPUBuffer buffer;
-    uint64_t offset;
-    uint64_t size;
-    WGPU_NULLABLE WGPUSampler sampler;
-    WGPU_NULLABLE WGPUTextureView textureView;
-} WGPUBindGroupEntry WGPU_STRUCTURE_ATTRIBUTE;
-`;
-
 interface CStructField {
   name: string;
   ctype: CType;
@@ -418,27 +387,6 @@ ${this.fields.map((f) => indent(1, f.prop())).join("\n")}
 `;
   }
 }
-
-// const uint32 = api.types.get("uint32_t")!;
-
-// const example = new CStruct(
-//   "WGPUExtent3D",
-//   "Extent3D",
-//   `
-// typedef struct WGPUExtent3D {
-//   uint32_t width;
-//   uint32_t height;
-//   uint32_t depthOrArrayLayers;
-// } WGPUExtent3D WGPU_STRUCTURE_ATTRIBUTE;
-//   `,
-//   [
-//     new ValueField("width", uint32),
-//     new ValueField("height", uint32),
-//     new ValueField("depthOrArrayLayers", uint32),
-//   ]
-// );
-
-// console.log(example.emit());
 
 // TODO/THOUGHTS:
 // * most structs should become classes that are effectively
