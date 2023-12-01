@@ -177,7 +177,8 @@ class ApiInfo {
       ["float", "float"],
       ["double", "float"],
       ["size_t", "int"],
-      ["ERROR", "int"],
+      ["ERROR", "any"],
+      ["NONE", "None"]
     ];
     for (const [cName, pyName] of PRIMITIVES) {
       this.types.set(cName, {
@@ -299,7 +300,11 @@ class ApiInfo {
     });
 
     const signature = `${returnType} ${name}(${args})`;
-    let ret: FuncArg | undefined = undefined;
+    let ret: FuncArg = {
+      name: "return",
+      ctype: this.types.get("NONE")!,
+      explicitPointer: false,
+    };
     if (returnType !== "void") {
       const info = parseTypeRef(returnType);
       const ctype =
@@ -545,6 +550,7 @@ ${this.fields.map((f) => indent(1, f.prop())).join("\n")}
 // * methods tacked onto opaque pointer classes! (or I guess
 //   concrete structs as well...). e.g., wgpuDeviceGetLimits -> device.getLimits
 // * horrible chained struct stuff
+// * bitflags: take in set[enum] or list[enum] or sequence[enum]?
 
 const api = new ApiInfo();
 api.parse(SRC);
