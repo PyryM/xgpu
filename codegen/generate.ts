@@ -3,17 +3,17 @@ import { readFileSync, writeFileSync } from "fs";
 const SRC = readFileSync("codegen/webgpu.h").toString("utf8");
 
 interface FuncArg {
-  name: string
-  explicitPointer: boolean
-  ctype: CType
+  name: string;
+  explicitPointer: boolean;
+  ctype: CType;
 }
 
 interface CFunc {
-  parent?: string
-  name: string
-  signature: string
-  args: FuncArg[]
-  ret?: FuncArg
+  parent?: string;
+  name: string;
+  signature: string;
+  args: FuncArg[];
+  ret?: FuncArg;
 }
 
 interface CType {
@@ -24,9 +24,9 @@ interface CType {
   wrap(val: string): string;
   unwrap(val: string): string;
   emit?(): string;
-  cdef?(): string
-  precdef?(): string
-  addFunc?(func: CFunc): void
+  cdef?(): string;
+  precdef?(): string;
+  addFunc?(func: CFunc): void;
 }
 
 interface CEnumVal {
@@ -51,7 +51,7 @@ class CEnum implements CType {
   ) {}
 
   pyAnnotation(): string {
-    return this.pyName
+    return this.pyName;
   }
 
   wrap(val: string): string {
@@ -63,13 +63,13 @@ class CEnum implements CType {
   }
 
   precdef(): string {
-    return `typedef uint32_t ${this.cName};`
+    return `typedef uint32_t ${this.cName};`;
   }
 
   emit(): string {
     let frags: string[] = [`class ${this.pyName}(IntEnum):`];
     for (const { name, val } of this.values) {
-      if(name !== "Force32") {
+      if (name !== "Force32") {
         frags.push(`    ${sanitizeIdent(name)} = ${val}`);
       }
     }
@@ -78,19 +78,19 @@ class CEnum implements CType {
 }
 
 function removePrefixCaseInsensitive(s: string, prefix: string): string {
-  if(s.toLowerCase().startsWith(prefix.toLowerCase())) {
-    return s.slice(prefix.length)
+  if (s.toLowerCase().startsWith(prefix.toLowerCase())) {
+    return s.slice(prefix.length);
   } else {
-    return s
+    return s;
   }
 }
 
 function removePrefix(s: string, prefixes: string | string[]): string {
-  if(typeof prefixes === 'string') {
-    prefixes = [prefixes]
+  if (typeof prefixes === "string") {
+    prefixes = [prefixes];
   }
 
-  for(const prefix of prefixes) {
+  for (const prefix of prefixes) {
     if (s.startsWith(prefix)) {
       s = s.slice(prefix.length);
     }
@@ -109,9 +109,9 @@ function parseEnumEntry(parentName: string, entry: string): CEnumVal {
 }
 
 function recase(ident: string, upperFirst: boolean): string {
-  const firstchar = ident.charAt(0)
-  const target = upperFirst ? firstchar.toUpperCase() : firstchar.toLowerCase()
-  return target + ident.slice(1)
+  const firstchar = ident.charAt(0);
+  const target = upperFirst ? firstchar.toUpperCase() : firstchar.toLowerCase();
+  return target + ident.slice(1);
 }
 
 function toPyName(ident: string, isClass = false): string {
@@ -119,38 +119,38 @@ function toPyName(ident: string, isClass = false): string {
 }
 
 interface Refinfo {
-  nullable?: boolean
-  constant?: boolean
-  explicitPointer?: boolean
-  inner: string
+  nullable?: boolean;
+  constant?: boolean;
+  explicitPointer?: boolean;
+  inner: string;
 }
 
 function parseTypeRef(ref: string): Refinfo {
-  const info: Refinfo = {inner: "unknown"}
-  for(const part of ref.trim().split(" ")) {
-    if(part === "WGPU_NULLABLE") {
-      info.nullable = true
-    } else if(part === "const") {
-      info.constant = true
-    } else if(part === "*") {
-      info.explicitPointer = true
+  const info: Refinfo = { inner: "unknown" };
+  for (const part of ref.trim().split(" ")) {
+    if (part === "WGPU_NULLABLE") {
+      info.nullable = true;
+    } else if (part === "const") {
+      info.constant = true;
+    } else if (part === "*") {
+      info.explicitPointer = true;
     } else {
-      info.inner = part
+      info.inner = part;
     }
   }
-  return info
+  return info;
 }
 
 function canonicalName(ref: Refinfo): string {
-  if(ref.explicitPointer && ref.inner === "char") {
+  if (ref.explicitPointer && ref.inner === "char") {
     // special case for strings?
-    return "cstr"
+    return "cstr";
   } else {
-    return ref.inner
+    return ref.inner;
   }
 }
 
-function parseTypedIdent(entry: string): {name: string, type: Refinfo} {
+function parseTypedIdent(entry: string): { name: string; type: Refinfo } {
   const matched = entry.match(/(.*) ([A-Za-z0-9_]+)$/);
   if (!matched) {
     throw new Error(`Unable to parse: "${entry}"`);
@@ -197,7 +197,7 @@ class ApiInfo {
       pyAnnotation: () => "str",
       wrap: (v) => `ffi.string(${v})`,
       unwrap: (v) => v,
-    })
+    });
   }
 
   findEnums(src: string) {
@@ -223,21 +223,29 @@ class ApiInfo {
   _createField(name: string, ref: Refinfo): CStructField {
     const ctype = canonicalName(ref);
     const type = this.types.get(ctype) ?? this.types.get("ERROR")!;
-    if(ref.explicitPointer || type.kind === "opaque" || type.kind === "struct") {
-      return new PointerField(name, type, ref.nullable ?? false)
+    if (
+      ref.explicitPointer ||
+      type.kind === "opaque" ||
+      type.kind === "struct"
+    ) {
+      return new PointerField(name, type, ref.nullable ?? false);
     } else {
-      return new ValueField(name, type)
+      return new ValueField(name, type);
     }
   }
 
-  _createArrayField(countField: string, arrField: string, arrType: Refinfo): CStructField {
+  _createArrayField(
+    countField: string,
+    arrField: string,
+    arrType: Refinfo
+  ): CStructField {
     const ctype = canonicalName(arrType);
     const type = this.types.get(ctype) ?? this.types.get("ERROR")!;
     return new ArrayField(arrField, countField, type);
   }
 
   _addStruct(cdef: string, cName: string, body: string) {
-    const rawFields: {name: string, type: Refinfo}[] = [];
+    const rawFields: { name: string; type: Refinfo }[] = [];
     for (const line of body.split(";")) {
       if (line.trim().length > 0) {
         rawFields.push(parseTypedIdent(line.trim()));
@@ -245,10 +253,14 @@ class ApiInfo {
     }
     const fields: CStructField[] = [];
     let fieldPos = 0;
-    while(fieldPos < rawFields.length) {
-      const {name, type} = rawFields[fieldPos];
-      if(name.endsWith("Count") && type.inner === "size_t" && (fieldPos + 1 < rawFields.length)) {
-        const {name: arrName, type: arrType} = rawFields[fieldPos+1];
+    while (fieldPos < rawFields.length) {
+      const { name, type } = rawFields[fieldPos];
+      if (
+        name.endsWith("Count") &&
+        type.inner === "size_t" &&
+        fieldPos + 1 < rawFields.length
+      ) {
+        const { name: arrName, type: arrType } = rawFields[fieldPos + 1];
         fields.push(this._createArrayField(name, arrName, arrType));
         fieldPos += 2;
       } else {
@@ -256,7 +268,10 @@ class ApiInfo {
         ++fieldPos;
       }
     }
-    this.types.set(cName, new CStruct(cName, toPyName(cName, true), cdef, fields));
+    this.types.set(
+      cName,
+      new CStruct(cName, toPyName(cName, true), cdef, fields)
+    );
   }
 
   findConcreteStructs(src: string) {
@@ -268,8 +283,8 @@ class ApiInfo {
   }
 
   _findFuncParent(args: FuncArg[]): CType | undefined {
-    if(args.length > 0) {
-      const thisType = args[0].ctype.cName
+    if (args.length > 0) {
+      const thisType = args[0].ctype.cName;
       return this.types.get(thisType);
     }
     return undefined;
@@ -277,23 +292,29 @@ class ApiInfo {
 
   _addFunc(name: string, argStr: string, returnType: string) {
     const args: FuncArg[] = argStr.split(",").map((ident) => {
-      let {name, type} = parseTypedIdent(ident);
-      const ctype = this.types.get(canonicalName(type)) ?? this.types.get("ERROR")!;
-      return {name, ctype, explicitPointer: type.explicitPointer === true}
+      let { name, type } = parseTypedIdent(ident);
+      const ctype =
+        this.types.get(canonicalName(type)) ?? this.types.get("ERROR")!;
+      return { name, ctype, explicitPointer: type.explicitPointer === true };
     });
 
     const signature = `${returnType} ${name}(${args})`;
     let ret: FuncArg | undefined = undefined;
-    if(returnType !== "void") {
+    if (returnType !== "void") {
       const info = parseTypeRef(returnType);
-      const ctype = this.types.get(canonicalName(info)) ?? this.types.get("ERROR")!;
-      ret = {name: "return", ctype, explicitPointer: info.explicitPointer === true}
+      const ctype =
+        this.types.get(canonicalName(info)) ?? this.types.get("ERROR")!;
+      ret = {
+        name: "return",
+        ctype,
+        explicitPointer: info.explicitPointer === true,
+      };
     }
 
-    let func: CFunc = {name, signature, args, ret}
+    let func: CFunc = { name, signature, args, ret };
 
     const parent = this._findFuncParent(args);
-    if(parent !== undefined && parent.addFunc) {
+    if (parent !== undefined && parent.addFunc) {
       parent.addFunc(func);
     } else {
       console.log(`Couldn't find parent for ${name}`);
@@ -302,8 +323,9 @@ class ApiInfo {
   }
 
   findExportedFunctions(src: string) {
-    const reg = /WGPU_EXPORT (.*) ([a-zA-Z0-9_]+)\((.*)\) WGPU_FUNCTION_ATTRIBUTE;/g;
-    for(const m of src.matchAll(reg)) {
+    const reg =
+      /WGPU_EXPORT (.*) ([a-zA-Z0-9_]+)\((.*)\) WGPU_FUNCTION_ATTRIBUTE;/g;
+    for (const m of src.matchAll(reg)) {
       const [_wholeMatch, returnType, name, args] = m;
       this._addFunc(name, args, returnType);
     }
@@ -325,10 +347,14 @@ interface CStructField {
 }
 
 class ArrayField implements CStructField {
-  constructor(public name: string, public countName: string, public ctype: CType) {}
+  constructor(
+    public name: string,
+    public countName: string,
+    public ctype: CType
+  ) {}
 
   arg(): string {
-    return `${this.name}: list[${this.ctype.pyName}]`
+    return `${this.name}: list[${this.ctype.pyName}]`;
   }
 
   prop(): string {
@@ -370,7 +396,11 @@ def ${this.name}(self, v: ${this.ctype.pyName}):
 }
 
 class PointerField implements CStructField {
-  constructor(public name: string, public ctype: CType, public nullable: boolean) {}
+  constructor(
+    public name: string,
+    public ctype: CType,
+    public nullable: boolean
+  ) {}
 
   arg(): string {
     return `${this.name}: ${this.ctype.pyName}`;
@@ -405,44 +435,47 @@ function ffiNew(ctype: string): string {
 }
 
 class COpaque implements CType {
-  kind: "opaque" = "opaque"
-  funcs: CFunc[] = []
+  kind: "opaque" = "opaque";
+  funcs: CFunc[] = [];
 
-  constructor(
-    public cName: string,
-    public pyName: string
-  ) {}
+  constructor(public cName: string, public pyName: string) {}
 
   pyAnnotation(): string {
-    return `"${this.pyName}"`
+    return `"${this.pyName}"`;
   }
 
   wrap(val: string): string {
-    return `${this.pyName}(${val})`
+    return `${this.pyName}(${val})`;
   }
 
   unwrap(val: string): string {
-    return `${val}._cdata`
+    return `${val}._cdata`;
   }
 
   precdef(): string {
-    return `typedef struct ${this.cName}Impl* ${this.cName};`
+    return `typedef struct ${this.cName}Impl* ${this.cName};`;
   }
 
   addFunc(func: CFunc): void {
-    console.log(`Adding ${func.name} to ${this.cName}`)
-    this.funcs.push(func)
+    console.log(`Adding ${func.name} to ${this.cName}`);
+    this.funcs.push(func);
   }
 
   emitFunc(func: CFunc): string {
-    const arglist = func.args.slice(1).map((arg) => `${arg.name}: ${arg.ctype.pyAnnotation()}`)
-    const retval = func.ret !== undefined ? ` -> ${func.ret.ctype.pyAnnotation()}` : "";
-    const fname = toPyName(removePrefixCaseInsensitive(func.name, this.cName))
+    const arglist = [
+      "self",
+      ...func.args
+        .slice(1)
+        .map((arg) => `${arg.name}: ${arg.ctype.pyAnnotation()}`),
+    ];
+    const retval =
+      func.ret !== undefined ? ` -> ${func.ret.ctype.pyAnnotation()}` : "";
+    const fname = toPyName(removePrefixCaseInsensitive(func.name, this.cName));
 
     return `
-    def ${fname}(self, ${arglist.join(", ")})${retval}:
+    def ${fname}(${arglist.join(", ")})${retval}:
         # TODO!
-        pass`
+        pass`;
   }
 
   emit(): string {
@@ -451,7 +484,7 @@ class ${this.pyName}:
     def __init__(self, cdata):
         self._cdata = cdata
 ${this.funcs.map((f) => this.emitFunc(f)).join("\n")}
-`
+`;
   }
 }
 
@@ -466,11 +499,11 @@ class CStruct implements CType {
   ) {}
 
   pyAnnotation(): string {
-    return `"${this.pyName}"`
+    return `"${this.pyName}"`;
   }
 
   wrap(val: string): string {
-    return `raise ValueError("This property cannot be queried!")`
+    return `raise ValueError("This property cannot be queried!")`;
   }
 
   unwrap(val: string): string {
@@ -478,11 +511,11 @@ class CStruct implements CType {
   }
 
   precdef(): string {
-    return `struct ${this.cName};`
+    return `struct ${this.cName};`;
   }
 
   cdef(): string {
-    return `${this._cdef} ${this.cName};`
+    return `${this._cdef} ${this.cName};`;
   }
 
   emit(): string {
@@ -551,6 +584,6 @@ ${cdefFrags.join("\n")}
 """)
 
 ${pyFrags.join("\n")}
-`
+`;
 
-writeFileSync("webgoo.py", finalOutput)
+writeFileSync("webgoo.py", finalOutput);
