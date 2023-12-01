@@ -187,12 +187,30 @@ class ApiInfo {
     }
   }
 
+  _createArrayField(countField: string, arrField: string, arrType: Refinfo): CStructField {
+    const ctype = canonicalName(arrType);
+    const type = this.types.get(ctype) ?? this.types.get("ERROR")!;
+    return new ArrayField(arrField, countField, type);
+  }
+
   _addStruct(cdef: string, cName: string, body: string) {
-    const fields: CStructField[] = [];
+    const rawFields: {name: string, type: Refinfo}[] = [];
     for (const line of body.split(";")) {
       if (line.trim().length > 0) {
-        const {name, type} = parseStructEntry(line.trim());
+        rawFields.push(parseStructEntry(line.trim()));
+      }
+    }
+    const fields: CStructField[] = [];
+    let fieldPos = 0;
+    while(fieldPos < rawFields.length) {
+      const {name, type} = rawFields[fieldPos];
+      if(name.endsWith("Count") && type.inner === "size_t" && (fieldPos + 1 < rawFields.length)) {
+        const {name: arrName, type: arrType} = rawFields[fieldPos+1];
+        fields.push(this._createArrayField(name, arrName, arrType));
+        fieldPos += 2;
+      } else {
         fields.push(this._createField(name, type));
+        ++fieldPos;
       }
     }
     this.types.set(cName, new CStruct(cName, pyName(cName), cdef, fields));
@@ -249,6 +267,32 @@ interface CStructField {
   ctype: CType;
   prop(): string;
   arg(): string;
+}
+
+class ArrayField implements CStructField {
+  constructor(public name: string, public countName: string, public ctype: CType) {}
+
+  arg(): string {
+    return `${this.name}: list[${this.ctype.pyName}]`
+  }
+
+  prop(): string {
+    return `
+@property
+def ${this.name}(self) -> list[${this.ctype.pyName}]:
+    return self._${this.name}
+
+@${this.name}.setter
+def ${this.name}(self, v: list[${this.ctype.pyName}]):
+    count = len(v)
+    ptr_arr = ffi.new('${this.ctype.cName}[]', count)
+    for idx, item in enumerate(v):
+        ptr_arr[idx] = ${this.ctype.unwrap("item")}
+    self._${this.name} = v
+    self._${this.name}_arr = ptr_arr
+    self._cdata.${this.countName} = count
+    self._cdata.${this.name} = ptr_arr`;
+  }
 }
 
 class ValueField implements CStructField {
