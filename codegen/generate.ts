@@ -77,18 +77,30 @@ class CEnum implements CType {
   }
 }
 
-function removePrefix(s: string, prefix: string): string {
-  if (s.startsWith(prefix)) {
-    s = s.slice(prefix.length);
+function removePrefixCaseInsensitive(s: string, prefix: string): string {
+  if(s.toLowerCase().startsWith(prefix.toLowerCase())) {
+    return s.slice(prefix.length)
+  } else {
+    return s
   }
+}
+
+function removePrefix(s: string, prefixes: string | string[]): string {
+  if(typeof prefixes === 'string') {
+    prefixes = [prefixes]
+  }
+
+  for(const prefix of prefixes) {
+    if (s.startsWith(prefix)) {
+      s = s.slice(prefix.length);
+    }
+  }
+
   return s;
 }
 
 function cleanup(s: string, prefix: string): string {
-  s = s.trim();
-  s = removePrefix(s, prefix);
-  s = removePrefix(s, "_");
-  return s;
+  return removePrefix(s.trim(), [prefix, "_"]);
 }
 
 function parseEnumEntry(parentName: string, entry: string): CEnumVal {
@@ -96,8 +108,14 @@ function parseEnumEntry(parentName: string, entry: string): CEnumVal {
   return { name: cleanup(name, parentName), val };
 }
 
-function pyName(ident: string): string {
-  return removePrefix(ident, "WGPU");
+function recase(ident: string, upperFirst: boolean): string {
+  const firstchar = ident.charAt(0)
+  const target = upperFirst ? firstchar.toUpperCase() : firstchar.toLowerCase()
+  return target + ident.slice(1)
+}
+
+function toPyName(ident: string, isClass = false): string {
+  return recase(removePrefix(ident, ["WGPU", "wgpu"]), isClass);
 }
 
 interface Refinfo {
@@ -190,7 +208,7 @@ class ApiInfo {
         .split(",")
         .map((e) => parseEnumEntry(name.trim(), e));
       const cName = name.trim();
-      this.types.set(cName, new CEnum(cName, pyName(cName), entries));
+      this.types.set(cName, new CEnum(cName, toPyName(cName, true), entries));
     }
   }
 
@@ -198,7 +216,7 @@ class ApiInfo {
     const reg = /typedef struct ([a-zA-Z0-9]+)\* ([a-zA-Z]+)([^;]*);/g;
     for (const m of src.matchAll(reg)) {
       const [_wholeMatch, _implName, cName, _extra] = m;
-      this.types.set(cName, new COpaque(cName, cName));
+      this.types.set(cName, new COpaque(cName, toPyName(cName, true)));
     }
   }
 
@@ -238,7 +256,7 @@ class ApiInfo {
         ++fieldPos;
       }
     }
-    this.types.set(cName, new CStruct(cName, pyName(cName), cdef, fields));
+    this.types.set(cName, new CStruct(cName, toPyName(cName, true), cdef, fields));
   }
 
   findConcreteStructs(src: string) {
@@ -419,9 +437,10 @@ class COpaque implements CType {
   emitFunc(func: CFunc): string {
     const arglist = func.args.slice(1).map((arg) => `${arg.name}: ${arg.ctype.pyAnnotation()}`)
     const retval = func.ret !== undefined ? ` -> ${func.ret.ctype.pyAnnotation()}` : "";
+    const fname = toPyName(removePrefixCaseInsensitive(func.name, this.cName))
 
     return `
-    def ${func.name}(self, ${arglist.join(", ")})${retval}:
+    def ${fname}(self, ${arglist.join(", ")})${retval}:
         # TODO!
         pass`
   }
@@ -518,6 +537,7 @@ for (const [name, ctype] of api.types.entries()) {
 
 const finalOutput = `
 from enum import IntEnum
+
 from cffi import FFI
 
 ffi = FFI()
