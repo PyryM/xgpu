@@ -2,15 +2,31 @@ import { readFileSync, writeFileSync } from "fs";
 
 const SRC = readFileSync("codegen/webgpu.h").toString("utf8");
 
+interface FuncArg {
+  name: string
+  explicitPointer: boolean
+  ctype: CType
+}
+
+interface CFunc {
+  parent?: string
+  name: string
+  signature: string
+  args: FuncArg[]
+  ret?: FuncArg
+}
+
 interface CType {
   kind: "opaque" | "enum" | "primitive" | "struct";
   pyName: string;
   cName: string;
+  pyAnnotation(): string;
   wrap(val: string): string;
   unwrap(val: string): string;
   emit?(): string;
   cdef?(): string
   precdef?(): string
+  addFunc?(func: CFunc): void
 }
 
 interface CEnumVal {
@@ -33,6 +49,10 @@ class CEnum implements CType {
     public pyName: string,
     public values: CEnumVal[]
   ) {}
+
+  pyAnnotation(): string {
+    return this.pyName
+  }
 
   wrap(val: string): string {
     return `${this.pyName}(${val})`;
@@ -112,7 +132,7 @@ function canonicalName(ref: Refinfo): string {
   }
 }
 
-function parseStructEntry(entry: string): {name: string, type: Refinfo} {
+function parseTypedIdent(entry: string): {name: string, type: Refinfo} {
   const matched = entry.match(/(.*) ([A-Za-z0-9_]+)$/);
   if (!matched) {
     throw new Error(`Unable to parse: "${entry}"`);
@@ -124,6 +144,7 @@ function parseStructEntry(entry: string): {name: string, type: Refinfo} {
 
 class ApiInfo {
   types: Map<string, CType> = new Map();
+  looseFuncs: CFunc[] = [];
 
   constructor() {
     const PRIMITIVES: [string, string][] = [
@@ -145,6 +166,7 @@ class ApiInfo {
         cName,
         pyName,
         kind: "primitive",
+        pyAnnotation: () => pyName,
         wrap: (v) => v,
         unwrap: (v) => v,
       });
@@ -154,6 +176,7 @@ class ApiInfo {
       cName: "const char *",
       pyName: "str",
       kind: "primitive",
+      pyAnnotation: () => "str",
       wrap: (v) => `ffi.string(${v})`,
       unwrap: (v) => v,
     })
@@ -199,7 +222,7 @@ class ApiInfo {
     const rawFields: {name: string, type: Refinfo}[] = [];
     for (const line of body.split(";")) {
       if (line.trim().length > 0) {
-        rawFields.push(parseStructEntry(line.trim()));
+        rawFields.push(parseTypedIdent(line.trim()));
       }
     }
     const fields: CStructField[] = [];
@@ -226,10 +249,53 @@ class ApiInfo {
     }
   }
 
+  _findFuncParent(args: FuncArg[]): CType | undefined {
+    if(args.length > 0) {
+      const thisType = args[0].ctype.cName
+      return this.types.get(thisType);
+    }
+    return undefined;
+  }
+
+  _addFunc(name: string, argStr: string, returnType: string) {
+    const args: FuncArg[] = argStr.split(",").map((ident) => {
+      let {name, type} = parseTypedIdent(ident);
+      const ctype = this.types.get(canonicalName(type)) ?? this.types.get("ERROR")!;
+      return {name, ctype, explicitPointer: type.explicitPointer === true}
+    });
+
+    const signature = `${returnType} ${name}(${args})`;
+    let ret: FuncArg | undefined = undefined;
+    if(returnType !== "void") {
+      const info = parseTypeRef(returnType);
+      const ctype = this.types.get(canonicalName(info)) ?? this.types.get("ERROR")!;
+      ret = {name: "return", ctype, explicitPointer: info.explicitPointer === true}
+    }
+
+    let func: CFunc = {name, signature, args, ret}
+
+    const parent = this._findFuncParent(args);
+    if(parent !== undefined && parent.addFunc) {
+      parent.addFunc(func);
+    } else {
+      console.log(`Couldn't find parent for ${name}`);
+      this.looseFuncs.push(func);
+    }
+  }
+
+  findExportedFunctions(src: string) {
+    const reg = /WGPU_EXPORT (.*) ([a-zA-Z0-9_]+)\((.*)\) WGPU_FUNCTION_ATTRIBUTE;/g;
+    for(const m of src.matchAll(reg)) {
+      const [_wholeMatch, returnType, name, args] = m;
+      this._addFunc(name, args, returnType);
+    }
+  }
+
   parse(src: string) {
-    this.findOpaquePointers(src);
     this.findEnums(src);
+    this.findOpaquePointers(src);
     this.findConcreteStructs(src);
+    this.findExportedFunctions(src);
   }
 }
 
@@ -322,11 +388,16 @@ function ffiNew(ctype: string): string {
 
 class COpaque implements CType {
   kind: "opaque" = "opaque"
+  funcs: CFunc[] = []
 
   constructor(
     public cName: string,
     public pyName: string
   ) {}
+
+  pyAnnotation(): string {
+    return `"${this.pyName}"`
+  }
 
   wrap(val: string): string {
     return `${this.pyName}(${val})`
@@ -340,11 +411,27 @@ class COpaque implements CType {
     return `typedef struct ${this.cName}Impl* ${this.cName};`
   }
 
+  addFunc(func: CFunc): void {
+    console.log(`Adding ${func.name} to ${this.cName}`)
+    this.funcs.push(func)
+  }
+
+  emitFunc(func: CFunc): string {
+    const arglist = func.args.slice(1).map((arg) => `${arg.name}: ${arg.ctype.pyAnnotation()}`)
+    const retval = func.ret !== undefined ? ` -> ${func.ret.ctype.pyAnnotation()}` : "";
+
+    return `
+    def ${func.name}(self, ${arglist.join(", ")})${retval}:
+        # TODO!
+        pass`
+  }
+
   emit(): string {
     return `
 class ${this.pyName}:
     def __init__(self, cdata):
         self._cdata = cdata
+${this.funcs.map((f) => this.emitFunc(f)).join("\n")}
 `
   }
 }
@@ -358,6 +445,10 @@ class CStruct implements CType {
     public _cdef: string,
     public fields: CStructField[]
   ) {}
+
+  pyAnnotation(): string {
+    return `"${this.pyName}"`
+  }
 
   wrap(val: string): string {
     return `raise ValueError("This property cannot be queried!")`
