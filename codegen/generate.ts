@@ -538,19 +538,12 @@ ${this.fields.map((f) => indent(1, f.prop())).join("\n")}
 }
 
 // TODO/THOUGHTS:
-// * most structs should become classes that are effectively
-//   immutable after construction (have inner .cdata)
-// * ALT: just map everything with getters/setters into cdata mutations?
-//   getting/setting will incur some overhead, but will maybe support
-//   some patterns people might want to use?
 // * a small number of structs need to be mutated
 //   (e.g., limits structs which are mutated to return limits)
-// * a few structs have count - then - array constructions, should
-//   handle passing these as actual arrays
-// * methods tacked onto opaque pointer classes! (or I guess
-//   concrete structs as well...). e.g., wgpuDeviceGetLimits -> device.getLimits
 // * horrible chained struct stuff
 // * bitflags: take in set[enum] or list[enum] or sequence[enum]?
+// * actually emit function calls
+// 
 
 const api = new ApiInfo();
 api.parse(SRC);
