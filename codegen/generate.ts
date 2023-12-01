@@ -1,4 +1,4 @@
-import { readFileSync } from "fs";
+import { readFileSync, writeFileSync } from "fs";
 
 const SRC = readFileSync("codegen/webgpu.h").toString("utf8");
 
@@ -37,7 +37,7 @@ class CEnum implements CType {
   }
 
   unwrap(val: string): string {
-    return `int(val)`;
+    return `int(${val})`;
   }
 
   emit(): string {
@@ -72,13 +72,46 @@ function pyName(ident: string): string {
   return removePrefix(ident, "WGPU");
 }
 
-function parseStructEntry(entry: string): {name: string, type: string} {
+interface Refinfo {
+  nullable?: boolean
+  constant?: boolean
+  explicitPointer?: boolean
+  inner: string
+}
+
+function parseTypeRef(ref: string): Refinfo {
+  const info: Refinfo = {inner: "unknown"}
+  for(const part of ref.trim().split(" ")) {
+    if(part === "WGPU_NULLABLE") {
+      info.nullable = true
+    } else if(part === "const") {
+      info.constant = true
+    } else if(part === "*") {
+      info.explicitPointer = true
+    } else {
+      info.inner = part
+    }
+  }
+  return info
+}
+
+function canonicalName(ref: Refinfo): string {
+  if(ref.explicitPointer && ref.inner === "char") {
+    // special case for strings?
+    return "cstr"
+  } else {
+    return ref.inner
+  }
+}
+
+function parseStructEntry(entry: string): {name: string, type: Refinfo} {
   const matched = entry.match(/(.*) ([A-Za-z0-9_]+)$/);
   if (!matched) {
     throw new Error(`Unable to parse: "${entry}"`);
   }
   const [_wholeMatch, type, name] = matched;
-  return { name, type };
+  //console.log(`>>>>>>>>> ${name} >>>>>>>> "${type}"`)
+  return { name, type: parseTypeRef(type) };
 }
 
 class ApiInfo {
@@ -96,6 +129,7 @@ class ApiInfo {
       ["int8_t", "int"],
       ["float", "float"],
       ["double", "float"],
+      ["size_t", "int"],
       ["ERROR", "int"],
     ];
     for (const [cName, pyName] of PRIMITIVES) {
@@ -107,6 +141,14 @@ class ApiInfo {
         unwrap: (v) => v,
       });
     }
+
+    this.types.set("cstr", {
+      cName: "const char *",
+      pyName: "str",
+      kind: "primitive",
+      wrap: (v) => `ffi.string(${v})`,
+      unwrap: (v) => v,
+    })
   }
 
   findEnums(src: string) {
@@ -125,21 +167,15 @@ class ApiInfo {
     const reg = /typedef struct ([a-zA-Z0-9]+)\* ([a-zA-Z]+)([^;]*);/g;
     for (const m of src.matchAll(reg)) {
       const [_wholeMatch, _implName, cName, _extra] = m;
-      this.types.set(cName, {
-        cName,
-        pyName: cName,
-        kind: "opaque",
-        wrap: (v) => v,
-        unwrap: (v) => v,
-        emit: () => `#opaque ${cName}`
-      });
+      this.types.set(cName, new COpaque(cName, cName));
     }
   }
 
-  _createField(name: string, ctype: string): CStructField {
+  _createField(name: string, ref: Refinfo): CStructField {
+    const ctype = canonicalName(ref);
     const type = this.types.get(ctype) ?? this.types.get("ERROR")!;
-    if(type.kind === "opaque" || type.kind === "struct") {
-      return new PointerField(name, type)
+    if(ref.explicitPointer || type.kind === "opaque" || type.kind === "struct") {
+      return new PointerField(name, type, ref.nullable ?? false)
     } else {
       return new ValueField(name, type)
     }
@@ -229,7 +265,7 @@ def ${this.name}(self, v: ${this.ctype.pyName}):
 }
 
 class PointerField implements CStructField {
-  constructor(public name: string, public ctype: CType) {}
+  constructor(public name: string, public ctype: CType, public nullable: boolean) {}
 
   arg(): string {
     return `${this.name}: ${this.ctype.pyName}`;
@@ -261,6 +297,31 @@ function ptrTo(ctype: string): string {
 
 function ffiNew(ctype: string): string {
   return `ffi.new("${ptrTo(ctype)}")`;
+}
+
+class COpaque implements CType {
+  kind: "opaque" = "opaque"
+
+  constructor(
+    public cName: string,
+    public pyName: string
+  ) {}
+
+  wrap(val: string): string {
+    return `${this.pyName}(${val})`
+  }
+
+  unwrap(val: string): string {
+    return `${val}._cdata`
+  }
+
+  emit(): string {
+    return `
+class ${this.pyName}:
+    def __init__(self, cdata):
+        self._cdata = cdata
+`
+  }
 }
 
 class CStruct implements CType {
@@ -330,11 +391,19 @@ ${this.fields.map((f) => indent(1, f.prop())).join("\n")}
 // * methods tacked onto opaque pointer classes! (or I guess
 //   concrete structs as well...). e.g., wgpuDeviceGetLimits -> device.getLimits
 
+const PREAMBLE = `
+from enum import IntEnum
+from cffi import ffi
+`
+
 const api = new ApiInfo();
 api.parse(SRC);
+
+const frags: string[] = [PREAMBLE];
 for (const [name, ctype] of api.types.entries()) {
   if (ctype.emit) {
-    console.log(ctype.emit());
-    console.log("");
+    frags.push(ctype.emit());
   }
 }
+
+writeFileSync("webgoo.py", frags.join("\n"))
