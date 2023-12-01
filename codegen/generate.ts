@@ -49,9 +49,11 @@ class CEnum implements CType {
   emit(): string {
     let frags: string[] = [`class ${this.pyName}(IntEnum):`];
     for (const { name, val } of this.values) {
-      frags.push(`    ${sanitizeIdent(name)} = ${val}`);
+      if(name !== "Force32") {
+        frags.push(`    ${sanitizeIdent(name)} = ${val}`);
+      }
     }
-    return frags.join("\n");
+    return frags.join("\n") + "\n";
   }
 }
 
