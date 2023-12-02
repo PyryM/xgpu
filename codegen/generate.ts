@@ -177,8 +177,8 @@ class ApiInfo {
       ["float", "float"],
       ["double", "float"],
       ["size_t", "int"],
-      ["ERROR", "any"],
-      ["NONE", "None"]
+      ["UNKNOWN", "Any"],
+      ["NONE", "None"],
     ];
     for (const [cName, pyName] of PRIMITIVES) {
       this.types.set(cName, {
@@ -223,7 +223,7 @@ class ApiInfo {
 
   _createField(name: string, ref: Refinfo): CStructField {
     const ctype = canonicalName(ref);
-    const type = this.types.get(ctype) ?? this.types.get("ERROR")!;
+    const type = this.types.get(ctype) ?? this.types.get("UNKNOWN")!;
     if (
       ref.explicitPointer ||
       type.kind === "opaque" ||
@@ -241,7 +241,7 @@ class ApiInfo {
     arrType: Refinfo
   ): CStructField {
     const ctype = canonicalName(arrType);
-    const type = this.types.get(ctype) ?? this.types.get("ERROR")!;
+    const type = this.types.get(ctype) ?? this.types.get("UNKNOWN")!;
     return new ArrayField(arrField, countField, type);
   }
 
@@ -295,7 +295,7 @@ class ApiInfo {
     const args: FuncArg[] = argStr.split(",").map((ident) => {
       let { name, type } = parseTypedIdent(ident);
       const ctype =
-        this.types.get(canonicalName(type)) ?? this.types.get("ERROR")!;
+        this.types.get(canonicalName(type)) ?? this.types.get("UNKNOWN")!;
       return { name, ctype, explicitPointer: type.explicitPointer === true };
     });
 
@@ -308,7 +308,7 @@ class ApiInfo {
     if (returnType !== "void") {
       const info = parseTypeRef(returnType);
       const ctype =
-        this.types.get(canonicalName(info)) ?? this.types.get("ERROR")!;
+        this.types.get(canonicalName(info)) ?? this.types.get("UNKNOWN")!;
       ret = {
         name: "return",
         ctype,
@@ -407,20 +407,43 @@ class PointerField implements CStructField {
     public nullable: boolean
   ) {}
 
+  argtype(): string {
+    return this.ctype.pyName + (this.nullable ? " | None" : "");
+  }
+
   arg(): string {
-    return `${this.name}: ${this.ctype.pyName}`;
+    return `${this.name}: ${this.argtype()}`;
+  }
+
+  setterBody(): string[] {
+    const unwrapped = this.ctype.unwrap("v");
+    if (this.nullable && unwrapped !== "v") {
+      // slight optimization: if unwrap(v) is just v then skip
+      // the none check because we can just directly assign
+      return [
+        `self._${this.name} = v`,
+        `if v is None:`,
+        `    self._cdata.${this.name} = None`,
+        `else:`,
+        `    self._cdata.${this.name} = ${unwrapped}`,
+      ];
+    } else {
+      return [
+        `self._${this.name} = v`,
+        `self._cdata.${this.name} = ${unwrapped}`,
+      ];
+    }
   }
 
   prop(): string {
     return `
 @property
-def ${this.name}(self) -> ${this.ctype.pyName}:
+def ${this.name}(self) -> ${this.argtype()}:
     return self._${this.name}
 
 @${this.name}.setter
-def ${this.name}(self, v: ${this.ctype.pyName}):
-    self._${this.name} = v
-    self._cdata.${this.name} = ${this.ctype.unwrap("v")}`;
+def ${this.name}(self, v: ${this.argtype()}):
+${indent(1, this.setterBody())}`;
   }
 }
 
@@ -467,20 +490,23 @@ class COpaque implements CType {
   }
 
   emitFunc(func: CFunc): string {
-    const arglist = [
+    const pyArglist = [
       "self",
       ...func.args
         .slice(1)
         .map((arg) => `${arg.name}: ${arg.ctype.pyAnnotation()}`),
+    ];
+    const callArglist = [
+      "self._cdata",
+      ...func.args.slice(1).map((arg) => arg.ctype.unwrap(arg.name)),
     ];
     const retval =
       func.ret !== undefined ? ` -> ${func.ret.ctype.pyAnnotation()}` : "";
     const fname = toPyName(removePrefixCaseInsensitive(func.name, this.cName));
 
     return `
-    def ${fname}(${arglist.join(", ")})${retval}:
-        # TODO!
-        pass`;
+    def ${fname}(${pyArglist.join(", ")})${retval}:
+        return lib.${func.name}(${callArglist.join(", ")})`;
   }
 
   emit(): string {
@@ -542,8 +568,8 @@ ${this.fields.map((f) => indent(1, f.prop())).join("\n")}
 //   (e.g., limits structs which are mutated to return limits)
 // * horrible chained struct stuff
 // * bitflags: take in set[enum] or list[enum] or sequence[enum]?
-// * actually emit function calls
-// 
+// * refcounting `reference`, `release`: ffi.gc on CDATA wrap ?
+//
 
 const api = new ApiInfo();
 api.parse(SRC);
@@ -568,10 +594,14 @@ for (const [name, ctype] of api.types.entries()) {
 
 const finalOutput = `
 from enum import IntEnum
+from typing import Any
 
 from cffi import FFI
 
 ffi = FFI()
+# TODO: figure out DLL name on different platforms!
+lib = ffi.dlopen("wgpu-native.dll")
+
 ffi.cdef("""
 typedef uint32_t WGPUFlags;
 typedef uint32_t WGPUBool;
