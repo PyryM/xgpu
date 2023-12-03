@@ -582,7 +582,7 @@ ${this.fields.map((f) => indent(1, f.prop())).join("\n")}
 // * horrible chained struct stuff
 // * bitflags: take in set[enum] or list[enum] or sequence[enum]?
 // * refcounting `reference`, `release`: ffi.gc on CDATA wrap ?
-//
+// * default arguments? maybe better to not have any defaults!
 
 const api = new ApiInfo();
 api.parse(SRC);
