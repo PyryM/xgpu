@@ -9,12 +9,6 @@ interface FuncArg {
   ctype: CType;
 }
 
-function emitArg(arg: FuncArg): string {
-  return `${arg.ctype.cName} ${arg.explicitConst ? "const " : ""}${
-    arg.explicitPointer ? "* " : ""
-  }${arg.name}`;
-}
-
 interface CFunc {
   parent?: string;
   name: string;
@@ -31,8 +25,6 @@ interface CType {
   wrap(val: string, isPointer: boolean): string;
   unwrap(val: string, isPointer: boolean): string;
   emit?(): string;
-  cdef?(): string;
-  precdef?(): string;
   addFunc?(func: CFunc): void;
 }
 
@@ -67,10 +59,6 @@ class CEnum implements CType {
 
   unwrap(val: string): string {
     return `int(${val})`;
-  }
-
-  precdef(): string {
-    return `typedef uint32_t ${this.cName};`;
   }
 
   emit(): string {
@@ -161,7 +149,6 @@ function parseTypedIdent(entry: string): { name: string; type: Refinfo } {
     throw new Error(`Unable to parse: "${entry}"`);
   }
   const [_wholeMatch, type, name] = matched;
-  //console.log(`>>>>>>>>> ${name} >>>>>>>> "${type}"`)
   return { name, type: parseTypeRef(type) };
 }
 
@@ -430,11 +417,6 @@ class CFuncPointer implements CType {
   // emit?(): string {
   //   throw new Error("Method not implemented.");
   // }
-
-  precdef?(): string {
-    const args = this.args.map(emitArg).join(", ");
-    return `typedef ${this.ret.ctype.cName} (*${this.cName})(${args});`;
-  }
 }
 
 interface CStructField {
@@ -578,10 +560,6 @@ class COpaque implements CType {
     return `${val}._cdata`;
   }
 
-  precdef(): string {
-    return `typedef struct ${this.cName}Impl* ${this.cName};`;
-  }
-
   addFunc(func: CFunc): void {
     console.log(`Adding ${func.name} to ${this.cName}`);
     this.funcs.push(func);
@@ -645,14 +623,6 @@ class CStruct implements CType {
     return `${val}._cdata`;
   }
 
-  precdef(): string {
-    return `struct ${this.cName};`;
-  }
-
-  cdef(): string {
-    return `${this._cdef} ${this.cName};`;
-  }
-
   emit(): string {
     return `
 class ${this.pyName}:
@@ -674,23 +644,15 @@ ${this.fields.map((f) => indent(1, f.prop())).join("\n")}
 // * bitflags: take in set[enum] or list[enum] or sequence[enum]?
 // * refcounting `reference`, `release`: ffi.gc on CDATA wrap ?
 // * default arguments? maybe better to not have any defaults!
+// * callbacks: create actual callback classes/objects that autowrap args?
+// * bind wgpu-native specific functions from wgpu.h? (at least poll is needed!)
 
 const api = new ApiInfo();
 api.parse(SRC);
 
-const predefFrags: string[] = [];
-const cdefFrags: string[] = [];
 const pyFrags: string[] = [];
 
 for (const [name, ctype] of api.types.entries()) {
-  if (ctype.precdef) {
-    predefFrags.push(ctype.precdef());
-  }
-
-  if (ctype.cdef) {
-    cdefFrags.push(ctype.cdef());
-  }
-
   if (ctype.emit) {
     pyFrags.push(ctype.emit());
   }
@@ -708,12 +670,7 @@ ffi = FFI()
 lib = ffi.dlopen("wgpu-native.dll")
 
 ffi.cdef("""
-typedef uint32_t WGPUFlags;
-typedef uint32_t WGPUBool;
-
-${predefFrags.join("\n")}
-
-${cdefFrags.join("\n")}
+${SRC}
 """)
 
 ${pyFrags.join("\n")}
