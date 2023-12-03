@@ -33,6 +33,13 @@ interface CEnumVal {
   val: string;
 }
 
+function quoted(s: string): string {
+  if(s.startsWith('"')) {
+    return s
+  }
+  return `"${s}"`
+}
+
 function sanitizeIdent(ident: string): string {
   if (!ident.match(/^[a-zA-Z]/) || ident === "None") {
     ident = "_" + ident;
@@ -50,7 +57,7 @@ class CEnum implements CType {
   ) {}
 
   pyAnnotation(): string {
-    return this.pyName;
+    return quoted(this.pyName);
   }
 
   wrap(val: string): string {
@@ -163,8 +170,13 @@ function prim(cName: string, pyName: string): CType {
   };
 }
 
+interface Emittable {
+  emit(): string
+}
+
 class ApiInfo {
   types: Map<string, CType> = new Map();
+  wrappers: Map<string, Emittable> = new Map();
   UNKNOWN_TYPE: CType = prim("UNKNOWN", "Any");
   looseFuncs: CFunc[] = [];
 
@@ -206,6 +218,12 @@ class ApiInfo {
       wrap: (v, isPointer) => (isPointer ? `ffi.string(${v})` : v),
       unwrap: (v) => v,
     });
+  }
+
+  createWrapperOnce(name: string, create: () => Emittable) {
+    if(!this.wrappers.has(name)) {
+      this.wrappers.set(name, create())
+    }
   }
 
   getType(t: Refinfo | string): CType {
@@ -265,7 +283,9 @@ class ApiInfo {
         fieldPos + 1 < rawFields.length
       ) {
         const { name: arrName, type: arrType } = rawFields[fieldPos + 1];
-        fields.push(new ArrayField(arrName, name, this.getType(arrType)));
+        const innerCType = this.getType(arrType);
+        this.createWrapperOnce(`_LIST_${innerCType.cName}`, () => new ListWrapper(innerCType))
+        fields.push(new ArrayField(arrName, name, innerCType));
         fieldPos += 2;
       } else {
         fields.push(this._createField(name, type));
@@ -426,6 +446,10 @@ interface CStructField {
   arg(): string;
 }
 
+function listName(pyname: string): string {
+  return `${pyname}List`
+}
+
 class ArrayField implements CStructField {
   constructor(
     public name: string,
@@ -434,25 +458,20 @@ class ArrayField implements CStructField {
   ) {}
 
   arg(): string {
-    return `${this.name}: list[${this.ctype.pyName}]`;
+    return `${this.name}: ${quoted(listName(this.ctype.pyName))}`;
   }
 
   prop(): string {
     return `
 @property
-def ${this.name}(self) -> list[${this.ctype.pyName}]:
+def ${this.name}(self) -> ${quoted(listName(this.ctype.pyName))}:
     return self._${this.name}
 
 @${this.name}.setter
-def ${this.name}(self, v: list[${this.ctype.pyName}]):
-    count = len(v)
-    ptr_arr = ffi.new('${this.ctype.cName}[]', count)
-    for idx, item in enumerate(v):
-        ptr_arr[idx] = ${this.ctype.unwrap("item", false)}
+def ${this.name}(self, v: ${quoted(listName(this.ctype.pyName))}):
     self._${this.name} = v
-    self._${this.name}_arr = ptr_arr
-    self._cdata.${this.countName} = count
-    self._cdata.${this.name} = ptr_arr`;
+    self._cdata.${this.countName} = v._count
+    self._cdata.${this.name} = v._ptr`;
   }
 }
 
@@ -460,17 +479,17 @@ class ValueField implements CStructField {
   constructor(public name: string, public ctype: CType) {}
 
   arg(): string {
-    return `${this.name}: ${this.ctype.pyName}`;
+    return `${this.name}: ${this.ctype.pyAnnotation(false)}`;
   }
 
   prop(): string {
     return `
 @property
-def ${this.name}(self) -> ${this.ctype.pyName}:
+def ${this.name}(self) -> ${this.ctype.pyAnnotation(false)}:
     return self._cdata.${this.name}
 
 @${this.name}.setter
-def ${this.name}(self, v: ${this.ctype.pyName}):
+def ${this.name}(self, v: ${this.ctype.pyAnnotation(false)}):
     self._cdata.${this.name} = v`;
   }
 }
@@ -488,7 +507,8 @@ class PointerField implements CStructField {
   ) {}
 
   argtype(): string {
-    return this.nullable ? pyOptional(this.ctype.pyName) : this.ctype.pyName;
+    const annotation = this.ctype.pyAnnotation(true)
+    return this.nullable ? pyOptional(annotation) : annotation;
   }
 
   arg(): string {
@@ -539,7 +559,7 @@ function ptrTo(ctype: string): string {
 }
 
 function ffiNew(ctype: string): string {
-  return `ffi.new("${ptrTo(ctype)}")`;
+  return `_ffi_new("${ptrTo(ctype)}")`;
 }
 
 class COpaque implements CType {
@@ -549,7 +569,7 @@ class COpaque implements CType {
   constructor(public cName: string, public pyName: string) {}
 
   pyAnnotation(): string {
-    return `"${this.pyName}"`;
+    return quoted(this.pyName);
   }
 
   wrap(val: string): string {
@@ -594,10 +614,24 @@ class COpaque implements CType {
   emit(): string {
     return `
 class ${this.pyName}:
-    def __init__(self, cdata):
+    def __init__(self, cdata: Any):
         self._cdata = cdata
 ${this.funcs.map((f) => this.emitFunc(f)).join("\n")}
 `;
+  }
+}
+
+class ListWrapper implements Emittable {
+  constructor(public ctype: CType) {}
+
+  emit(): string {
+    return `
+class ${listName(this.ctype.pyName)}:
+    def __init__(self, items: list[${this.ctype.pyAnnotation(false)}]):
+        self._count = len(items)
+        self._ptr = _ffi_new('${this.ctype.cName}[]', self._count)
+        for idx, item in enumerate(items):
+            self._ptr[idx] = ${this.ctype.unwrap("item", false)}`
   }
 }
 
@@ -612,7 +646,7 @@ class CStruct implements CType {
   ) {}
 
   pyAnnotation(): string {
-    return `"${this.pyName}"`;
+    return quoted(this.pyName);
   }
 
   wrap(val: string): string {
@@ -646,16 +680,26 @@ ${this.fields.map((f) => indent(1, f.prop())).join("\n")}
 // * default arguments? maybe better to not have any defaults!
 // * callbacks: create actual callback classes/objects that autowrap args?
 // * bind wgpu-native specific functions from wgpu.h? (at least poll is needed!)
+// * void* into some kind of Buffer?
+// * (size_t thingCount, Thing* things) pattern in argument lists!
+//   -> some kind of more generic "push args"/"pop args" way of producing arg lists
+//   -> have explicit XArray classes
 
 const api = new ApiInfo();
 api.parse(SRC);
 
 const pyFrags: string[] = [];
 
-for (const [name, ctype] of api.types.entries()) {
+pyFrags.push("# Basic types")
+for (const [_name, ctype] of api.types.entries()) {
   if (ctype.emit) {
     pyFrags.push(ctype.emit());
   }
+}
+
+pyFrags.push("# Util wrapper types")
+for (const [_name, emitter] of api.wrappers.entries()) {
+  pyFrags.push(emitter.emit())
 }
 
 const finalOutput = `# AUTOGENERATED
@@ -667,11 +711,14 @@ from cffi import FFI
 
 ffi = FFI()
 # TODO: figure out DLL name on different platforms!
-lib = ffi.dlopen("wgpu-native.dll")
+lib: Any = ffi.dlopen("wgpu-native.dll")
 
 ffi.cdef("""
 ${SRC}
 """)
+
+def _ffi_new(typespec: str, count: int | None = None) -> Any:
+    return ffi.new(typespec, count)
 
 ${pyFrags.join("\n")}
 `;
