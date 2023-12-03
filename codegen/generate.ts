@@ -8,6 +8,10 @@ interface FuncArg {
   ctype: CType;
 }
 
+function emitArg(arg: FuncArg): string {
+  return `${arg.ctype.cName} ${arg.explicitPointer ? "* " : ""}${arg.name}`;
+}
+
 interface CFunc {
   parent?: string;
   name: string;
@@ -299,31 +303,39 @@ class ApiInfo {
     return undefined;
   }
 
-  _addFunc(name: string, argStr: string, returnType: string) {
-    const args: FuncArg[] = argStr.split(",").map((ident) => {
-      let { name, type } = parseTypedIdent(ident);
-      const ctype =
-        this.types.get(canonicalName(type)) ?? this.types.get("UNKNOWN")!;
-      return { name, ctype, explicitPointer: type.explicitPointer === true };
-    });
-
-    const signature = `${returnType} ${name}(${args})`;
-    let ret: FuncArg = {
-      name: "return",
-      ctype: this.types.get("NONE")!,
-      explicitPointer: false,
-    };
-    if (returnType !== "void") {
+  _parseFuncReturn(returnType: string): FuncArg {
+    if (returnType === "void") {
+      return {
+        name: "return",
+        ctype: this.types.get("NONE")!,
+        explicitPointer: false,
+      };
+    } else {
       const info = parseTypeRef(returnType);
       const ctype =
         this.types.get(canonicalName(info)) ?? this.types.get("UNKNOWN")!;
-      ret = {
+      return {
         name: "return",
         ctype,
         explicitPointer: info.explicitPointer === true,
       };
     }
+  }
 
+  _parseFuncArgs(argStr: string): FuncArg[] {
+    return argStr.split(",").map((ident) => {
+      let { name, type } = parseTypedIdent(ident);
+      const ctype =
+        this.types.get(canonicalName(type)) ?? this.types.get("UNKNOWN")!;
+      return { name, ctype, explicitPointer: type.explicitPointer === true };
+    });
+  }
+
+  _addFunc(name: string, argStr: string, returnType: string) {
+    const args = this._parseFuncArgs(argStr);
+    const ret = this._parseFuncReturn(returnType);
+
+    const signature = `${returnType} ${name}(${args})`;
     let func: CFunc = { name, signature, args, ret };
 
     const parent = this._findFuncParent(args);
@@ -332,6 +344,27 @@ class ApiInfo {
     } else {
       console.log(`Couldn't find parent for ${name}`);
       this.looseFuncs.push(func);
+    }
+  }
+
+  _addCallbackType(name: string, argStr: string, returnType: string) {
+    console.log(`Callback: ${name}(${argStr}) -> ${returnType}`);
+    const args = this._parseFuncArgs(argStr);
+    const ret = this._parseFuncReturn(returnType);
+
+    this.types.set(name, new CFuncPointer(name, toPyName(name), args, ret));
+  }
+
+  findCallbackTypes(src: string) {
+    // typedef void (*WGPUBufferMapCallback)(WGPUBufferMapAsyncStatus status, void * userdata) WGPU_FUNCTION_ATTRIBUTE;
+    const reg =
+      /typedef (.*) \(\*([A-Za-z0-9]+)\)\((.*)\) WGPU_FUNCTION_ATTRIBUTE;/g;
+    for (const m of src.matchAll(reg)) {
+      const [_wholeMatch, returnType, name, args] = m;
+      if (!name.endsWith("Callback")) {
+        continue;
+      }
+      this._addCallbackType(name, args, returnType);
     }
   }
 
@@ -348,7 +381,50 @@ class ApiInfo {
     this.findEnums(src);
     this.findOpaquePointers(src);
     this.findConcreteStructs(src);
+    this.findCallbackTypes(src);
     this.findExportedFunctions(src);
+  }
+}
+
+class CFuncPointer implements CType {
+  kind: "opaque" = "opaque";
+
+  constructor(
+    public cName: string,
+    public pyName: string,
+    public args: FuncArg[],
+    public ret: FuncArg
+  ) {}
+
+  pyAnnotation(): string {
+    const arglist = this.args.map((arg) => {
+      if (arg.ctype.kind === "primitive") {
+        return arg.ctype.pyAnnotation();
+      } else if (arg.ctype.kind === "enum") {
+        return "int";
+      } else {
+        // TODO: consider wrapping python callbacks?
+        return "Any";
+      }
+    });
+    return `Callable[[${arglist}], ${this.ret.ctype.pyAnnotation()}]`;
+  }
+
+  wrap(val: string): string {
+    return val;
+  }
+
+  unwrap(val: string): string {
+    return val;
+  }
+
+  // emit?(): string {
+  //   throw new Error("Method not implemented.");
+  // }
+
+  precdef?(): string {
+    const args = this.args.map(emitArg).join(", ");
+    return `typedef ${this.ret.ctype.cName} (*${this.cName})(${args});`;
   }
 }
 
