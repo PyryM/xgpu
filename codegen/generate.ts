@@ -5,11 +5,14 @@ const SRC = readFileSync("codegen/webgpu.h").toString("utf8");
 interface FuncArg {
   name: string;
   explicitPointer: boolean;
+  explicitConst: boolean;
   ctype: CType;
 }
 
 function emitArg(arg: FuncArg): string {
-  return `${arg.ctype.cName} ${arg.explicitPointer ? "* " : ""}${arg.name}`;
+  return `${arg.ctype.cName} ${arg.explicitConst ? "const " : ""}${
+    arg.explicitPointer ? "* " : ""
+  }${arg.name}`;
 }
 
 interface CFunc {
@@ -24,9 +27,9 @@ interface CType {
   kind: "opaque" | "enum" | "primitive" | "struct";
   pyName: string;
   cName: string;
-  pyAnnotation(): string;
-  wrap(val: string): string;
-  unwrap(val: string): string;
+  pyAnnotation(isPointer: boolean): string;
+  wrap(val: string, isPointer: boolean): string;
+  unwrap(val: string, isPointer: boolean): string;
   emit?(): string;
   cdef?(): string;
   precdef?(): string;
@@ -152,15 +155,6 @@ function parseTypeRef(ref: string): Refinfo {
   return info;
 }
 
-function canonicalName(ref: Refinfo): string {
-  if (ref.explicitPointer && ref.inner === "char") {
-    // special case for strings?
-    return "cstr";
-  } else {
-    return ref.inner;
-  }
-}
-
 function parseTypedIdent(entry: string): { name: string; type: Refinfo } {
   const matched = entry.match(/(.*) ([A-Za-z0-9_]+)$/);
   if (!matched) {
@@ -171,8 +165,20 @@ function parseTypedIdent(entry: string): { name: string; type: Refinfo } {
   return { name, type: parseTypeRef(type) };
 }
 
+function prim(cName: string, pyName: string): CType {
+  return {
+    cName,
+    pyName,
+    kind: "primitive",
+    pyAnnotation: () => pyName,
+    wrap: (v) => v,
+    unwrap: (v) => v,
+  };
+}
+
 class ApiInfo {
   types: Map<string, CType> = new Map();
+  UNKNOWN_TYPE: CType = prim("UNKNOWN", "Any");
   looseFuncs: CFunc[] = [];
 
   constructor() {
@@ -190,27 +196,36 @@ class ApiInfo {
       ["size_t", "int"],
       ["WGPUBool", "bool"],
       ["UNKNOWN", "Any"],
-      ["NONE", "None"],
     ];
     for (const [cName, pyName] of PRIMITIVES) {
-      this.types.set(cName, {
-        cName,
-        pyName,
-        kind: "primitive",
-        pyAnnotation: () => pyName,
-        wrap: (v) => v,
-        unwrap: (v) => v,
-      });
+      this.types.set(cName, prim(cName, pyName));
     }
 
-    this.types.set("cstr", {
-      cName: "const char *",
+    this.types.set("void", {
+      cName: "void",
+      pyName: "VOID",
+      kind: "primitive",
+      pyAnnotation: (isPointer) => (isPointer ? "Any" : "None"),
+      wrap: (v, isPointer) => v,
+      unwrap: (v, isPointer) => v,
+    });
+
+    // C `char *` is treated specially as Python `str`
+    this.types.set("char", {
+      cName: "char",
       pyName: "str",
       kind: "primitive",
-      pyAnnotation: () => "str",
-      wrap: (v) => `ffi.string(${v})`,
+      pyAnnotation: (isPointer) => (isPointer ? "str" : "int"),
+      wrap: (v, isPointer) => (isPointer ? `ffi.string(${v})` : v),
       unwrap: (v) => v,
     });
+  }
+
+  getType(t: Refinfo | string): CType {
+    if (typeof t !== "string") {
+      t = t.inner;
+    }
+    return this.types.get(t) ?? this.UNKNOWN_TYPE;
   }
 
   findEnums(src: string) {
@@ -234,8 +249,7 @@ class ApiInfo {
   }
 
   _createField(name: string, ref: Refinfo): CStructField {
-    const ctype = canonicalName(ref);
-    const type = this.types.get(ctype) ?? this.types.get("UNKNOWN")!;
+    const type = this.getType(ref);
     if (
       ref.explicitPointer ||
       type.kind === "opaque" ||
@@ -245,16 +259,6 @@ class ApiInfo {
     } else {
       return new ValueField(name, type);
     }
-  }
-
-  _createArrayField(
-    countField: string,
-    arrField: string,
-    arrType: Refinfo
-  ): CStructField {
-    const ctype = canonicalName(arrType);
-    const type = this.types.get(ctype) ?? this.types.get("UNKNOWN")!;
-    return new ArrayField(arrField, countField, type);
   }
 
   _addStruct(cdef: string, cName: string, body: string) {
@@ -274,7 +278,7 @@ class ApiInfo {
         fieldPos + 1 < rawFields.length
       ) {
         const { name: arrName, type: arrType } = rawFields[fieldPos + 1];
-        fields.push(this._createArrayField(name, arrName, arrType));
+        fields.push(new ArrayField(arrName, name, this.getType(arrType)));
         fieldPos += 2;
       } else {
         fields.push(this._createField(name, type));
@@ -307,16 +311,16 @@ class ApiInfo {
     if (returnType === "void") {
       return {
         name: "return",
-        ctype: this.types.get("NONE")!,
+        ctype: this.getType("void"),
+        explicitConst: false,
         explicitPointer: false,
       };
     } else {
       const info = parseTypeRef(returnType);
-      const ctype =
-        this.types.get(canonicalName(info)) ?? this.types.get("UNKNOWN")!;
       return {
         name: "return",
-        ctype,
+        ctype: this.getType(info),
+        explicitConst: info.constant === true,
         explicitPointer: info.explicitPointer === true,
       };
     }
@@ -325,9 +329,12 @@ class ApiInfo {
   _parseFuncArgs(argStr: string): FuncArg[] {
     return argStr.split(",").map((ident) => {
       let { name, type } = parseTypedIdent(ident);
-      const ctype =
-        this.types.get(canonicalName(type)) ?? this.types.get("UNKNOWN")!;
-      return { name, ctype, explicitPointer: type.explicitPointer === true };
+      return {
+        name,
+        ctype: this.getType(type),
+        explicitPointer: type.explicitPointer === true,
+        explicitConst: type.constant === true,
+      };
     });
   }
 
@@ -399,7 +406,7 @@ class CFuncPointer implements CType {
   pyAnnotation(): string {
     const arglist = this.args.map((arg) => {
       if (arg.ctype.kind === "primitive") {
-        return arg.ctype.pyAnnotation();
+        return arg.ctype.pyAnnotation(arg.explicitPointer);
       } else if (arg.ctype.kind === "enum") {
         return "int";
       } else {
@@ -407,7 +414,9 @@ class CFuncPointer implements CType {
         return "Any";
       }
     });
-    return `Callable[[${arglist}], ${this.ret.ctype.pyAnnotation()}]`;
+    return `Callable[[${arglist}], ${this.ret.ctype.pyAnnotation(
+      this.ret.explicitPointer
+    )}]`;
   }
 
   wrap(val: string): string {
@@ -457,7 +466,7 @@ def ${this.name}(self, v: list[${this.ctype.pyName}]):
     count = len(v)
     ptr_arr = ffi.new('${this.ctype.cName}[]', count)
     for idx, item in enumerate(v):
-        ptr_arr[idx] = ${this.ctype.unwrap("item")}
+        ptr_arr[idx] = ${this.ctype.unwrap("item", false)}
     self._${this.name} = v
     self._${this.name}_arr = ptr_arr
     self._cdata.${this.countName} = count
@@ -505,7 +514,7 @@ class PointerField implements CStructField {
   }
 
   setterBody(): string[] {
-    const unwrapped = this.ctype.unwrap("v");
+    const unwrapped = this.ctype.unwrap("v", true);
     if (this.nullable && unwrapped !== "v") {
       // slight optimization: if unwrap(v) is just v then skip
       // the none check because we can just directly assign
@@ -583,14 +592,20 @@ class COpaque implements CType {
       "self",
       ...func.args
         .slice(1)
-        .map((arg) => `${arg.name}: ${arg.ctype.pyAnnotation()}`),
+        .map(
+          (arg) => `${arg.name}: ${arg.ctype.pyAnnotation(arg.explicitPointer)}`
+        ),
     ];
     const callArglist = [
       "self._cdata",
-      ...func.args.slice(1).map((arg) => arg.ctype.unwrap(arg.name)),
+      ...func.args
+        .slice(1)
+        .map((arg) => arg.ctype.unwrap(arg.name, arg.explicitPointer)),
     ];
     const retval =
-      func.ret !== undefined ? ` -> ${func.ret.ctype.pyAnnotation()}` : "";
+      func.ret !== undefined
+        ? ` -> ${func.ret.ctype.pyAnnotation(func.ret.explicitPointer)}`
+        : "";
     const fname = toPyName(removePrefixCaseInsensitive(func.name, this.cName));
 
     return `
@@ -681,7 +696,8 @@ for (const [name, ctype] of api.types.entries()) {
   }
 }
 
-const finalOutput = `
+const finalOutput = `# AUTOGENERATED
+from collections.abc import Callable
 from enum import IntEnum
 from typing import Any
 
