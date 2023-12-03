@@ -138,6 +138,13 @@ function parseTypeRef(ref: string): Refinfo {
       info.inner = part;
     }
   }
+  if (
+    info.inner === "WGPUChainedStruct" ||
+    info.inner === "WGPUChainedStructOut"
+  ) {
+    // chained structs are always nullable?
+    info.nullable = true;
+  }
   return info;
 }
 
@@ -177,6 +184,7 @@ class ApiInfo {
       ["float", "float"],
       ["double", "float"],
       ["size_t", "int"],
+      ["WGPUBool", "bool"],
       ["UNKNOWN", "Any"],
       ["NONE", "None"],
     ];
@@ -400,6 +408,11 @@ def ${this.name}(self, v: ${this.ctype.pyName}):
   }
 }
 
+function pyOptional(pyType: string): string {
+  // return `Optional[${pyType}]`
+  return `${pyType} | None`;
+}
+
 class PointerField implements CStructField {
   constructor(
     public name: string,
@@ -408,7 +421,7 @@ class PointerField implements CStructField {
   ) {}
 
   argtype(): string {
-    return this.ctype.pyName + (this.nullable ? " | None" : "");
+    return this.nullable ? pyOptional(this.ctype.pyName) : this.ctype.pyName;
   }
 
   arg(): string {
@@ -552,7 +565,7 @@ class CStruct implements CType {
   emit(): string {
     return `
 class ${this.pyName}:
-    def __init__(self, ${this.fields.map((f) => f.arg()).join(", ")}):
+    def __init__(self, *, ${this.fields.map((f) => f.arg()).join(", ")}):
         self._cdata = ${ffiNew(this.cName)}
 ${indent(
   2,
