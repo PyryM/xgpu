@@ -850,23 +850,12 @@ ${this.fields.map((f) => indent(1, f.prop())).join("\n")}
 // TODO/THOUGHTS:
 // * chained structs
 // * void pointers / bare byte buffers
-// * callbacks for real
-// * bitflags
+// * mutated by value structs (wrapping values back?)
+// * bind wgpu-native specific functions from wgpu.h? (at least poll is needed!)
+// * refcounting `reference`, `release`: ffi.gc on CDATA wrap ?
 
 // * cleanup: merge all the types into just CType
-
-// * a small number of structs need to be mutated
-//   (e.g., limits structs which are mutated to return limits)
-// * horrible chained struct stuff
-// * bitflags: take in set[enum] or list[enum] or sequence[enum]?
-// * refcounting `reference`, `release`: ffi.gc on CDATA wrap ?
 // * default arguments? maybe better to not have any defaults!
-// * callbacks: create actual callback classes/objects that autowrap args?
-// * bind wgpu-native specific functions from wgpu.h? (at least poll is needed!)
-// * void* into some kind of Buffer?
-// * (size_t thingCount, Thing* things) pattern in argument lists!
-//   -> some kind of more generic "push args"/"pop args" way of producing arg lists
-//   -> have explicit XArray classes
 
 const api = new ApiInfo();
 api.parse(SRC);
