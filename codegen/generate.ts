@@ -268,9 +268,20 @@ class ApiInfo {
       cName: "void",
       pyName: "VOID",
       kind: "primitive",
-      pyAnnotation: (isPointer) => (isPointer ? "Any" : "None"),
-      wrap: (v, isPointer) => v,
-      unwrap: (v, isPointer) => v,
+      pyAnnotation: (isPointer) => (isPointer ? "VoidPtr" : "None"),
+      wrap: (v, isPointer) => {
+        if (isPointer) {
+          // HORRIBLE HACK: assumes "size" is an argument!
+          return `VoidPtr(${v}, size)`;
+        }
+        return v;
+      },
+      unwrap: (v, isPointer) => {
+        if (isPointer) {
+          return `${v}._cdata`;
+        }
+        return v;
+      },
     });
 
     // C `char *` is treated specially as Python `str`
@@ -735,22 +746,24 @@ class COpaque implements CType {
 
   emitFunc(api: ApiInfo, func: CFunc): string {
     const [pyArglist, callArglist] = api.prepFuncCall(func);
-
-    const retval =
-      func.ret !== undefined
-        ? ` -> ${func.ret.ctype.pyAnnotation(func.ret.explicitPointer)}`
-        : "";
     const fname = toPyName(removePrefixCaseInsensitive(func.name, this.cName));
+
+    let retval = "";
+    let theCall = `lib.${func.name}(${callArglist.join(", ")})`;
+    if (func.ret !== undefined) {
+      theCall = func.ret.ctype.wrap(theCall, func.ret.explicitPointer);
+      retval = ` -> ${func.ret.ctype.pyAnnotation(func.ret.explicitPointer)}`;
+    }
 
     return `
     def ${fname}(${pyArglist.join(", ")})${retval}:
-        return lib.${func.name}(${callArglist.join(", ")})`;
+        return ${theCall}`;
   }
 
   emit(api: ApiInfo): string {
     return `
 class ${this.pyName}:
-    def __init__(self, cdata: Any):
+    def __init__(self, cdata: ffi.CData):
         self._cdata = cdata
 ${this.funcs.map((f) => this.emitFunc(api, f)).join("\n")}
 `;
@@ -792,7 +805,7 @@ class ${this.func.pyName}:
         self._ptr = ${rawName}
 
     def remove(self):
-        del ${mapName}[self.index]
+        ${mapName}.remove(self.index)
     `;
   }
 }
@@ -889,8 +902,34 @@ ffi.cdef("""
 ${SRC}
 """)
 
-def _ffi_new(typespec: str, count: int | None = None) -> Any:
+def _ffi_new(typespec: str, count: int | None = None) -> ffi.CData:
     return ffi.new(typespec, count)
+
+def _cast_userdata(ud: ffi.CData) -> int:
+    return ffi.cast("int *", ud)[0]
+
+class CBMap:
+    def __init__(self):
+        self.callbacks = {}
+        self.index = 0
+
+    def add(self, cb) -> int:
+        retidx = self.index
+        self.index += 1
+        self.callbacks[retidx] = cb
+        return retidx
+
+    def get(self, idx):
+        return self.callbacks.get(idx)
+
+    def remove(self, idx):
+        if idx in self.callbacks:
+            del self.callbacks[idx]
+
+class VoidPtr:
+    def __init__(self, cdata: ffi.CData, size: int | None = None):
+        self._cdata = cdata
+        self._size = size
 
 ${pyFrags.join("\n")}
 `;
