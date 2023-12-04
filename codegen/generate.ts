@@ -111,8 +111,8 @@ class CFlags implements CType {
 
     const props: string[] = [];
     for (const { name, val } of this.etype.sanitized) {
-      if(parseInt(val) === 0) {
-        continue
+      if (parseInt(val) === 0) {
+        continue;
       }
       props.push(`
     @property
@@ -124,7 +124,7 @@ class CFlags implements CType {
         if enabled:
             self.value |= ${val}
         else:
-            self.value &= ~(${val})`)
+            self.value &= ~(${val})`);
     }
 
     return (
