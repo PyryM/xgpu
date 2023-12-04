@@ -34,10 +34,10 @@ interface CEnumVal {
 }
 
 function quoted(s: string): string {
-  if(s.startsWith('"')) {
-    return s
+  if (s.startsWith('"')) {
+    return s;
   }
-  return `"${s}"`
+  return `"${s}"`;
 }
 
 function sanitizeIdent(ident: string): string {
@@ -171,7 +171,7 @@ function prim(cName: string, pyName: string): CType {
 }
 
 interface Emittable {
-  emit(): string
+  emit(): string;
 }
 
 class ApiInfo {
@@ -221,8 +221,8 @@ class ApiInfo {
   }
 
   createWrapperOnce(name: string, create: () => Emittable) {
-    if(!this.wrappers.has(name)) {
-      this.wrappers.set(name, create())
+    if (!this.wrappers.has(name)) {
+      this.wrappers.set(name, create());
     }
   }
 
@@ -284,7 +284,10 @@ class ApiInfo {
       ) {
         const { name: arrName, type: arrType } = rawFields[fieldPos + 1];
         const innerCType = this.getType(arrType);
-        this.createWrapperOnce(`_LIST_${innerCType.cName}`, () => new ListWrapper(innerCType))
+        this.createWrapperOnce(
+          `_LIST_${innerCType.cName}`,
+          () => new ListWrapper(innerCType)
+        );
         fields.push(new ArrayField(arrName, name, innerCType));
         fieldPos += 2;
       } else {
@@ -365,8 +368,10 @@ class ApiInfo {
     console.log(`Callback: ${name}(${argStr}) -> ${returnType}`);
     const args = this._parseFuncArgs(argStr);
     const ret = this._parseFuncReturn(returnType);
+    const fpointer = new CFuncPointer(name, toPyName(name, true), args, ret);
 
-    this.types.set(name, new CFuncPointer(name, toPyName(name), args, ret));
+    this.types.set(name, fpointer);
+    this.wrappers.set(`_cbwrap_${name}`, new CallbackWrapper(fpointer));
   }
 
   findCallbackTypes(src: string) {
@@ -394,8 +399,8 @@ class ApiInfo {
   parse(src: string) {
     this.findEnums(src);
     this.findOpaquePointers(src);
-    this.findConcreteStructs(src);
     this.findCallbackTypes(src);
+    this.findConcreteStructs(src);
     this.findExportedFunctions(src);
   }
 }
@@ -411,19 +416,7 @@ class CFuncPointer implements CType {
   ) {}
 
   pyAnnotation(): string {
-    const arglist = this.args.map((arg) => {
-      if (arg.ctype.kind === "primitive") {
-        return arg.ctype.pyAnnotation(arg.explicitPointer);
-      } else if (arg.ctype.kind === "enum") {
-        return "int";
-      } else {
-        // TODO: consider wrapping python callbacks?
-        return "Any";
-      }
-    });
-    return `Callable[[${arglist}], ${this.ret.ctype.pyAnnotation(
-      this.ret.explicitPointer
-    )}]`;
+    return quoted(this.pyName);
   }
 
   wrap(val: string): string {
@@ -447,7 +440,7 @@ interface CStructField {
 }
 
 function listName(pyname: string): string {
-  return `${pyname}List`
+  return `${pyname}List`;
 }
 
 class ArrayField implements CStructField {
@@ -507,7 +500,7 @@ class PointerField implements CStructField {
   ) {}
 
   argtype(): string {
-    const annotation = this.ctype.pyAnnotation(true)
+    const annotation = this.ctype.pyAnnotation(true);
     return this.nullable ? pyOptional(annotation) : annotation;
   }
 
@@ -621,6 +614,46 @@ ${this.funcs.map((f) => this.emitFunc(f)).join("\n")}
   }
 }
 
+class CallbackWrapper implements Emittable {
+  constructor(public func: CFuncPointer) {}
+
+  emit(): string {
+    const args = this.func.args;
+    const rawArglist = args.map((arg) => arg.name);
+    const arglist = args.slice(0, args.length-1).map((arg) =>
+      arg.ctype.pyAnnotation(arg.explicitPointer)
+    );
+    const unpackList = args.slice(0, args.length-1).map((arg) =>
+      arg.ctype.wrap(arg.name, arg.explicitPointer)
+    );
+    const pytype = `Callable[[${arglist}], ${this.func.ret.ctype.pyAnnotation(
+      this.func.ret.explicitPointer
+    )}]`;
+
+    const mapName = `_callback_map_${this.func.pyName}`;
+    const rawName = `_raw_callback_${this.func.pyName}`;
+    return `
+${mapName} = CBMap()
+
+def ${rawName}(${rawArglist.join(", ")}):
+    idx = _cast_userdata(userdata)
+    cb = ${mapName}.get(idx)
+    if cb is not None:
+        cb(${unpackList.join(", ")})
+
+class ${this.func.pyName}:
+    def __init__(self, callback: ${pytype})
+        self.index = ${mapName}.add(callback)
+        self._userdata = _ffi_new("int[]", 1)
+        self._userdata[0] = self.index
+        self._ptr = ${rawName}
+
+    def remove(self):
+        del ${mapName}[self.index]
+    `;
+  }
+}
+
 class ListWrapper implements Emittable {
   constructor(public ctype: CType) {}
 
@@ -631,7 +664,7 @@ class ${listName(this.ctype.pyName)}:
         self._count = len(items)
         self._ptr = _ffi_new('${this.ctype.cName}[]', self._count)
         for idx, item in enumerate(items):
-            self._ptr[idx] = ${this.ctype.unwrap("item", false)}`
+            self._ptr[idx] = ${this.ctype.unwrap("item", false)}`;
   }
 }
 
@@ -672,6 +705,13 @@ ${this.fields.map((f) => indent(1, f.prop())).join("\n")}
 }
 
 // TODO/THOUGHTS:
+// * chained structs
+// * void pointers / bare byte buffers
+// * callbacks for real
+// * bitflags
+
+// * cleanup: merge all the types into just CType
+
 // * a small number of structs need to be mutated
 //   (e.g., limits structs which are mutated to return limits)
 // * horrible chained struct stuff
@@ -690,16 +730,16 @@ api.parse(SRC);
 
 const pyFrags: string[] = [];
 
-pyFrags.push("# Basic types")
+pyFrags.push("# Basic types");
 for (const [_name, ctype] of api.types.entries()) {
   if (ctype.emit) {
     pyFrags.push(ctype.emit());
   }
 }
 
-pyFrags.push("# Util wrapper types")
+pyFrags.push("# Util wrapper types");
 for (const [_name, emitter] of api.wrappers.entries()) {
-  pyFrags.push(emitter.emit())
+  pyFrags.push(emitter.emit());
 }
 
 const finalOutput = `# AUTOGENERATED
