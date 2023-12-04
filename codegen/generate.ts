@@ -49,12 +49,20 @@ function sanitizeIdent(ident: string): string {
 
 class CEnum implements CType {
   kind: "enum" = "enum";
+  sanitized: { name: string; val: string }[];
 
   constructor(
     public cName: string,
     public pyName: string,
     public values: CEnumVal[]
-  ) {}
+  ) {
+    this.sanitized = [];
+    for (const { name, val } of this.values) {
+      if (name !== "Force32") {
+        this.sanitized.push({ name: sanitizeIdent(name), val });
+      }
+    }
+  }
 
   pyAnnotation(): string {
     return quoted(this.pyName);
@@ -70,12 +78,68 @@ class CEnum implements CType {
 
   emit(): string {
     let frags: string[] = [`class ${this.pyName}(IntEnum):`];
-    for (const { name, val } of this.values) {
-      if (name !== "Force32") {
-        frags.push(`    ${sanitizeIdent(name)} = ${val}`);
-      }
+    for (const { name, val } of this.sanitized) {
+      frags.push(`    ${name} = ${val}`);
     }
     return frags.join("\n") + "\n";
+  }
+}
+
+class CFlags implements CType {
+  kind: "enum" = "enum";
+
+  constructor(
+    public cName: string,
+    public pyName: string,
+    public etype: CEnum
+  ) {}
+
+  pyAnnotation(): string {
+    return quoted(this.pyName);
+  }
+
+  wrap(val: string): string {
+    return `${this.pyName}(${val})`;
+  }
+
+  unwrap(val: string): string {
+    return `int(${val})`;
+  }
+
+  emit(): string {
+    const etypename = this.etype.pyAnnotation();
+
+    const props: string[] = [];
+    for (const { name, val } of this.etype.sanitized) {
+      if(parseInt(val) === 0) {
+        continue
+      }
+      props.push(`
+    @property
+    def ${name}(self) -> bool:
+        return (self.value & ${val}) > 0
+
+    @${name}.setter
+    def ${name}(self, enabled: bool):
+        if enabled:
+            self.value |= ${val}
+        else:
+            self.value &= ~(${val})`)
+    }
+
+    return (
+      `
+class ${this.etype.pyName}Flags:
+    def __init__(self, flags: list[${etypename}] | int):
+        if type(flags) is int:
+            self.value = flags
+        else:
+            self.value = sum(set(flags))
+
+    def __int__(self) -> int:
+        return self.value
+    ` + props.join("\n")
+    );
   }
 }
 
@@ -271,7 +335,7 @@ class ApiInfo {
       `_LIST_${ctype.cName}`,
       () => new ListWrapper(ctype)
     );
-    return listName(ctype.pyName)
+    return listName(ctype.pyName);
   }
 
   _addStruct(cdef: string, cName: string, body: string) {
@@ -292,7 +356,7 @@ class ApiInfo {
       ) {
         const { name: arrName, type: arrType } = rawFields[fieldPos + 1];
         const innerCType = this.getType(arrType);
-        this.getListWrapper(innerCType)
+        this.getListWrapper(innerCType);
         fields.push(new ArrayField(arrName, name, innerCType));
         fieldPos += 2;
       } else if (
@@ -408,6 +472,22 @@ class ApiInfo {
     }
   }
 
+  findBitflags(src: string) {
+    const reg = /typedef WGPUFlags ([A-Za-z0-9]*)Flags WGPU_ENUM_ATTRIBUTE;/g;
+    for (const m of src.matchAll(reg)) {
+      const [_wholeMatch, enumType] = m;
+      const ee = this.types.get(enumType);
+      if (ee === undefined || !(ee instanceof CEnum)) {
+        console.log(`Couldn't find enum corresponding to "${enumType}"!`);
+        continue;
+      }
+      const cname = `${enumType}Flags`;
+      const pyName = toPyName(cname, true);
+
+      this.types.set(cname, new CFlags(cname, pyName, ee));
+    }
+  }
+
   prepFuncCall(func: CFunc): [string[], string[]] {
     let pyArglist = ["self"];
     let callArglist = ["self._cdata"];
@@ -423,9 +503,7 @@ class ApiInfo {
         // assume this is a (count, ptr) combo
         const nextArg = args[idx + 1];
         const lname = this.getListWrapper(nextArg.ctype);
-        pyArglist.push(
-          `${nextArg.name}: ${quoted(lname)}`
-        );
+        pyArglist.push(`${nextArg.name}: ${quoted(lname)}`);
         callArglist.push(`${nextArg.name}._count`);
         callArglist.push(`${nextArg.name}._ptr`);
         idx += 2;
@@ -450,6 +528,7 @@ class ApiInfo {
 
   parse(src: string) {
     this.findEnums(src);
+    this.findBitflags(src);
     this.findOpaquePointers(src);
     this.findCallbackTypes(src);
     this.findConcreteStructs(src);
@@ -555,11 +634,11 @@ class ValueField implements CStructField {
     return `
 @property
 def ${this.name}(self) -> ${this.ctype.pyAnnotation(false)}:
-    return self._cdata.${this.name}
+    return ${this.ctype.wrap(`self._cdata.${this.name}`, false)}
 
 @${this.name}.setter
 def ${this.name}(self, v: ${this.ctype.pyAnnotation(false)}):
-    self._cdata.${this.name} = v`;
+    self._cdata.${this.name} = ${this.ctype.unwrap("v", false)}`;
   }
 }
 
