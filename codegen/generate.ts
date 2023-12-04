@@ -24,7 +24,7 @@ interface CType {
   pyAnnotation(isPointer: boolean): string;
   wrap(val: string, isPointer: boolean): string;
   unwrap(val: string, isPointer: boolean): string;
-  emit?(): string;
+  emit?(api: ApiInfo): string;
   addFunc?(func: CFunc): void;
 }
 
@@ -266,6 +266,14 @@ class ApiInfo {
     }
   }
 
+  getListWrapper(ctype: CType): string {
+    this.createWrapperOnce(
+      `_LIST_${ctype.cName}`,
+      () => new ListWrapper(ctype)
+    );
+    return listName(ctype.pyName)
+  }
+
   _addStruct(cdef: string, cName: string, body: string) {
     const rawFields: { name: string; type: Refinfo }[] = [];
     for (const line of body.split(";")) {
@@ -284,10 +292,7 @@ class ApiInfo {
       ) {
         const { name: arrName, type: arrType } = rawFields[fieldPos + 1];
         const innerCType = this.getType(arrType);
-        this.createWrapperOnce(
-          `_LIST_${innerCType.cName}`,
-          () => new ListWrapper(innerCType)
-        );
+        this.getListWrapper(innerCType)
         fields.push(new ArrayField(arrName, name, innerCType));
         fieldPos += 2;
       } else if (
@@ -401,6 +406,46 @@ class ApiInfo {
       const [_wholeMatch, returnType, name, args] = m;
       this._addFunc(name, args, returnType);
     }
+  }
+
+  prepFuncCall(func: CFunc): [string[], string[]] {
+    let pyArglist = ["self"];
+    let callArglist = ["self._cdata"];
+    const args = func.args;
+    let idx = 1;
+    while (idx < args.length) {
+      const arg = args[idx];
+      if (
+        arg.name.endsWith("Count") &&
+        arg.ctype.cName === "size_t" &&
+        idx + 1 < args.length
+      ) {
+        // assume this is a (count, ptr) combo
+        const nextArg = args[idx + 1];
+        const lname = this.getListWrapper(nextArg.ctype);
+        pyArglist.push(
+          `${nextArg.name}: ${quoted(lname)}`
+        );
+        callArglist.push(`${nextArg.name}._count`);
+        callArglist.push(`${nextArg.name}._ptr`);
+        idx += 2;
+      } else if (arg.name === "callback") {
+        // assume a (callback, userdata) combo
+        pyArglist.push(
+          `${arg.name}: ${arg.ctype.pyAnnotation(arg.explicitPointer)}`
+        );
+        callArglist.push(`${arg.name}._ptr`);
+        callArglist.push(`${arg.name}._userdata`);
+        idx += 2;
+      } else {
+        pyArglist.push(
+          `${arg.name}: ${arg.ctype.pyAnnotation(arg.explicitPointer)}`
+        );
+        callArglist.push(arg.ctype.unwrap(arg.name, arg.explicitPointer));
+        ++idx;
+      }
+    }
+    return [pyArglist, callArglist];
   }
 
   parse(src: string) {
@@ -609,21 +654,9 @@ class COpaque implements CType {
     this.funcs.push(func);
   }
 
-  emitFunc(func: CFunc): string {
-    const pyArglist = [
-      "self",
-      ...func.args
-        .slice(1)
-        .map(
-          (arg) => `${arg.name}: ${arg.ctype.pyAnnotation(arg.explicitPointer)}`
-        ),
-    ];
-    const callArglist = [
-      "self._cdata",
-      ...func.args
-        .slice(1)
-        .map((arg) => arg.ctype.unwrap(arg.name, arg.explicitPointer)),
-    ];
+  emitFunc(api: ApiInfo, func: CFunc): string {
+    const [pyArglist, callArglist] = api.prepFuncCall(func);
+
     const retval =
       func.ret !== undefined
         ? ` -> ${func.ret.ctype.pyAnnotation(func.ret.explicitPointer)}`
@@ -635,12 +668,12 @@ class COpaque implements CType {
         return lib.${func.name}(${callArglist.join(", ")})`;
   }
 
-  emit(): string {
+  emit(api: ApiInfo): string {
     return `
 class ${this.pyName}:
     def __init__(self, cdata: Any):
         self._cdata = cdata
-${this.funcs.map((f) => this.emitFunc(f)).join("\n")}
+${this.funcs.map((f) => this.emitFunc(api, f)).join("\n")}
 `;
   }
 }
@@ -673,7 +706,7 @@ def ${rawName}(${rawArglist.join(", ")}):
         cb(${unpackList.join(", ")})
 
 class ${this.func.pyName}:
-    def __init__(self, callback: ${pytype})
+    def __init__(self, callback: ${pytype}):
         self.index = ${mapName}.add(callback)
         self._userdata = _ffi_new("int[]", 1)
         self._userdata[0] = self.index
@@ -764,7 +797,7 @@ const pyFrags: string[] = [];
 pyFrags.push("# Basic types");
 for (const [_name, ctype] of api.types.entries()) {
   if (ctype.emit) {
-    pyFrags.push(ctype.emit());
+    pyFrags.push(ctype.emit(api));
   }
 }
 
