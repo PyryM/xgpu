@@ -290,6 +290,13 @@ class ApiInfo {
         );
         fields.push(new ArrayField(arrName, name, innerCType));
         fieldPos += 2;
+      } else if (
+        name.endsWith("Callback") &&
+        fieldPos + 1 < rawFields.length &&
+        rawFields[fieldPos + 1].name.endsWith("Userdata")
+      ) {
+        fields.push(new CallbackField(name, this.getType(type)));
+        fieldPos += 2;
       } else {
         fields.push(this._createField(name, type));
         ++fieldPos;
@@ -468,6 +475,30 @@ def ${this.name}(self, v: ${quoted(listName(this.ctype.pyName))}):
   }
 }
 
+// hate that I have to special case for like one struct that
+// has embedded callbacks!
+class CallbackField implements CStructField {
+  constructor(public name: string, public ctype: CType) {}
+
+  arg(): string {
+    return `${this.name}: ${this.ctype.pyAnnotation(false)}`;
+  }
+
+  prop(): string {
+    return `
+@property
+def ${this.name}(self) -> ${this.ctype.pyAnnotation(false)}:
+    return self._${this.name}
+
+@${this.name}.setter
+def ${this.name}(self, v: ${this.ctype.pyAnnotation(false)}):
+    self._${this.name} = v
+    self._cdata.${this.name} = v._ptr
+    self._cdata.${this.name.replaceAll("Callback", "Userdata")} = v._userdata
+    `;
+  }
+}
+
 class ValueField implements CStructField {
   constructor(public name: string, public ctype: CType) {}
 
@@ -620,12 +651,12 @@ class CallbackWrapper implements Emittable {
   emit(): string {
     const args = this.func.args;
     const rawArglist = args.map((arg) => arg.name);
-    const arglist = args.slice(0, args.length-1).map((arg) =>
-      arg.ctype.pyAnnotation(arg.explicitPointer)
-    );
-    const unpackList = args.slice(0, args.length-1).map((arg) =>
-      arg.ctype.wrap(arg.name, arg.explicitPointer)
-    );
+    const arglist = args
+      .slice(0, args.length - 1)
+      .map((arg) => arg.ctype.pyAnnotation(arg.explicitPointer));
+    const unpackList = args
+      .slice(0, args.length - 1)
+      .map((arg) => arg.ctype.wrap(arg.name, arg.explicitPointer));
     const pytype = `Callable[[${arglist}], ${this.func.ret.ctype.pyAnnotation(
       this.func.ret.explicitPointer
     )}]`;
