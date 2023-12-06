@@ -375,7 +375,10 @@ class ApiInfo {
       pyAnnotation: (isPointer) => (isPointer ? "str" : "int"),
       wrap: (v, isPointer) => (isPointer ? `_ffi_string(${v})` : v),
       unwrap: (v) => `_ffi_unwrap_str(${v})`,
-      preStore: (target, val) => [`${target} = _ffi_unwrap_str(${val})`, target]
+      preStore: (target, val) => [
+        `${target} = _ffi_unwrap_str(${val})`,
+        target,
+      ],
     });
   }
 
@@ -779,28 +782,26 @@ class PointerField implements CStructField {
   }
 
   setterBody(): string[] {
-    let lines: string[] = [
-      `self._${this.name} = v`,
-    ];
+    let lines: string[] = [`self._${this.name} = v`];
     let unwrapped = this.ctype.unwrap("v", true);
-    const storeBody: string[] = []
-    if(this.ctype.preStore) {
+    const storeBody: string[] = [];
+    if (this.ctype.preStore) {
       const storeName = `self._store_${this.name}`;
       const [storeCmd, unwrappedStore] = this.ctype.preStore(storeName, "v");
       storeBody.push(storeCmd);
       unwrapped = unwrappedStore;
     }
-    storeBody.push(`self._cdata.${this.name} = ${unwrapped}`)
+    storeBody.push(`self._cdata.${this.name} = ${unwrapped}`);
 
     if (this.nullable) {
-      lines.push(`if v is None:`)
-      lines.push(`    self._cdata.${this.name} = ffi.NULL`)
-      lines.push(`else:`)
-      lines = lines.concat(indent2(1, storeBody))
+      lines.push(`if v is None:`);
+      lines.push(`    self._cdata.${this.name} = ffi.NULL`);
+      lines.push(`else:`);
+      lines = lines.concat(indent2(1, storeBody));
     } else {
-      lines = lines.concat(storeBody)
+      lines = lines.concat(storeBody);
     }
-    return lines
+    return lines;
   }
 
   prop(): string {
@@ -816,7 +817,7 @@ ${indent(1, this.setterBody())}`;
 }
 
 function indent2(n: number, lines: string[]): string[] {
-  return lines.map((l) => `${" ".repeat(4 * n)}${l}`)
+  return lines.map((l) => `${" ".repeat(4 * n)}${l}`);
 }
 
 function indent(n: number, lines: string | string[]): string {
@@ -994,7 +995,7 @@ class CStruct implements CType {
 
   wrap(val: string): string {
     // OH NO
-    console.warn(`Trying to return concrete struct ${val}: ${this.cName}`)
+    console.warn(`Trying to return concrete struct ${val}: ${this.cName}`);
     return val;
   }
 
