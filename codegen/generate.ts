@@ -802,7 +802,7 @@ function ffiNew(ctype: string): string {
 
 class COpaque implements CType {
   kind: "opaque" = "opaque";
-  funcs: CFunc[] = [];
+  funcs: Map<string, CFunc> = new Map();
 
   constructor(public cName: string, public pyName: string) {}
 
@@ -819,13 +819,15 @@ class COpaque implements CType {
   }
 
   addFunc(func: CFunc): void {
-    console.log(`Adding ${func.name} to ${this.cName}`);
-    this.funcs.push(func);
+    const pyFname = toPyName(
+      removePrefixCaseInsensitive(func.name, this.cName)
+    );
+    console.log(`Adding ${func.name} (${pyFname}) to ${this.cName}`);
+    this.funcs.set(pyFname, func);
   }
 
-  emitFunc(api: ApiInfo, func: CFunc): string {
+  emitFunc(api: ApiInfo, pyFname: string, func: CFunc): string {
     const [pyArglist, callArglist] = api.prepFuncCall(func);
-    const fname = toPyName(removePrefixCaseInsensitive(func.name, this.cName));
 
     let retval = "";
     let theCall = `lib.${func.name}(${callArglist.join(", ")})`;
@@ -835,16 +837,26 @@ class COpaque implements CType {
     }
 
     return `
-    def ${fname}(${pyArglist.join(", ")})${retval}:
+    def ${pyFname}(${pyArglist.join(", ")})${retval}:
         return ${theCall}`;
   }
 
   emit(api: ApiInfo): string {
+    const funcdefs: string[] = [];
+    for (const [pyFname, func] of this.funcs.entries()) {
+      funcdefs.push(this.emitFunc(api, pyFname, func));
+    }
+    const reffer = this.funcs.get("reference");
+    const releaser = this.funcs.get("release");
+    if (reffer === undefined || releaser === undefined) {
+      throw new Error(`Opaque ${this.cName} missing reference or release!`);
+    }
+
     return `
 class ${this.pyName}:
     def __init__(self, cdata: CData):
-        self._cdata = cdata
-${this.funcs.map((f) => this.emitFunc(api, f)).join("\n")}
+        self._cdata = ffi.gc(cdata, lib.${releaser.name})
+${funcdefs.join("\n")}
 `;
   }
 }
@@ -941,16 +953,19 @@ ${this.fields.map((f) => indent(1, f.prop())).join("\n")}
 
 // TODO/THOUGHTS:
 // * chained structs
-// * void pointers / bare byte buffers
 // * mutated by value structs (wrapping values back?)
 // * bind wgpu-native specific functions from wgpu.h? (at least poll is needed!)
-// * refcounting `reference`, `release`: ffi.gc on CDATA wrap ?
 
 // * cleanup: merge all the types into just CType
 // * default arguments? maybe better to not have any defaults!
 
+// QUESTIONS:
+// * do we need to explicitly call `reference` on returned things?
+
 // NICE TO HAVE:
 // * pretty printing
+// * maybe use https://cffi.readthedocs.io/en/stable/ref.html#ffi-new-handle-ffi-from-handle
+//   instead of current int userdata approach? (could store callback itself as handle?)
 
 const api = new ApiInfo();
 api.parse(SRC);
