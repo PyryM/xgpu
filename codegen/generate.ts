@@ -1,6 +1,7 @@
 import { readFileSync, writeFileSync } from "fs";
 
-const SRC = readFileSync("codegen/webgpu.h").toString("utf8");
+const HEADERS = ["codegen/webgpu.h", "codegen/wgpu_extra.h"];
+const SRC = HEADERS.map((fn) => readFileSync(fn).toString("utf8")).join("\n");
 
 const IS_PY12 = false;
 const EMIT_CDEF = true;
@@ -48,6 +49,16 @@ function sanitizeIdent(ident: string): string {
     ident = "_" + ident;
   }
   return ident;
+}
+
+function onlyDefined<T>(items: (T | undefined)[]): T[] {
+  const res: T[] = [];
+  for (const item of items) {
+    if (item !== undefined) {
+      res.push(item);
+    }
+  }
+  return res;
 }
 
 type ParseState = { lines: string[]; pos: number };
@@ -232,7 +243,13 @@ function cleanup(s: string, prefix: string): string {
   return removePrefix(s.trim(), [prefix, "_"]);
 }
 
-function parseEnumEntry(parentName: string, entry: string): CEnumVal {
+function parseEnumEntry(
+  parentName: string,
+  entry: string
+): CEnumVal | undefined {
+  if (!entry.includes("=")) {
+    return undefined;
+  }
   const [name, val] = entry.split("=").map((e) => e.trim());
   return { name: cleanup(name, parentName), val };
 }
@@ -321,6 +338,7 @@ class ApiInfo {
       ["double", "float"],
       ["size_t", "int"],
       ["WGPUBool", "bool"],
+      ["WGPUSubmissionIndex", "int"],
       ["UNKNOWN", "Any"],
     ];
     for (const [cName, pyName] of PRIMITIVES) {
@@ -375,9 +393,9 @@ class ApiInfo {
     const enumExp = /typedef enum ([a-zA-Z0-9]*) \{([^\}]*)\}/g;
     for (const m of src.matchAll(enumExp)) {
       const [_wholeMatch, name, body] = m;
-      const entries = body
-        .split(",")
-        .map((e) => parseEnumEntry(name.trim(), e));
+      const entries = onlyDefined(
+        body.split(",").map((e) => parseEnumEntry(name.trim(), e))
+      );
       const cName = name.trim();
       this.types.set(cName, new CEnum(cName, toPyName(cName, true), entries));
     }
@@ -487,6 +505,12 @@ class ApiInfo {
   }
 
   _parseFuncArgs(argStr: string): FuncArg[] {
+    argStr = argStr.trim();
+    if (argStr === "" || argStr === "void") {
+      // zero argument function
+      return [];
+    }
+
     return argStr.split(",").map((ident) => {
       let { name, type } = parseTypedIdent(ident);
       return {
@@ -562,11 +586,11 @@ class ApiInfo {
     }
   }
 
-  prepFuncCall(func: CFunc): [string[], string[]] {
-    let pyArglist = ["self"];
-    let callArglist = ["self._cdata"];
+  prepFuncCall(func: CFunc, isMemberFunc: boolean): [string[], string[]] {
+    let pyArglist = isMemberFunc ? ["self"] : [];
+    let callArglist = isMemberFunc ? ["self._cdata"] : [];
     const args = func.args;
-    let idx = 1;
+    let idx = isMemberFunc ? 1 : 0;
     while (idx < args.length) {
       const arg = args[idx];
       const next = args[idx + 1];
@@ -800,6 +824,27 @@ function ffiNew(ctype: string): string {
   return `_ffi_new("${ptrTo(ctype)}")`;
 }
 
+function emitFuncDef(
+  api: ApiInfo,
+  pyFname: string,
+  func: CFunc,
+  isMemberFunc: boolean
+): string[] {
+  const [pyArglist, callArglist] = api.prepFuncCall(func, isMemberFunc);
+
+  let retval = "";
+  let theCall = `lib.${func.name}(${callArglist.join(", ")})`;
+  if (func.ret !== undefined) {
+    theCall = func.ret.ctype.wrap(theCall, func.ret.explicitPointer);
+    retval = ` -> ${func.ret.ctype.pyAnnotation(func.ret.explicitPointer)}`;
+  }
+
+  return [
+    `def ${pyFname}(${pyArglist.join(", ")})${retval}:`,
+    `    return ${theCall}`,
+  ];
+}
+
 class COpaque implements CType {
   kind: "opaque" = "opaque";
   funcs: Map<string, CFunc> = new Map();
@@ -827,18 +872,7 @@ class COpaque implements CType {
   }
 
   emitFunc(api: ApiInfo, pyFname: string, func: CFunc): string {
-    const [pyArglist, callArglist] = api.prepFuncCall(func);
-
-    let retval = "";
-    let theCall = `lib.${func.name}(${callArglist.join(", ")})`;
-    if (func.ret !== undefined) {
-      theCall = func.ret.ctype.wrap(theCall, func.ret.explicitPointer);
-      retval = ` -> ${func.ret.ctype.pyAnnotation(func.ret.explicitPointer)}`;
-    }
-
-    return `
-    def ${pyFname}(${pyArglist.join(", ")})${retval}:
-        return ${theCall}`;
+    return indent(1, emitFuncDef(api, pyFname, func, true));
   }
 
   emit(api: ApiInfo): string {
@@ -968,7 +1002,11 @@ ${this.fields.map((f) => indent(1, f.prop())).join("\n")}
 //   instead of current int userdata approach? (could store callback itself as handle?)
 
 const api = new ApiInfo();
-api.parse(SRC);
+
+const SRC_NO_COMMENTS = SRC.split("\n")
+  .filter((line) => !line.trim().startsWith("//"))
+  .join("\n");
+api.parse(SRC_NO_COMMENTS);
 
 const pyFrags: string[] = [];
 
@@ -977,6 +1015,14 @@ for (const [_name, ctype] of api.types.entries()) {
   if (ctype.emit) {
     pyFrags.push(ctype.emit(api));
   }
+}
+
+pyFrags.push("# Loose functions");
+for (const func of api.looseFuncs) {
+  pyFrags.push(
+    emitFuncDef(api, toPyName(func.name, false), func, false).join("\n")
+  );
+  pyFrags.push("\n");
 }
 
 pyFrags.push("# Util wrapper types");
