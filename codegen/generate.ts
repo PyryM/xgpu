@@ -28,6 +28,7 @@ interface CType {
   pyAnnotation(isPointer: boolean): string;
   wrap(val: string, isPointer: boolean): string;
   unwrap(val: string, isPointer: boolean): string;
+  preStore?(target: string, val: string): [string, string];
   emit?(api: ApiInfo): string;
   addFunc?(func: CFunc): void;
 }
@@ -71,7 +72,6 @@ function discardProcs(state: ParseState) {
   ++state.pos;
   while (state.pos < lines.length) {
     if (lines[state.pos].includes("WGPU_SKIP_PROCS")) {
-      console.log("SKIPPED TO:", state.pos);
       return;
     }
     ++state.pos;
@@ -280,6 +280,8 @@ function parseTypeRef(ref: string): Refinfo {
       info.constant = true;
     } else if (part === "*") {
       info.explicitPointer = true;
+    } else if (part === "struct") {
+      // don't do anything
     } else {
       info.inner = part;
     }
@@ -315,7 +317,7 @@ function prim(cName: string, pyName: string): CType {
 }
 
 interface Emittable {
-  emit(): string;
+  emit(api: ApiInfo): string;
 }
 
 class ApiInfo {
@@ -371,8 +373,9 @@ class ApiInfo {
       pyName: "str",
       kind: "primitive",
       pyAnnotation: (isPointer) => (isPointer ? "str" : "int"),
-      wrap: (v, isPointer) => (isPointer ? `ffi.string(${v})` : v),
-      unwrap: (v) => v,
+      wrap: (v, isPointer) => (isPointer ? `_ffi_string(${v})` : v),
+      unwrap: (v) => `_ffi_unwrap_str(${v})`,
+      preStore: (target, val) => [`${target} = _ffi_unwrap_str(${val})`, target]
     });
   }
 
@@ -539,10 +542,8 @@ class ApiInfo {
   }
 
   _addCallbackType(name: string, argStr: string, returnType: string) {
-    console.log(`Callback: ${name}(${argStr}) -> ${returnType}`);
-    const args = this._parseFuncArgs(argStr);
     const ret = this._parseFuncReturn(returnType);
-    const fpointer = new CFuncPointer(name, toPyName(name, true), args, ret);
+    const fpointer = new CFuncPointer(name, toPyName(name, true), argStr, ret);
 
     this.types.set(name, fpointer);
     this.wrappers.set(`_cbwrap_${name}`, new CallbackWrapper(fpointer));
@@ -653,7 +654,7 @@ class CFuncPointer implements CType {
   constructor(
     public cName: string,
     public pyName: string,
-    public args: FuncArg[],
+    public argStr: string,
     public ret: FuncArg
   ) {}
 
@@ -778,23 +779,28 @@ class PointerField implements CStructField {
   }
 
   setterBody(): string[] {
-    const unwrapped = this.ctype.unwrap("v", true);
-    if (this.nullable && unwrapped !== "v") {
-      // slight optimization: if unwrap(v) is just v then skip
-      // the none check because we can just directly assign
-      return [
-        `self._${this.name} = v`,
-        `if v is None:`,
-        `    self._cdata.${this.name} = None`,
-        `else:`,
-        `    self._cdata.${this.name} = ${unwrapped}`,
-      ];
-    } else {
-      return [
-        `self._${this.name} = v`,
-        `self._cdata.${this.name} = ${unwrapped}`,
-      ];
+    let lines: string[] = [
+      `self._${this.name} = v`,
+    ];
+    let unwrapped = this.ctype.unwrap("v", true);
+    const storeBody: string[] = []
+    if(this.ctype.preStore) {
+      const storeName = `self._store_${this.name}`;
+      const [storeCmd, unwrappedStore] = this.ctype.preStore(storeName, "v");
+      storeBody.push(storeCmd);
+      unwrapped = unwrappedStore;
     }
+    storeBody.push(`self._cdata.${this.name} = ${unwrapped}`)
+
+    if (this.nullable) {
+      lines.push(`if v is None:`)
+      lines.push(`    self._cdata.${this.name} = ffi.NULL`)
+      lines.push(`else:`)
+      lines = lines.concat(indent2(1, storeBody))
+    } else {
+      lines = lines.concat(storeBody)
+    }
+    return lines
   }
 
   prop(): string {
@@ -809,11 +815,15 @@ ${indent(1, this.setterBody())}`;
   }
 }
 
+function indent2(n: number, lines: string[]): string[] {
+  return lines.map((l) => `${" ".repeat(4 * n)}${l}`)
+}
+
 function indent(n: number, lines: string | string[]): string {
   if (typeof lines === "string") {
     lines = lines.replaceAll("\r", "").split("\n");
   }
-  return lines.map((l) => `${" ".repeat(4 * n)}${l}`).join("\n");
+  return indent2(n, lines).join("\n");
 }
 
 function ptrTo(ctype: string): string {
@@ -842,6 +852,7 @@ function emitFuncDef(
   return [
     `def ${pyFname}(${pyArglist.join(", ")})${retval}:`,
     `    return ${theCall}`,
+    ``,
   ];
 }
 
@@ -867,7 +878,6 @@ class COpaque implements CType {
     const pyFname = toPyName(
       removePrefixCaseInsensitive(func.name, this.cName)
     );
-    console.log(`Adding ${func.name} (${pyFname}) to ${this.cName}`);
     this.funcs.set(pyFname, func);
   }
 
@@ -890,16 +900,30 @@ class COpaque implements CType {
 class ${this.pyName}:
     def __init__(self, cdata: CData):
         self._cdata = ffi.gc(cdata, lib.${releaser.name})
+
 ${funcdefs.join("\n")}
 `;
   }
 }
 
+function cTypeAnnotation(arg: FuncArg): string {
+  const parts: string[] = [];
+  if (arg.explicitConst) {
+    parts.push("const");
+  }
+  parts.push(arg.ctype.cName);
+  if (arg.explicitPointer) {
+    parts.push("*");
+  }
+  return parts.join(" ");
+}
+
 class CallbackWrapper implements Emittable {
   constructor(public func: CFuncPointer) {}
 
-  emit(): string {
-    const args = this.func.args;
+  emit(api: ApiInfo): string {
+    const ret = this.func.ret;
+    const args = api._parseFuncArgs(this.func.argStr);
     const rawArglist = args.map((arg) => arg.name);
     const arglist = args
       .slice(0, args.length - 1)
@@ -907,15 +931,20 @@ class CallbackWrapper implements Emittable {
     const unpackList = args
       .slice(0, args.length - 1)
       .map((arg) => arg.ctype.wrap(arg.name, arg.explicitPointer));
-    const pytype = `Callable[[${arglist}], ${this.func.ret.ctype.pyAnnotation(
-      this.func.ret.explicitPointer
+    const pytype = `Callable[[${arglist}], ${ret.ctype.pyAnnotation(
+      ret.explicitPointer
     )}]`;
+
+    const callbackSignature = `${cTypeAnnotation(ret)}(${args
+      .map(cTypeAnnotation)
+      .join(", ")})`;
 
     const mapName = `_callback_map_${this.func.pyName}`;
     const rawName = `_raw_callback_${this.func.pyName}`;
     return `
 ${mapName} = CBMap()
 
+@ffi.callback("${callbackSignature}")
 def ${rawName}(${rawArglist.join(", ")}):
     idx = _cast_userdata(userdata)
     cb = ${mapName}.get(idx)
@@ -964,7 +993,9 @@ class CStruct implements CType {
   }
 
   wrap(val: string): string {
-    return `raise ValueError("This property cannot be queried!")`;
+    // OH NO
+    console.warn(`Trying to return concrete struct ${val}: ${this.cName}`)
+    return val;
   }
 
   unwrap(val: string): string {
@@ -1022,12 +1053,11 @@ for (const func of api.looseFuncs) {
   pyFrags.push(
     emitFuncDef(api, toPyName(func.name, false), func, false).join("\n")
   );
-  pyFrags.push("\n");
 }
 
 pyFrags.push("# Util wrapper types");
 for (const [_name, emitter] of api.wrappers.entries()) {
-  pyFrags.push(emitter.emit());
+  pyFrags.push(emitter.emit(api));
 }
 
 const cdef = EMIT_CDEF ? `ffi.cdef("""${cleanHeader(SRC)}""")` : ``;
@@ -1051,6 +1081,17 @@ ${cdef}
 
 def _ffi_new(typespec: str, count: ${pyOptional("int")} = None) -> CData:
     return ffi.new(typespec, count)
+
+def _ffi_unwrap_str(val: ${pyOptional("str")}):
+    if val is None:
+        val = ""
+    return ffi.new("char[]", val.encode("utf8"))
+
+def _ffi_string(val) -> ${pyUnion("str", "bytes")}:
+    if val == ffi.NULL:
+        return ""
+    else:
+        return ffi.string(val)
 
 def _cast_userdata(ud: CData) -> int:
     return ffi.cast("int *", ud)[0]
