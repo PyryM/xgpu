@@ -281,7 +281,7 @@ class ApiInfo {
       },
       unwrap: (v, isPointer) => {
         if (isPointer) {
-          return `${v}._cdata`;
+          return `${v}._ptr`;
         }
         return v;
       },
@@ -509,17 +509,28 @@ class ApiInfo {
     let idx = 1;
     while (idx < args.length) {
       const arg = args[idx];
+      const next = args[idx+1];
       if (
-        arg.name.endsWith("Count") &&
+        next !== undefined &&
         arg.ctype.cName === "size_t" &&
-        idx + 1 < args.length
+        arg.name.endsWith("Count")
       ) {
         // assume this is a (count, ptr) combo
-        const nextArg = args[idx + 1];
-        const lname = this.getListWrapper(nextArg.ctype);
-        pyArglist.push(`${nextArg.name}: ${quoted(lname)}`);
-        callArglist.push(`${nextArg.name}._count`);
-        callArglist.push(`${nextArg.name}._ptr`);
+        const lname = this.getListWrapper(next.ctype);
+        pyArglist.push(`${next.name}: ${quoted(lname)}`);
+        callArglist.push(`${next.name}._count`);
+        callArglist.push(`${next.name}._ptr`);
+        idx += 2;
+      } else if (
+        arg.ctype.cName === "void" &&
+        arg.explicitPointer &&
+        next?.ctype.cName === "size_t" &&
+        next?.name.toLowerCase().endsWith("size")
+      ) {
+        // assume a (void ptr, size) pair
+        pyArglist.push(`${arg.name}: ${arg.ctype.pyAnnotation(arg.explicitPointer)}`)
+        callArglist.push(`${arg.name}._ptr`)
+        callArglist.push(`${arg.name}._size`)
         idx += 2;
       } else if (arg.name === "callback") {
         // assume a (callback, userdata) combo
@@ -769,7 +780,7 @@ class COpaque implements CType {
   emit(api: ApiInfo): string {
     return `
 class ${this.pyName}:
-    def __init__(self, cdata: ffi.CData):
+    def __init__(self, cdata: CData):
         self._cdata = cdata
 ${this.funcs.map((f) => this.emitFunc(api, f)).join("\n")}
 `;
@@ -909,12 +920,16 @@ ffi = FFI()
 # TODO: figure out DLL name on different platforms!
 lib: Any = ffi.dlopen("wgpu_native.dll")
 
+# make typing temporarily happy until I can figure out if there's
+# a better way to have type information about CData fields
+CData = Any
+
 ${cdef}
 
-def _ffi_new(typespec: str, count: ${pyOptional("int")} = None) -> ffi.CData:
+def _ffi_new(typespec: str, count: ${pyOptional("int")} = None) -> CData:
     return ffi.new(typespec, count)
 
-def _cast_userdata(ud: ffi.CData) -> int:
+def _cast_userdata(ud: CData) -> int:
     return ffi.cast("int *", ud)[0]
 
 class CBMap:
@@ -936,8 +951,8 @@ class CBMap:
             del self.callbacks[idx]
 
 class VoidPtr:
-    def __init__(self, cdata: ffi.CData, size: ${pyOptional("int")} = None):
-        self._cdata = cdata
+    def __init__(self, data: CData, size: ${pyOptional("int")} = None):
+        self._ptr = data
         self._size = size
 
 ${pyFrags.join("\n")}
