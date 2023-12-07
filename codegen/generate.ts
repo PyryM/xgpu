@@ -12,10 +12,8 @@ const SPECIAL_CLASSES: Set<string> = new Set([
 ]);
 
 const BAD_FUNCTIONS: Map<string, string> = new Map([
-  [
-    "wgpuAdapterEnumerateFeatures", 
-    "The way you're supposed to use this function is ridiculous and unsafe."
-  ],
+  ["wgpuAdapterEnumerateFeatures", "This is unsafe. Use hasFeature."],
+  ["wgpuDeviceEnumerateFeatures", "This is unsafe. Use hasFeature."],
 ]);
 
 interface FuncArg {
