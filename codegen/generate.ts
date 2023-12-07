@@ -11,6 +11,13 @@ const SPECIAL_CLASSES: Set<string> = new Set([
   "WGPUChainedStructOut",
 ]);
 
+const BAD_FUNCTIONS: Map<string, string> = new Map([
+  [
+    "wgpuAdapterEnumerateFeatures", 
+    "The way you're supposed to use this function is ridiculous and unsafe."
+  ],
+]);
+
 interface FuncArg {
   name: string;
   explicitPointer: boolean;
@@ -851,6 +858,15 @@ function emitFuncDef(
   func: CFunc,
   isMemberFunc: boolean
 ): string[] {
+  const badReason = BAD_FUNCTIONS.get(func.name);
+  if (badReason) {
+    return [
+      `# ${func.name} is marked as a MISBEHAVED FUNCTION:`,
+      `# ${badReason}`,
+      ``,
+    ];
+  }
+
   const [pyArglist, callArglist] = api.prepFuncCall(func, isMemberFunc);
 
   let retval = "";
@@ -1061,6 +1077,14 @@ ${props.join("\n")}
 
 // TODO/THOUGHTS:
 // * mutated by value structs (wrapping values back?)
+//   * separate wrapped vs. owned classes?
+//   * or separate constructor for values?
+
+// KNOWN ISSUES:
+// * Adapter.enumerateFeatures: shoves features into an-array-by-pointer
+//  (The way you're supposed to use this function is HACKY:
+//   first you call it with null and it returns how many features, then
+//   you allocate space and call again with pointer to that space!)
 
 // * cleanup: merge all the types into just CType
 //   * have .isPointer, and .inner
