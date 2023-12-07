@@ -203,7 +203,7 @@ class CFlags implements CType {
 
     return (
       `
-class ${this.etype.pyName}Flags:
+class ${this.pyName}:
     def __init__(self, flags: ${pyUnion(`list[${etypename}]`, `int`)}):
         if isinstance(flags, int):
             self.value = flags
@@ -578,10 +578,16 @@ class ApiInfo {
     const reg = /typedef WGPUFlags ([A-Za-z0-9]*)Flags WGPU_ENUM_ATTRIBUTE;/g;
     for (const m of src.matchAll(reg)) {
       const [_wholeMatch, enumType] = m;
-      const ee = this.types.get(enumType);
+      let ee = this.types.get(enumType);
       if (ee === undefined || !(ee instanceof CEnum)) {
-        console.log(`Couldn't find enum corresponding to "${enumType}"!`);
-        continue;
+        // hack to deal with special case of
+        // "WGPUInstanceFlag" -> "WGPUInstanceFlags"
+        ee = this.types.get(enumType + "Flag");
+        if (ee === undefined || !(ee instanceof CEnum)) {
+          console.log(`Couldn't find enum "${enumType}" or "${enumType}Flag"!`);
+          console.log("Whole match:", _wholeMatch);
+          continue;
+        }
       }
       const cname = `${enumType}Flags`;
       const pyName = toPyName(cname, true);
