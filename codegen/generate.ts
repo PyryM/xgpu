@@ -1077,6 +1077,7 @@ ${props.join("\n")}
 // * mutated by value structs (wrapping values back?)
 //   * separate wrapped vs. owned classes?
 //   * or separate constructor for values?
+// * merge WGPUNativeFeature into WGPUFeatureName ?
 
 // KNOWN ISSUES:
 // * Adapter.enumerateFeatures: shoves features into an-array-by-pointer
