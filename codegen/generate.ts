@@ -1044,11 +1044,11 @@ class CStruct implements CType {
       props.push(indent(1, f.prop()));
     }
 
-    if(chainable) {
-      props.push(``)
-      props.push(`    @property`)
-      props.push(`    def _chain(self) -> Any:`)
-      props.push(`        return self._cdata.chain`)
+    if (chainable) {
+      props.push(``);
+      props.push(`    @property`);
+      props.push(`    def _chain(self) -> Any:`);
+      props.push(`        return self._cdata.chain`);
     }
 
     return `
@@ -1065,6 +1065,7 @@ ${props.join("\n")}
 // * cleanup: merge all the types into just CType
 //   * have .isPointer, and .inner
 //   * have a .resolve() that can deal w/ forward references
+// * cleanup: list-of-lists indent flattening?
 // * default arguments? maybe better to not have any defaults!
 
 // QUESTIONS:
