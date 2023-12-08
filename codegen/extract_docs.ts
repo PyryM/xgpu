@@ -1,4 +1,4 @@
-import { readFileSync } from "fs";
+import { readFileSync, writeFileSync } from "fs";
 
 type Section = {
   name: string;
@@ -50,6 +50,9 @@ if (occ) {
   console.log(occ.content);
 }
 
+let outlines: string[] = [];
 for (const sec of docs.search("requestAdapter")) {
-  console.log(`${sec.linkName}: "${sec.name}"`);
+  outlines.push(`### ${sec.name} ### {${sec.linkName}}`);
+  outlines.push(sec.content.join("\n"));
 }
+writeFileSync("hmmm.txt", outlines.join("\n"));
