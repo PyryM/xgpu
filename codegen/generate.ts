@@ -820,10 +820,20 @@ class PointerField implements CStructField {
   }
 
   prop(): string {
+    let getter: string = `self._${this.name}`;
+    if (this.name !== "nextInChain" && this.ctype.kind === "struct") {
+      // special case where we want to return a wrapped pointer
+      // to an interior by-value struct
+      getter = `${this.ctype.pyName}(cdata = self._cdata.${this.name}, parent = self)`;
+    } else if (this.ctype.pyName === "str") {
+      // special case returning strings?
+      getter = `_ffi_string(self._cdata.${this.name})`;
+    }
+
     return `
 @property
 def ${this.name}(self) -> ${this.argtype()}:
-    return self._${this.name}
+    return ${getter}
 
 @${this.name}.setter
 def ${this.name}(self, v: ${this.argtype()}):
@@ -1046,17 +1056,30 @@ class CStruct implements CType {
       publicFields = publicFields.slice(1, publicFields.length);
     }
 
-    const classdef = `class ${this.pyName}${chainable ? "(Chainable)" : ""}`;
+    const className = this.pyName;
+    const conName = toPyName(className, false);
+    const classdef = `class ${className}${chainable ? "(Chainable)" : ""}`;
 
     const init: string[] = [
-      `def __init__(self, *, ${publicFields.map((f) => f.arg()).join(", ")}):`,
-      `    self._cdata = ${ffiNew(this.cName)}`,
+      `def __init__(self, *, cdata: ${pyOptional(
+        "CData"
+      )}, parent: ${pyOptional("Any")}):`,
+      `    self._parent = parent`,
+      `    if cdata is not None:`,
+      `        self._cdata = cdata`,
+      `    else:`,
+      `        self._cdata = ${ffiNew(this.cName)}`,
     ];
+    const conlines: string[] = [
+      `ret = ${className}(cdata = None, parent = None)`,
+    ];
+
     const props: string[] = [];
     for (const f of publicFields) {
-      init.push(`    self.${f.name} = ${f.name}`);
+      conlines.push(`ret.${f.name} = ${f.name}`);
       props.push(indent(1, f.prop()));
     }
+    conlines.push(`return ret`);
 
     if (chainable) {
       props.push(``);
@@ -1069,6 +1092,9 @@ class CStruct implements CType {
 ${classdef}:
 ${indent(1, init.join("\n"))}
 ${props.join("\n")}
+
+def ${conName}(${publicFields.map((f) => f.arg()).join(", ")}) -> ${className}:
+${indent(1, conlines.join("\n"))}
 `;
   }
 }
@@ -1077,7 +1103,9 @@ ${props.join("\n")}
 // * mutated by value structs (wrapping values back?)
 //   * separate wrapped vs. owned classes?
 //   * or separate constructor for values?
+//   * general "inner struct" problem!
 // * merge WGPUNativeFeature into WGPUFeatureName ?
+// * cleanup: list-of-lists indent flattening?
 
 // KNOWN ISSUES:
 // * Adapter.enumerateFeatures: shoves features into an-array-by-pointer
@@ -1088,7 +1116,6 @@ ${props.join("\n")}
 // * cleanup: merge all the types into just CType
 //   * have .isPointer, and .inner
 //   * have a .resolve() that can deal w/ forward references
-// * cleanup: list-of-lists indent flattening?
 // * default arguments? maybe better to not have any defaults!
 
 // QUESTIONS:
@@ -1156,11 +1183,16 @@ def _ffi_unwrap_str(val: ${pyOptional("str")}):
         val = ""
     return ffi.new("char[]", val.encode("utf8"))
 
-def _ffi_string(val) -> ${pyUnion("str", "bytes")}:
+def _ffi_string(val) -> str:
     if val == ffi.NULL:
         return ""
+    ret = ffi.string(val)
+    if isinstance(ret, bytes):
+        return ret.decode("utf8")
+    elif isinstance(ret, str):
+        return ret
     else:
-        return ffi.string(val)
+        raise RuntimeError("IMPOSSIBLE")
 
 def _cast_userdata(ud: CData) -> int:
     return ffi.cast("int *", ud)[0]
