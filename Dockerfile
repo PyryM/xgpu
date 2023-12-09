@@ -12,7 +12,7 @@ COPY pyproject.toml .
 RUN bun codegen/generate.ts
 
 # run ruff to automatically format and fix linter errors
-RUN ruff . --fix
+RUN ruff . --fix && ruff format .
 
 
 ############################################
