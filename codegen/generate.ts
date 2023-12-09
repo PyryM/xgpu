@@ -619,7 +619,7 @@ interface CStructField {
   name: string;
   ctype: CType;
   prop(): string;
-  arg(): string;
+  arg(noInit?: boolean): string;
 }
 
 function listName(pyname: string): string {
@@ -718,8 +718,8 @@ class PointerField implements CStructField {
     return this.nullable ? " = None" : "";
   }
 
-  arg(): string {
-    return `${this.name}: ${this.argtype()}${this.arginit()}`;
+  arg(noInit: boolean = false): string {
+    return `${this.name}: ${this.argtype()}${noInit ? "" : this.arginit()}`;
   }
 
   setterBody(): string[] {
@@ -775,6 +775,24 @@ function ffiNew(ctype: string): string {
   return `_ffi_new("${ptrTo(ctype)}")`;
 }
 
+function getDescriptorArg(
+  func: CFunc,
+  isMemberFunc: boolean
+): CStruct | undefined {
+  const expectedArgCount = isMemberFunc ? 2 : 1;
+  if (func.args.length !== expectedArgCount) {
+    return undefined;
+  }
+  const maybeDescArg = func.args[expectedArgCount - 1];
+  if (
+    maybeDescArg.name === "descriptor" &&
+    maybeDescArg.ctype.cName.endsWith("Descriptor")
+  ) {
+    return maybeDescArg.ctype as CStruct;
+  }
+  return undefined;
+}
+
 function emitFuncDef(
   api: ApiInfo,
   pyFname: string,
@@ -799,11 +817,36 @@ function emitFuncDef(
     retval = ` -> ${func.ret.ctype.pyAnnotation(func.ret.explicitPointer)}`;
   }
 
-  return [
-    `def ${pyFname}(${pyArglist.join(", ")})${retval}:`,
-    `    return ${theCall}`,
-    ``,
-  ];
+  const descriptorType = getDescriptorArg(func, isMemberFunc);
+
+  if (descriptorType) {
+    const descArglist = isMemberFunc ? ["self", "*"] : ["*"];
+    const descCallList: string[] = [];
+    for (const field of descriptorType.publicFields()) {
+      descArglist.push(field.arg(false));
+      descCallList.push(`${field.name} = ${field.name}`);
+    }
+
+    const descInit = toPyName(descriptorType.pyName, false);
+
+    const maybeSelf = isMemberFunc ? "self." : "";
+    return [
+      `def ${pyFname}FromDesc(${pyArglist.join(", ")})${retval}:`,
+      `    return ${theCall}`,
+      ``,
+      `def ${pyFname}(${descArglist.join(", ")})${retval}:`,
+      `    return ${maybeSelf}${pyFname}FromDesc(${descInit}(${descCallList.join(
+        ", "
+      )}))`,
+      ``,
+    ];
+  } else {
+    return [
+      `def ${pyFname}(${pyArglist.join(", ")})${retval}:`,
+      `    return ${theCall}`,
+      ``,
+    ];
+  }
 }
 
 class COpaque implements CType {
@@ -969,17 +1012,25 @@ class CStruct implements CType {
     return name === "chain" && ctype.cName.startsWith("WGPUChainedStruct");
   }
 
+  publicFields(): CStructField[] {
+    if (this.chainable()) {
+      return this.fields.slice(1, this.fields.length);
+    }
+    return this.fields;
+  }
+
+  initArgList(): string {
+    return this.publicFields()
+      .map((f) => f.arg())
+      .join(", ");
+  }
+
   emit(): string {
     if (this.noEmit) {
       return `# ${this.pyName} is specially defined elsewhere`;
     }
 
-    let publicFields = this.fields;
     const chainable = this.chainable();
-    if (chainable) {
-      publicFields = publicFields.slice(1, publicFields.length);
-    }
-
     const className = this.pyName;
     const conName = toPyName(className, false);
     const classdef = `class ${className}${chainable ? "(Chainable)" : ""}`;
@@ -999,7 +1050,7 @@ class CStruct implements CType {
     ];
 
     const props: string[] = [];
-    for (const f of publicFields) {
+    for (const f of this.publicFields()) {
       conlines.push(`ret.${f.name} = ${f.name}`);
       props.push(indent(1, f.prop()));
     }
@@ -1019,9 +1070,7 @@ ${classdef}:
 ${indent(1, init.join("\n"))}
 ${props.join("\n")}
 
-def ${conName}(*, ${publicFields
-      .map((f) => f.arg())
-      .join(", ")}) -> ${className}:
+def ${conName}(*, ${this.initArgList()}) -> ${className}:
 ${indent(1, conlines.join("\n"))}
 `;
   }
@@ -1036,7 +1085,6 @@ ${indent(1, conlines.join("\n"))}
 // * cleanup: list-of-lists indent flattening?
 
 // ERGONOMICS:
-// * thing.func(descriptor(...args)) could 'unpack' to just thing.func(...args)
 // * ThingList could auto-cast a list to ThingList(list)
 // * Flags could auto-cast an int?
 

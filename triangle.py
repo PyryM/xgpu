@@ -65,7 +65,7 @@ def get_adapter(power: webgoo.PowerPreference) -> webgoo.Adapter:
         adapter[0] = gotten
     cb = webgoo.RequestAdapterCallback(adapterCB)
 
-    instance = webgoo.createInstance(webgoo.instanceDescriptor())
+    instance = webgoo.createInstance()
     instance.requestAdapter(webgoo.requestAdapterOptions(
         powerPreference=power,
         backendType=webgoo.BackendType.Undefined,
@@ -109,18 +109,18 @@ def main(power_preference=webgoo.PowerPreference.HighPerformance):
 
 
 def _main(device: webgoo.Device):
-    shader = device.createShaderModule(webgoo.shaderModuleDescriptor(
+    shader = device.createShaderModule(
         nextInChain = webgoo.ChainedStruct([
             webgoo.shaderModuleWGSLDescriptor(code=shader_source)
         ]),
         hints = webgoo.ShaderModuleCompilationHintList([])
-    ))
+    )
 
-    layout = device.createPipelineLayout(webgoo.pipelineLayoutDescriptor(
+    layout = device.createPipelineLayout(
         bindGroupLayouts=webgoo.BindGroupLayoutList([])
-    ))
+    )
 
-    color_tex = device.createTexture(webgoo.textureDescriptor(
+    color_tex = device.createTexture(
         usage = webgoo.TextureUsageFlags([
             webgoo.TextureUsage.RenderAttachment,
             webgoo.TextureUsage.CopySrc
@@ -131,7 +131,7 @@ def _main(device: webgoo.Device):
         mipLevelCount=1,
         sampleCount=1,
         viewFormats=webgoo.TextureFormatList([webgoo.TextureFormat.RGBA8Unorm])
-    ))
+    )
 
     REPLACE = webgoo.blendComponent(
         srcFactor=webgoo.BlendFactor.One,
@@ -169,17 +169,15 @@ def _main(device: webgoo.Device):
     )
 
     render_pipeline = device.createRenderPipeline(
-        descriptor=webgoo.renderPipelineDescriptor(
-            layout = layout,
-            vertex=vertex,
-            primitive=primitive,
-            depthStencil=None,
-            multisample=multisample,
-            fragment=fragment
-        )
+        layout = layout,
+        vertex=vertex,
+        primitive=primitive,
+        depthStencil=None,
+        multisample=multisample,
+        fragment=fragment
     )
 
-    color_view = color_tex.createView(webgoo.textureViewDescriptor(
+    color_view = color_tex.createView(
         format=webgoo.TextureFormat.RGBA8Unorm,
         dimension=webgoo.TextureViewDimension._2D,
         baseMipLevel=0,
@@ -187,7 +185,7 @@ def _main(device: webgoo.Device):
         baseArrayLayer=0,
         arrayLayerCount=0,
         aspect=webgoo.TextureAspect.All
-    ))
+    )
 
     color_attachment = webgoo.renderPassColorAttachment(
         view = color_view,
@@ -196,19 +194,17 @@ def _main(device: webgoo.Device):
         clearValue=webgoo.color(r=1.0, g=0.0, b=0.0, a=1.0)
     )
 
-    command_encoder = device.createCommandEncoder(webgoo.commandEncoderDescriptor())
+    command_encoder = device.createCommandEncoder()
 
     render_pass = command_encoder.beginRenderPass(
-        webgoo.renderPassDescriptor(
-            colorAttachments=webgoo.RenderPassColorAttachmentList([color_attachment])
-        )
+        colorAttachments=webgoo.RenderPassColorAttachmentList([color_attachment])
     )
 
     render_pass.setPipeline(render_pipeline)
     render_pass.draw(3, 1, 0, 0)
     render_pass.end()
 
-    commands = command_encoder.finish(webgoo.commandBufferDescriptor())
+    commands = command_encoder.finish()
     device.getQueue().submit(webgoo.CommandBufferList([commands]))
 
     # TODO: read back texture?
