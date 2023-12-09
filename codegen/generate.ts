@@ -1087,6 +1087,7 @@ ${indent(1, conlines.join("\n"))}
 // ERGONOMICS:
 // * ThingList could auto-cast a list to ThingList(list)
 // * Flags could auto-cast an int?
+// * callbacks could auto-cast?
 
 // KNOWN ISSUES:
 // * building extension w/ dll needs to renamed
