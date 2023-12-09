@@ -3,6 +3,9 @@ Example use of the wgpu API to draw a triangle. This example is set up
 so it can be run on canvases provided by any backend. Running this file
 as a script will use the auto-backend (using either glfw or jupyter).
 
+Ported from wgpu-py (BSD2):
+https://github.com/pygfx/wgpu-py/blob/main/examples/triangle.py
+
 
 Similar example in other languages / API's:
 
@@ -111,81 +114,109 @@ def _main(device: webgoo.Device):
             webgoo.shaderModuleWGSLDescriptor(code=shader_source)
         ]),
         hints = webgoo.ShaderModuleCompilationHintList([])
+    ))
+
+    layout = device.createPipelineLayout(webgoo.pipelineLayoutDescriptor(
+        bindGroupLayouts=webgoo.BindGroupLayoutList([])
+    ))
+
+    color_tex = device.createTexture(webgoo.textureDescriptor(
+        usage = webgoo.TextureUsageFlags([
+            webgoo.TextureUsage.RenderAttachment,
+            webgoo.TextureUsage.CopySrc
+        ]),
+        dimension=webgoo.TextureDimension._2D,
+        size=webgoo.extent3D(width = 1024, height = 1024, depthOrArrayLayers = 1),
+        format = webgoo.TextureFormat.RGBA8Unorm,
+        mipLevelCount=1,
+        sampleCount=1,
+        viewFormats=webgoo.TextureFormatList([webgoo.TextureFormat.RGBA8Unorm])
+    ))
+
+    REPLACE = webgoo.blendComponent(
+        srcFactor=webgoo.BlendFactor.One,
+        dstFactor=webgoo.BlendFactor.Zero,
+        operation=webgoo.BlendOperation.Add
     )
 
-    # No bind group and layout, we should not create empty ones.
-    pipeline_layout = device.create_pipeline_layout(bind_group_layouts=[])
-
-    present_context = canvas.get_context()
-    render_texture_format = present_context.get_preferred_format(device.adapter)
-    present_context.configure(device=device, format=render_texture_format)
-
-    render_pipeline = device.create_render_pipeline(
-        layout=pipeline_layout,
-        vertex={
-            "module": shader,
-            "entry_point": "vs_main",
-            "buffers": [],
-        },
-        primitive={
-            "topology": wgpu.PrimitiveTopology.triangle_list,
-            "front_face": wgpu.FrontFace.ccw,
-            "cull_mode": wgpu.CullMode.none,
-        },
-        depth_stencil=None,
-        multisample=None,
-        fragment={
-            "module": shader,
-            "entry_point": "fs_main",
-            "targets": [
-                {
-                    "format": render_texture_format,
-                    "blend": {
-                        "color": (
-                            wgpu.BlendFactor.one,
-                            wgpu.BlendFactor.zero,
-                            wgpu.BlendOperation.add,
-                        ),
-                        "alpha": (
-                            wgpu.BlendFactor.one,
-                            wgpu.BlendFactor.zero,
-                            wgpu.BlendOperation.add,
-                        ),
-                    },
-                },
-            ],
-        },
+    primitive = webgoo.primitiveState(
+        topology = webgoo.PrimitiveTopology.TriangleList,
+        stripIndexFormat= webgoo.IndexFormat.Undefined,
+        frontFace = webgoo.FrontFace.CCW,
+        cullMode = webgoo.CullMode._None,
+    )
+    vertex = webgoo.vertexState(
+        module=shader,
+        entryPoint="vs_main",
+        constants=webgoo.ConstantEntryList([]),
+        buffers = webgoo.VertexBufferLayoutList([])
+    )
+    color_target = webgoo.colorTargetState(
+        format=webgoo.TextureFormat.RGBA8Unorm, blend = webgoo.blendState(
+            color = REPLACE,
+            alpha = REPLACE
+        ),
+        writeMask=webgoo.ColorWriteMaskFlags([
+            webgoo.ColorWriteMask.All
+        ])
+    )
+    multisample = webgoo.multisampleState(count=0, mask=0, alphaToCoverageEnabled=False)
+    fragment = webgoo.fragmentState(
+        module=shader,
+        entryPoint="fs_main",
+        constants=webgoo.ConstantEntryList([]),
+        targets=webgoo.ColorTargetStateList([color_target])
     )
 
-    def draw_frame():
-        current_texture = present_context.get_current_texture()
-        command_encoder = device.create_command_encoder()
-
-        render_pass = command_encoder.begin_render_pass(
-            color_attachments=[
-                {
-                    "view": current_texture.create_view(),
-                    "resolve_target": None,
-                    "clear_value": (0, 0, 0, 1),
-                    "load_op": wgpu.LoadOp.clear,
-                    "store_op": wgpu.StoreOp.store,
-                }
-            ],
+    render_pipeline = device.createRenderPipeline(
+        descriptor=webgoo.renderPipelineDescriptor(
+            layout = layout,
+            vertex=vertex,
+            primitive=primitive,
+            depthStencil=None,
+            multisample=multisample,
+            fragment=fragment
         )
+    )
 
-        render_pass.set_pipeline(render_pipeline)
-        # render_pass.set_bind_group(0, no_bind_group, [], 0, 1)
-        render_pass.draw(3, 1, 0, 0)
-        render_pass.end()
-        device.queue.submit([command_encoder.finish()])
+    color_view = color_tex.createView(webgoo.textureViewDescriptor(
+        format=webgoo.TextureFormat.RGBA8Unorm,
+        dimension=webgoo.TextureViewDimension._2D,
+        baseMipLevel=0,
+        mipLevelCount=0,
+        baseArrayLayer=0,
+        arrayLayerCount=0,
+        aspect=webgoo.TextureAspect.All
+    ))
 
-    canvas.request_draw(draw_frame)
+    color_attachment = webgoo.renderPassColorAttachment(
+        view = color_view,
+        loadOp=webgoo.LoadOp.Clear,
+        storeOp=webgoo.StoreOp.Store,
+        clearValue=webgoo.color(r=1.0, g=0.0, b=0.0, a=1.0)
+    )
+
+    command_encoder = device.createCommandEncoder(webgoo.commandEncoderDescriptor())
+
+    render_pass = command_encoder.beginRenderPass(
+        webgoo.renderPassDescriptor(
+            colorAttachments=webgoo.RenderPassColorAttachmentList([color_attachment])
+        )
+    )
+
+    render_pass.setPipeline(render_pipeline)
+    render_pass.draw(3, 1, 0, 0)
+    render_pass.end()
+
+    commands = command_encoder.finish(webgoo.commandBufferDescriptor())
+    device.getQueue().submit(webgoo.CommandBufferList([commands]))
+
+    # TODO: read back texture?
+    raise ValueError("NYI!")
+
     return device
 
 
 if __name__ == "__main__":
-    from wgpu.gui.auto import WgpuCanvas, run
+    main()
 
-    canvas = WgpuCanvas(size=(640, 480), title="wgpu triangle")
-    main(canvas)
-    run()

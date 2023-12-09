@@ -1035,6 +1035,11 @@ ${indent(1, conlines.join("\n"))}
 // * merge WGPUNativeFeature into WGPUFeatureName ?
 // * cleanup: list-of-lists indent flattening?
 
+// ERGONOMICS:
+// * thing.func(descriptor(...args)) could 'unpack' to just thing.func(...args)
+// * ThingList could auto-cast a list to ThingList(list)
+// * Flags could auto-cast an int?
+
 // KNOWN ISSUES:
 // * building extension w/ dll needs to renamed
 //   'wgpu_native.dll.lib' -> 'wgpu_native.lib'
