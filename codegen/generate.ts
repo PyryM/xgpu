@@ -792,8 +792,12 @@ class PointerField implements CStructField {
     return this.nullable ? pyOptional(annotation) : annotation;
   }
 
+  arginit(): string {
+    return this.nullable ? " = None" : "";
+  }
+
   arg(): string {
-    return `${this.name}: ${this.argtype()}`;
+    return `${this.name}: ${this.argtype()}${this.arginit()}`;
   }
 
   setterBody(): string[] {
@@ -1063,7 +1067,7 @@ class CStruct implements CType {
     const init: string[] = [
       `def __init__(self, *, cdata: ${pyOptional(
         "CData"
-      )}, parent: ${pyOptional("Any")}):`,
+      )} = None, parent: ${pyOptional("Any")} = None):`,
       `    self._parent = parent`,
       `    if cdata is not None:`,
       `        self._cdata = cdata`,
@@ -1093,7 +1097,9 @@ ${classdef}:
 ${indent(1, init.join("\n"))}
 ${props.join("\n")}
 
-def ${conName}(${publicFields.map((f) => f.arg()).join(", ")}) -> ${className}:
+def ${conName}(*, ${publicFields
+      .map((f) => f.arg())
+      .join(", ")}) -> ${className}:
 ${indent(1, conlines.join("\n"))}
 `;
   }
