@@ -80,15 +80,16 @@ export const EMPTY_DEFINES: string[] = [
 
 class CEnum implements CType {
   kind: "enum" = "enum";
-  sanitized: { name: string; val: string }[];
+  sanitized: { name: string; val: string }[] = [];
+  values: CEnumVal[] = [];
 
-  constructor(
-    public cName: string,
-    public pyName: string,
-    public values: CEnumVal[]
-  ) {
-    this.sanitized = [];
-    for (const { name, val } of this.values) {
+  constructor(public cName: string, public pyName: string, values: CEnumVal[]) {
+    this.mergeValues(values);
+  }
+
+  mergeValues(values: CEnumVal[]) {
+    for (const { name, val } of values) {
+      this.values.push({ name, val });
       if (name !== "Force32") {
         this.sanitized.push({ name: sanitizeIdent(name), val });
       }
@@ -326,7 +327,17 @@ class ApiInfo {
         body.split(",").map((e) => parseEnumEntry(name.trim(), e))
       );
       const cName = name.trim();
-      this.types.set(cName, new CEnum(cName, toPyName(cName, true), entries));
+      if (cName === "WGPUNativeSType") {
+        // HACK: merge into existing SType enum
+        const stypeEnum = this.types.get("WGPUSType") as CEnum;
+        const fixedEntries = entries.map(({ name, val }) => ({
+          name: removePrefix(name, "WGPUSType_"),
+          val,
+        }));
+        stypeEnum.mergeValues(fixedEntries);
+      } else {
+        this.types.set(cName, new CEnum(cName, toPyName(cName, true), entries));
+      }
     }
   }
 
@@ -999,6 +1010,8 @@ class CStruct implements CType {
       props.push(`    @property`);
       props.push(`    def _chain(self) -> Any:`);
       props.push(`        return self._cdata.chain`);
+
+      init.push(`    self._cdata.chain.sType = SType.${className}`);
     }
 
     return `
@@ -1040,6 +1053,8 @@ ${indent(1, conlines.join("\n"))}
 // * do we need to explicitly call `reference` on returned things?
 
 // NICE TO HAVE:
+// * autocast lists to appropriate list types
+
 // * less manual way of dealing with wgpu.h
 // * pretty printing
 // * maybe use https://cffi.readthedocs.io/en/stable/ref.html#ffi-new-handle-ffi-from-handle
