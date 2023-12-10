@@ -327,8 +327,7 @@ class ApiInfo {
 
   findEnums(src: string) {
     const enumExp = /typedef enum ([a-zA-Z0-9]*) \{([^\}]*)\}/g;
-    for (const m of src.matchAll(enumExp)) {
-      const [_wholeMatch, name, body] = m;
+    for (const [_wholeMatch, name, body] of src.matchAll(enumExp)) {
       const entries = onlyDefined(
         body.split(",").map((e) => parseEnumEntry(name.trim(), e))
       );
@@ -349,8 +348,7 @@ class ApiInfo {
 
   findOpaquePointers(src: string) {
     const reg = /typedef struct ([a-zA-Z0-9]+)\* ([a-zA-Z]+)([^;]*);/g;
-    for (const m of src.matchAll(reg)) {
-      const [_wholeMatch, _implName, cName, _extra] = m;
+    for (const [, , cName] of src.matchAll(reg)) {
       this.types.set(cName, new COpaque(cName, toPyName(cName, true)));
     }
   }
@@ -418,8 +416,7 @@ class ApiInfo {
 
   findConcreteStructs(src: string) {
     const reg = /typedef struct ([a-zA-Z0-9]*) \{([^\}]*)\}/g;
-    for (const m of src.matchAll(reg)) {
-      const [cdef, name, rawBody] = m;
+    for (const [cdef, name, rawBody] of src.matchAll(reg)) {
       this._addStruct(cdef, name, rawBody);
     }
   }
@@ -497,8 +494,7 @@ class ApiInfo {
     // typedef void (*WGPUBufferMapCallback)(WGPUBufferMapAsyncStatus status, void * userdata) WGPU_FUNCTION_ATTRIBUTE;
     const reg =
       /typedef (.*) \(\*([A-Za-z0-9]+)\)\((.*)\) WGPU_FUNCTION_ATTRIBUTE;/g;
-    for (const m of src.matchAll(reg)) {
-      const [_wholeMatch, returnType, name, args] = m;
+    for (const [, returnType, name, args] of src.matchAll(reg)) {
       if (!name.endsWith("Callback")) {
         continue;
       }
@@ -509,16 +505,14 @@ class ApiInfo {
   findExportedFunctions(src: string) {
     const reg =
       /WGPU_EXPORT (.*) ([a-zA-Z0-9_]+)\((.*)\) WGPU_FUNCTION_ATTRIBUTE;/g;
-    for (const m of src.matchAll(reg)) {
-      const [_wholeMatch, returnType, name, args] = m;
+    for (const [, returnType, name, args] of src.matchAll(reg)) {
       this._addFunc(name, args, returnType);
     }
   }
 
   findBitflags(src: string) {
     const reg = /typedef WGPUFlags ([A-Za-z0-9]*)Flags WGPU_ENUM_ATTRIBUTE;/g;
-    for (const m of src.matchAll(reg)) {
-      const [_wholeMatch, enumType] = m;
+    for (const [_wholeMatch, enumType] of src.matchAll(reg)) {
       let ee = this.types.get(enumType);
       if (ee === undefined || !(ee instanceof CEnum)) {
         // hack to deal with special case of
