@@ -25,6 +25,7 @@ const SPECIAL_CLASSES: Set<string> = new Set([
 const BAD_FUNCTIONS: Map<string, string> = new Map([
   ["wgpuAdapterEnumerateFeatures", "This is unsafe. Use hasFeature."],
   ["wgpuDeviceEnumerateFeatures", "This is unsafe. Use hasFeature."],
+  ["wgpuGetProcAddress", "Untyped function pointer return."],
 ]);
 
 interface FuncArg {
@@ -247,7 +248,7 @@ interface Emittable {
 class ApiInfo {
   types: Map<string, CType> = new Map();
   wrappers: Map<string, Emittable> = new Map();
-  UNKNOWN_TYPE: CType = prim("UNKNOWN", "Any");
+  UNKNOWN_TYPE: CType = prim("UNKNOWN", "UNKNOWN");
   looseFuncs: CFunc[] = [];
 
   constructor() {
@@ -265,7 +266,7 @@ class ApiInfo {
       ["size_t", "int"],
       ["WGPUBool", "bool"],
       ["WGPUSubmissionIndex", "int"],
-      ["UNKNOWN", "Any"],
+      ["UNKNOWN", "UNKNOWN"],
     ];
     for (const [cName, pyName] of PRIMITIVES) {
       this.types.set(cName, prim(cName, pyName));
@@ -316,7 +317,12 @@ class ApiInfo {
     if (typeof t !== "string") {
       t = t.inner;
     }
-    return this.types.get(t) ?? this.UNKNOWN_TYPE;
+    const ret = this.types.get(t);
+    if (ret === undefined) {
+      console.log("MISSING:", t);
+      return this.UNKNOWN_TYPE;
+    }
+    return ret;
   }
 
   findEnums(src: string) {
@@ -1110,7 +1116,6 @@ ${indent(1, conlines.join("\n"))}
 // * cleanup: list-of-lists indent flattening?
 
 // ERGONOMICS:
-// * ThingList could auto-cast a list to ThingList(list)
 // * Flags could auto-cast an int?
 // * callbacks could auto-cast?
 
