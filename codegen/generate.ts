@@ -1192,7 +1192,8 @@ ffibuilder.cdef(CDEF)
 ffibuilder.set_source(
     "_wgpu_native_cffi", 
     SOURCE, 
-    libraries=['wgpu_native']
+    libraries=['wgpu_native'],
+    library_dirs=['.']
 )   
 
 if __name__ == "__main__":
