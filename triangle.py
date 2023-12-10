@@ -90,7 +90,7 @@ def get_device(adapter: webgoo.Adapter) -> webgoo.Device:
     cb = webgoo.RequestDeviceCallback(deviceCB)
 
     adapter.requestDevice(webgoo.deviceDescriptor(
-        requiredFeatures=webgoo.FeatureNameList([]),
+        requiredFeatures=[],
         defaultQueue=webgoo.queueDescriptor(),
         deviceLostCallback=dlcb
     ), cb)
@@ -113,12 +113,10 @@ def _main(device: webgoo.Device):
         nextInChain = webgoo.ChainedStruct([
             webgoo.shaderModuleWGSLDescriptor(code=shader_source)
         ]),
-        hints = webgoo.ShaderModuleCompilationHintList([])
+        hints = []
     )
 
-    layout = device.createPipelineLayout(
-        bindGroupLayouts=webgoo.BindGroupLayoutList([])
-    )
+    layout = device.createPipelineLayout(bindGroupLayouts=[])
 
     color_tex = device.createTexture(
         usage = webgoo.TextureUsageFlags([
@@ -130,7 +128,7 @@ def _main(device: webgoo.Device):
         format = webgoo.TextureFormat.RGBA8Unorm,
         mipLevelCount=1,
         sampleCount=1,
-        viewFormats=webgoo.TextureFormatList([webgoo.TextureFormat.RGBA8Unorm])
+        viewFormats=[webgoo.TextureFormat.RGBA8Unorm]
     )
 
     REPLACE = webgoo.blendComponent(
@@ -148,8 +146,8 @@ def _main(device: webgoo.Device):
     vertex = webgoo.vertexState(
         module=shader,
         entryPoint="vs_main",
-        constants=webgoo.ConstantEntryList([]),
-        buffers = webgoo.VertexBufferLayoutList([])
+        constants=[],
+        buffers = []
     )
     color_target = webgoo.colorTargetState(
         format=webgoo.TextureFormat.RGBA8Unorm, blend = webgoo.blendState(
@@ -164,8 +162,8 @@ def _main(device: webgoo.Device):
     fragment = webgoo.fragmentState(
         module=shader,
         entryPoint="fs_main",
-        constants=webgoo.ConstantEntryList([]),
-        targets=webgoo.ColorTargetStateList([color_target])
+        constants=[],
+        targets=[color_target]
     )
 
     render_pipeline = device.createRenderPipeline(
@@ -197,15 +195,14 @@ def _main(device: webgoo.Device):
     command_encoder = device.createCommandEncoder()
 
     render_pass = command_encoder.beginRenderPass(
-        colorAttachments=webgoo.RenderPassColorAttachmentList([color_attachment])
+        colorAttachments=[color_attachment]
     )
 
     render_pass.setPipeline(render_pipeline)
     render_pass.draw(3, 1, 0, 0)
     render_pass.end()
 
-    commands = command_encoder.finish()
-    device.getQueue().submit(webgoo.CommandBufferList([commands]))
+    device.getQueue().submit([command_encoder.finish()])
 
     # TODO: read back texture?
     raise ValueError("NYI!")

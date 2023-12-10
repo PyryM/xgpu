@@ -531,9 +531,14 @@ class ApiInfo {
     }
   }
 
-  prepFuncCall(func: CFunc, isMemberFunc: boolean): [string[], string[]] {
-    let pyArglist = isMemberFunc ? ["self"] : [];
-    let callArglist = isMemberFunc ? ["self._cdata"] : [];
+  prepFuncCall(
+    func: CFunc,
+    isMemberFunc: boolean
+  ): { pyArgs: string[]; callArgs: string[]; staging: string[] } {
+    const pyArgs = isMemberFunc ? ["self"] : [];
+    const callArgs = isMemberFunc ? ["self._cdata"] : [];
+    const staging: string[] = [];
+
     const args = func.args;
     let idx = isMemberFunc ? 1 : 0;
     while (idx < args.length) {
@@ -545,10 +550,16 @@ class ApiInfo {
         arg.name.endsWith("Count")
       ) {
         // assume this is a (count, ptr) combo
-        const lname = this.getListWrapper(next.ctype);
-        pyArglist.push(`${next.name}: ${quoted(lname)}`);
-        callArglist.push(`${next.name}._count`);
-        callArglist.push(`${next.name}._ptr`);
+        const wrapperName = this.getListWrapper(next.ctype);
+        const lname = quoted(wrapperName);
+        const maybeList = pyUnion(lname, `list[${next.ctype.pyName}]`);
+        pyArgs.push(`${next.name}: ${maybeList}`);
+        staging.push(`if isinstance(${next.name}, list):`);
+        staging.push(`    ${next.name}_staged = ${wrapperName}(${next.name})`);
+        staging.push(`else:`);
+        staging.push(`    ${next.name}_staged = ${next.name}`);
+        callArgs.push(`${next.name}_staged._count`);
+        callArgs.push(`${next.name}_staged._ptr`);
         idx += 2;
       } else if (
         arg.ctype.cName === "void" &&
@@ -557,29 +568,29 @@ class ApiInfo {
         next?.name.toLowerCase().endsWith("size")
       ) {
         // assume a (void ptr, size) pair
-        pyArglist.push(
+        pyArgs.push(
           `${arg.name}: ${arg.ctype.pyAnnotation(arg.explicitPointer)}`
         );
-        callArglist.push(`${arg.name}._ptr`);
-        callArglist.push(`${arg.name}._size`);
+        callArgs.push(`${arg.name}._ptr`);
+        callArgs.push(`${arg.name}._size`);
         idx += 2;
       } else if (arg.name === "callback") {
         // assume a (callback, userdata) combo
-        pyArglist.push(
+        pyArgs.push(
           `${arg.name}: ${arg.ctype.pyAnnotation(arg.explicitPointer)}`
         );
-        callArglist.push(`${arg.name}._ptr`);
-        callArglist.push(`${arg.name}._userdata`);
+        callArgs.push(`${arg.name}._ptr`);
+        callArgs.push(`${arg.name}._userdata`);
         idx += 2;
       } else {
-        pyArglist.push(
+        pyArgs.push(
           `${arg.name}: ${arg.ctype.pyAnnotation(arg.explicitPointer)}`
         );
-        callArglist.push(arg.ctype.unwrap(arg.name, arg.explicitPointer));
+        callArgs.push(arg.ctype.unwrap(arg.name, arg.explicitPointer));
         ++idx;
       }
     }
-    return [pyArglist, callArglist];
+    return { pyArgs, callArgs, staging };
   }
 
   parse(src: string) {
@@ -623,7 +634,7 @@ interface CStructField {
 }
 
 function listName(pyname: string): string {
-  return `${pyname}List`;
+  return toPyName(`${pyname}List`, true);
 }
 
 class ArrayField implements CStructField {
@@ -633,21 +644,33 @@ class ArrayField implements CStructField {
     public ctype: CType
   ) {}
 
+  listType(): string {
+    return quoted(listName(this.ctype.pyName));
+  }
+
+  argType(): string {
+    return pyUnion(this.listType(), `list[${quoted(this.ctype.pyName)}]`);
+  }
+
   arg(): string {
-    return `${this.name}: ${quoted(listName(this.ctype.pyName))}`;
+    return `${this.name}: ${this.argType()}`;
   }
 
   prop(): string {
     return `
 @property
-def ${this.name}(self) -> ${quoted(listName(this.ctype.pyName))}:
+def ${this.name}(self) -> ${this.listType()}:
     return self._${this.name}
 
 @${this.name}.setter
-def ${this.name}(self, v: ${quoted(listName(this.ctype.pyName))}):
-    self._${this.name} = v
-    self._cdata.${this.countName} = v._count
-    self._cdata.${this.name} = v._ptr`;
+def ${this.name}(self, v: ${this.argType()}):
+    if isinstance(v, list):
+        v2 = ${listName(this.ctype.pyName)}(v)
+    else:
+        v2 = v
+    self._${this.name} = v2
+    self._cdata.${this.countName} = v2._count
+    self._cdata.${this.name} = v2._ptr`;
   }
 }
 
@@ -808,14 +831,16 @@ function emitFuncDef(
     ];
   }
 
-  const [pyArglist, callArglist] = api.prepFuncCall(func, isMemberFunc);
+  const { pyArgs, callArgs, staging } = api.prepFuncCall(func, isMemberFunc);
 
   let retval = "";
-  let theCall = `lib.${func.name}(${callArglist.join(", ")})`;
+  let theCall = `lib.${func.name}(${callArgs.join(", ")})`;
   if (func.ret !== undefined) {
     theCall = func.ret.ctype.wrap(theCall, func.ret.explicitPointer);
     retval = ` -> ${func.ret.ctype.pyAnnotation(func.ret.explicitPointer)}`;
   }
+
+  const callBody = [...staging, `return ${theCall}`];
 
   const descriptorType = getDescriptorArg(func, isMemberFunc);
 
@@ -831,8 +856,8 @@ function emitFuncDef(
 
     const maybeSelf = isMemberFunc ? "self." : "";
     return [
-      `def ${pyFname}FromDesc(${pyArglist.join(", ")})${retval}:`,
-      `    return ${theCall}`,
+      `def ${pyFname}FromDesc(${pyArgs.join(", ")})${retval}:`,
+      ...indent2(1, callBody),
       ``,
       `def ${pyFname}(${descArglist.join(", ")})${retval}:`,
       `    return ${maybeSelf}${pyFname}FromDesc(${descInit}(${descCallList.join(
@@ -842,8 +867,8 @@ function emitFuncDef(
     ];
   } else {
     return [
-      `def ${pyFname}(${pyArglist.join(", ")})${retval}:`,
-      `    return ${theCall}`,
+      `def ${pyFname}(${pyArgs.join(", ")})${retval}:`,
+      ...indent2(1, callBody),
       ``,
     ];
   }
