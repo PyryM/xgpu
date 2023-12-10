@@ -15,7 +15,6 @@ const HEADERS = ["codegen/webgpu.h", "codegen/wgpu_extra.h"];
 const SRC = HEADERS.map((fn) => readFileSync(fn).toString("utf8")).join("\n");
 
 const IS_PY12 = false;
-const EMIT_CDEF = true;
 
 const SPECIAL_CLASSES: Set<string> = new Set([
   "WGPUChainedStruct",
@@ -1102,11 +1101,6 @@ ${indent(1, conlines.join("\n"))}
 }
 
 // TODO/THOUGHTS:
-// * mutated by value structs (wrapping values back?)
-//   * separate wrapped vs. owned classes?
-//   * or separate constructor for values?
-//   * general "inner struct" problem!
-// * merge WGPUNativeFeature into WGPUFeatureName ?
 // * cleanup: list-of-lists indent flattening?
 
 // ERGONOMICS:
@@ -1129,9 +1123,6 @@ ${indent(1, conlines.join("\n"))}
 
 // QUESTIONS:
 // * do we need to explicitly call `reference` on returned things?
-
-// NICE TO HAVE:
-// * autocast lists to appropriate list types
 
 // * less manual way of dealing with wgpu.h
 // * pretty printing
