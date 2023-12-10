@@ -47,7 +47,7 @@ interface CType {
   pyName: string;
   cName: string;
   pyAnnotation(isPointer: boolean): string;
-  wrap(val: string, isPointer: boolean): string;
+  wrap(val: string, isPointer: boolean, parent?: string): string;
   unwrap(val: string, isPointer: boolean): string;
   preStore?(target: string, val: string): [string, string];
   emit?(api: ApiInfo): string;
@@ -354,11 +354,7 @@ class ApiInfo {
 
   _createField(name: string, ref: Refinfo): CStructField {
     const type = this.getType(ref);
-    if (
-      ref.explicitPointer ||
-      type.kind === "opaque" ||
-      type.kind === "struct"
-    ) {
+    if (ref.explicitPointer || type.kind === "opaque") {
       return new PointerField(name, type, ref.nullable ?? false);
     } else {
       return new ValueField(name, type);
@@ -708,7 +704,7 @@ class ValueField implements CStructField {
     return `
 @property
 def ${this.name}(self) -> ${this.ctype.pyAnnotation(false)}:
-    return ${this.ctype.wrap(`self._cdata.${this.name}`, false)}
+    return ${this.ctype.wrap(`self._cdata.${this.name}`, false, "self")}
 
 @${this.name}.setter
 def ${this.name}(self, v: ${this.ctype.pyAnnotation(false)}):
@@ -771,7 +767,7 @@ class PointerField implements CStructField {
     let getter: string = `self._${this.name}`;
     if (this.name !== "nextInChain" && this.ctype.kind === "struct") {
       // special case where we want to return a wrapped pointer
-      // to an interior by-value struct
+      // to an interior pointer
       getter = `${this.ctype.pyName}(cdata = self._cdata.${this.name}, parent = self)`;
     } else if (this.ctype.pyName === "str") {
       // special case returning strings?
@@ -793,8 +789,8 @@ function ptrTo(ctype: string): string {
   return `${ctype} *`;
 }
 
-function ffiNew(ctype: string): string {
-  return `_ffi_new("${ptrTo(ctype)}")`;
+function ffiInit(ctype: string, cdata: string): string {
+  return `_ffi_init("${ptrTo(ctype)}", ${cdata})`;
 }
 
 function getDescriptorArg(
@@ -1019,14 +1015,16 @@ class CStruct implements CType {
     return quoted(this.pyName);
   }
 
-  wrap(val: string): string {
-    // OH NO
-    console.warn(`Trying to return concrete struct ${val}: ${this.cName}`);
-    return val;
+  wrap(val: string, isPointer: boolean, parent?: string): string {
+    return `${this.pyName}(cdata = ${val}, parent = ${parent ?? "None"})`;
   }
 
-  unwrap(val: string): string {
-    return `${val}._cdata`;
+  unwrap(val: string, isPointer: boolean): string {
+    if (isPointer) {
+      return `${val}._cdata`;
+    } else {
+      return `_ffi_deref(${val}._cdata)`;
+    }
   }
 
   chainable(): boolean {
@@ -1064,10 +1062,7 @@ class CStruct implements CType {
         "CData"
       )} = None, parent: ${pyOptional("Any")} = None):`,
       `    self._parent = parent`,
-      `    if cdata is not None:`,
-      `        self._cdata = cdata`,
-      `    else:`,
-      `        self._cdata = ${ffiNew(this.cName)}`,
+      `    self._cdata = ${ffiInit(this.cName, "cdata")}`,
     ];
     const conlines: string[] = [
       `ret = ${className}(cdata = None, parent = None)`,
@@ -1205,6 +1200,18 @@ CData = Any
 
 def _ffi_new(typespec: str, count: ${pyOptional("int")} = None) -> CData:
     return ffi.new(typespec, count)
+
+def _ffi_init(typespec: str, initializer: ${pyOptional("Any")}) -> CData:
+    if initializer is None:
+        return ffi.new(typespec)
+    else:
+        return initializer
+
+def _ffi_deref(cdata):
+    if ffi.typeof(cdata).kind == 'pointer':
+        return cdata[0]
+    else:
+        return cdata
 
 def _ffi_unwrap_str(val: ${pyOptional("str")}):
     if val is None:

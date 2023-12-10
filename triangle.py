@@ -89,10 +89,19 @@ def get_device(adapter: webgoo.Adapter) -> webgoo.Device:
     dlcb = webgoo.DeviceLostCallback(deviceLostCB)
     cb = webgoo.RequestDeviceCallback(deviceCB)
 
+    supported_limits = webgoo.supportedLimits(limits=webgoo.Limits(cdata=None, parent=None))
+    adapter.getLimits(supported_limits)
+    supported = supported_limits.limits
+    supported.maxTextureDimension3D = 0xffffffff
+    print("supported color attachments:", supported.maxColorAttachments)
+    print("supported texture dim 3d:", supported.maxTextureDimension3D)
+
+
     adapter.requestDevice(webgoo.deviceDescriptor(
         requiredFeatures=[],
         defaultQueue=webgoo.queueDescriptor(),
-        deviceLostCallback=dlcb
+        deviceLostCallback=dlcb,
+        requiredLimits=webgoo.requiredLimits(limits=supported)
     ), cb)
 
     while device[0] is None:
@@ -105,6 +114,12 @@ def main(power_preference=webgoo.PowerPreference.HighPerformance):
     """Regular function to setup a viz on the given canvas."""
     adapter = get_adapter(power_preference)
     device = get_device(adapter)
+    limits = webgoo.supportedLimits(limits=webgoo.Limits(cdata=None, parent=None))
+    happy = device.getLimits(limits)
+    print("Got limits?", happy)
+    print(limits.limits.maxTextureDimension3D)
+    print(limits)
+    raise RuntimeError("Got this far!")
     return _main(device)
 
 
