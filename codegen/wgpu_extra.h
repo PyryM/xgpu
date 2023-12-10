@@ -215,7 +215,7 @@ WGPU_EXPORT size_t wgpuInstanceEnumerateAdapters(WGPUInstance instance, WGPUInst
 WGPU_EXPORT WGPUSubmissionIndex wgpuQueueSubmitForIndex(WGPUQueue queue, size_t commandCount, WGPUCommandBuffer const * commands) WGPU_FUNCTION_ATTRIBUTE;
 
 // Returns true if the queue is empty, or false if there are more queue submissions still in flight.
-WGPU_EXPORT WGPUBool wgpuDevicePoll(WGPUDevice device, WGPUBool wait, WGPUWrappedSubmissionIndex const * wrappedSubmissionIndex) WGPU_FUNCTION_ATTRIBUTE;
+WGPU_EXPORT WGPUBool wgpuDevicePoll(WGPUDevice device, WGPUBool wait, WGPU_NULLABLE WGPUWrappedSubmissionIndex const * wrappedSubmissionIndex) WGPU_FUNCTION_ATTRIBUTE;
 
 WGPU_EXPORT void wgpuSetLogCallback(WGPULogCallback callback, void * userdata) WGPU_FUNCTION_ATTRIBUTE;
 

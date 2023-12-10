@@ -31,6 +31,7 @@ interface FuncArg {
   name: string;
   explicitPointer: boolean;
   explicitConst: boolean;
+  nullable: boolean;
   ctype: CType;
 }
 
@@ -57,6 +58,14 @@ interface CType {
 interface CEnumVal {
   name: string;
   val: string;
+}
+
+function pyOptional(pyType: string): string {
+  return IS_PY12 ? `${pyType} | None` : `Optional[${pyType}]`;
+}
+
+function pyUnion(a: string, b: string): string {
+  return IS_PY12 ? `${a} | ${b}` : `Union[${a}, ${b}]`;
 }
 
 function onlyDefined<T>(items: (T | undefined)[]): T[] {
@@ -431,6 +440,7 @@ class ApiInfo {
         ctype: this.getType("void"),
         explicitConst: false,
         explicitPointer: false,
+        nullable: false,
       };
     } else {
       const info = parseTypeRef(returnType);
@@ -439,6 +449,7 @@ class ApiInfo {
         ctype: this.getType(info),
         explicitConst: info.constant === true,
         explicitPointer: info.explicitPointer === true,
+        nullable: false,
       };
     }
   }
@@ -457,6 +468,7 @@ class ApiInfo {
         ctype: this.getType(type),
         explicitPointer: type.explicitPointer === true,
         explicitConst: type.constant === true,
+        nullable: type.nullable === true,
       };
     });
   }
@@ -577,6 +589,18 @@ class ApiInfo {
         callArgs.push(`${arg.name}._ptr`);
         callArgs.push(`${arg.name}._userdata`);
         idx += 2;
+      } else if (
+        arg.nullable &&
+        (arg.explicitPointer || arg.ctype.kind === "opaque")
+      ) {
+        pyArgs.push(
+          `${arg.name}: ${pyOptional(
+            arg.ctype.pyAnnotation(arg.explicitPointer)
+          )}`
+        );
+        callArgs.push(`_ffi_unwrap_optional(${arg.name})`);
+        //callArgs.push(arg.ctype.unwrap(arg.name, arg.explicitPointer));
+        ++idx;
       } else {
         pyArgs.push(
           `${arg.name}: ${arg.ctype.pyAnnotation(arg.explicitPointer)}`
@@ -710,14 +734,6 @@ def ${this.name}(self) -> ${this.ctype.pyAnnotation(false)}:
 def ${this.name}(self, v: ${this.ctype.pyAnnotation(false)}):
     self._cdata.${this.name} = ${this.ctype.unwrap("v", false)}`;
   }
-}
-
-function pyOptional(pyType: string): string {
-  return IS_PY12 ? `${pyType} | None` : `Optional[${pyType}]`;
-}
-
-function pyUnion(a: string, b: string): string {
-  return IS_PY12 ? `${a} | ${b}` : `Union[${a}, ${b}]`;
 }
 
 class PointerField implements CStructField {
@@ -1213,6 +1229,12 @@ def _ffi_deref(cdata):
     else:
         return cdata
 
+def _ffi_unwrap_optional(val):
+    if val is None:
+        return ffi.NULL
+    else:
+        return val._cdata
+
 def _ffi_unwrap_str(val: ${pyOptional("str")}):
     if val is None:
         val = ""
@@ -1244,8 +1266,8 @@ class ChainedStruct:
         if len(chain) == 0:
             self._cdata = ffi.NULL
             return
-        self._cdata = chain[0]._chain
-        next_ptrs = [link._chain for link in chain[1:]] + [ffi.NULL]
+        self._cdata = ffi.addressof(chain[0]._chain)
+        next_ptrs = [ffi.addressof(link._chain) for link in chain[1:]] + [ffi.NULL]
         for idx, ptr in enumerate(next_ptrs):
             chain[idx]._chain.next = ptr
 
@@ -1276,6 +1298,9 @@ class VoidPtr:
     def __init__(self, data: CData, size: ${pyOptional("int")} = None):
         self._ptr = data
         self._size = size
+
+    def to_bytes(self) -> bytes:
+        return bytes(ffi.buffer(self._ptr, self._size))
 
 ${pyFrags.join("\n")}
 `;
