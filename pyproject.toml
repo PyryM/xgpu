@@ -3,9 +3,10 @@ requires = ["setuptools>=61.2"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "webgoopy"
+name = "webgoo"
 version = "0.1.0"
 readme = "README.md"
+requires-python = ">=3.7"
 
 [project.license]
 text = "proprietary"
@@ -48,3 +49,4 @@ ignore = [
     "UP038", # uses `|` instead of `tuple`	
 ]
 line-length = 90
+

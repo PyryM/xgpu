@@ -1,0 +1,9 @@
+[
+  {
+    "name": "wgpu_native",
+    "platform": "linux",
+    "sha256": "d683abcad4b834edc0fe5d09c5919758a21fc8ee11feaf7a0d05ecbfcaace0f8",
+    "target": "../build/",
+    "url": "https://github.com/gfx-rs/wgpu-native/releases/download/v0.18.1.3/wgpu-linux-x86_64-release.zip"
+  }
+]

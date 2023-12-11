@@ -27,7 +27,19 @@ codegen: ## Run the codegen using bun inside docker
 		. && \
 	ln -s `pwd`/codegen build/codegen
 
+.PHONY: fetch
+fetch:  ## Fetch wgpu_native from github release
+	python docker/fetch-native.py --install wgpu_native
+
+.PHONY: build
+build: clean codegen fetch ## Run all steps of the build process.
+	cd build && \
+	python wgpu_native_build.py && \
+	cd .. && mkdir webgoo && \
+	cp build/webgoo.py webgoo/__init__.py && \
+	cp build/*.so webgoo/ && \
+	patchelf --set-rpath '$$ORIGIN'/ webgoo/_wgpu_native_cffi.*
 
 .PHONY: clean
 clean: ## Remove built files.
-	rm -rf build
+	rm -rf build webgoo

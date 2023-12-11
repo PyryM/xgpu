@@ -1247,7 +1247,7 @@ from collections.abc import Callable
 from enum import IntEnum
 from typing import Any, Optional, Union
 
-from _wgpu_native_cffi import ffi, lib
+from ._wgpu_native_cffi import ffi, lib
 
 # NOTE: this is the runtime-abi linked version for reference
 # from cffi import FFI
