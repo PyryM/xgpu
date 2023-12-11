@@ -56,10 +56,10 @@ ignore = [
 line-length = 90
 
 [tool.cibuildwheel]
+# wgpu-native does not build with older manylinux
 manylinux-x86_64-image = "manylinux_2_28"
 
 [tool.cibuildwheel.linux]
-before-all = "yum install -y gcc"
-before-build = "pip install cffi && cd webgoo && rm _wgpu_native_cffi* && python wgpu_native_build.py && ls -altrsh && mv webgoo.py __init__.py && patchelf --set-rpath '$ORIGIN'/ _wgpu_native_cffi.*.so && ls -altrsh && ldd _wgpu_native_cffi.*.so && rm wgpu_native_build.py"
+before-build = "pip install cffi && cd webgoo && rm _wgpu_native_cffi* | true && python wgpu_native_build.py && ls -altrsh && patchelf --set-rpath '$ORIGIN'/ _wgpu_native_cffi.*.so && ls -altrsh && ldd _wgpu_native_cffi.*.so"
 
 #CIBW_BUILD_VERBOSITY

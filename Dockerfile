@@ -18,6 +18,10 @@ RUN ruff . --fix && ruff format .
 ############################################
 FROM scratch AS output
 
-COPY --from=builder /tmp/webgoo.py /tmp/wgpu_native_build.py .
+# rename webgoo to a module entrypoint
+COPY --from=builder /tmp/webgoo.py ./__init__.py
+COPY --from=builder /tmp/wgpu_native_build.py .
+
+
 
 
