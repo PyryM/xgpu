@@ -16,11 +16,10 @@ jobs:
       - name: Run Codegen
         run: |
           make build
-
       - name: Build Wheels
         run: |
           python -m pip install cibuildwheel==2.16.2
-	  cd build
+          cd build
           python -m cibuildwheel --output-dir wheelhouse
 
       - uses: actions/upload-artifact@v3
