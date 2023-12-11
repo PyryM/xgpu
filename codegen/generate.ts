@@ -9,13 +9,14 @@ import {
   recase,
   indent2,
   indent,
+  titleCase,
 } from "./stringmanip";
+import { docs } from "./extract_docs";
 
 const HEADERS = ["codegen/webgpu.h", "codegen/wgpu_extra.h"];
 const SRC = HEADERS.map((fn) => readFileSync(fn).toString("utf8")).join("\n");
 
 const IS_PY12 = false;
-const EMIT_CDEF = true;
 
 const SPECIAL_CLASSES: Set<string> = new Set([
   "WGPUChainedStruct",
@@ -25,12 +26,14 @@ const SPECIAL_CLASSES: Set<string> = new Set([
 const BAD_FUNCTIONS: Map<string, string> = new Map([
   ["wgpuAdapterEnumerateFeatures", "This is unsafe. Use hasFeature."],
   ["wgpuDeviceEnumerateFeatures", "This is unsafe. Use hasFeature."],
+  ["wgpuGetProcAddress", "Untyped function pointer return."],
 ]);
 
 interface FuncArg {
   name: string;
   explicitPointer: boolean;
   explicitConst: boolean;
+  nullable: boolean;
   ctype: CType;
 }
 
@@ -47,7 +50,7 @@ interface CType {
   pyName: string;
   cName: string;
   pyAnnotation(isPointer: boolean): string;
-  wrap(val: string, isPointer: boolean): string;
+  wrap(val: string, isPointer: boolean, parent?: string): string;
   unwrap(val: string, isPointer: boolean): string;
   preStore?(target: string, val: string): [string, string];
   emit?(api: ApiInfo): string;
@@ -57,6 +60,14 @@ interface CType {
 interface CEnumVal {
   name: string;
   val: string;
+}
+
+function pyOptional(pyType: string): string {
+  return IS_PY12 ? `${pyType} | None` : `Optional[${pyType}]`;
+}
+
+function pyUnion(a: string, b: string): string {
+  return IS_PY12 ? `${a} | ${b}` : `Union[${a}, ${b}]`;
 }
 
 function onlyDefined<T>(items: (T | undefined)[]): T[] {
@@ -247,7 +258,7 @@ interface Emittable {
 class ApiInfo {
   types: Map<string, CType> = new Map();
   wrappers: Map<string, Emittable> = new Map();
-  UNKNOWN_TYPE: CType = prim("UNKNOWN", "Any");
+  UNKNOWN_TYPE: CType = prim("UNKNOWN", "UNKNOWN");
   looseFuncs: CFunc[] = [];
 
   constructor() {
@@ -265,7 +276,7 @@ class ApiInfo {
       ["size_t", "int"],
       ["WGPUBool", "bool"],
       ["WGPUSubmissionIndex", "int"],
-      ["UNKNOWN", "Any"],
+      ["UNKNOWN", "UNKNOWN"],
     ];
     for (const [cName, pyName] of PRIMITIVES) {
       this.types.set(cName, prim(cName, pyName));
@@ -316,13 +327,17 @@ class ApiInfo {
     if (typeof t !== "string") {
       t = t.inner;
     }
-    return this.types.get(t) ?? this.UNKNOWN_TYPE;
+    const ret = this.types.get(t);
+    if (ret === undefined) {
+      console.log("MISSING:", t);
+      return this.UNKNOWN_TYPE;
+    }
+    return ret;
   }
 
   findEnums(src: string) {
     const enumExp = /typedef enum ([a-zA-Z0-9]*) \{([^\}]*)\}/g;
-    for (const m of src.matchAll(enumExp)) {
-      const [_wholeMatch, name, body] = m;
+    for (const [_wholeMatch, name, body] of src.matchAll(enumExp)) {
       const entries = onlyDefined(
         body.split(",").map((e) => parseEnumEntry(name.trim(), e))
       );
@@ -343,22 +358,17 @@ class ApiInfo {
 
   findOpaquePointers(src: string) {
     const reg = /typedef struct ([a-zA-Z0-9]+)\* ([a-zA-Z]+)([^;]*);/g;
-    for (const m of src.matchAll(reg)) {
-      const [_wholeMatch, _implName, cName, _extra] = m;
+    for (const [, , cName] of src.matchAll(reg)) {
       this.types.set(cName, new COpaque(cName, toPyName(cName, true)));
     }
   }
 
-  _createField(name: string, ref: Refinfo): CStructField {
+  _createField(name: string, ref: Refinfo, parent: string): CStructField {
     const type = this.getType(ref);
-    if (
-      ref.explicitPointer ||
-      type.kind === "opaque" ||
-      type.kind === "struct"
-    ) {
+    if (ref.explicitPointer || type.kind === "opaque") {
       return new PointerField(name, type, ref.nullable ?? false);
     } else {
-      return new ValueField(name, type);
+      return new ValueField(name, type, parent);
     }
   }
 
@@ -399,7 +409,7 @@ class ApiInfo {
         fields.push(new CallbackField(name, this.getType(type)));
         fieldPos += 2;
       } else {
-        fields.push(this._createField(name, type));
+        fields.push(this._createField(name, type, cName));
         ++fieldPos;
       }
     }
@@ -412,8 +422,7 @@ class ApiInfo {
 
   findConcreteStructs(src: string) {
     const reg = /typedef struct ([a-zA-Z0-9]*) \{([^\}]*)\}/g;
-    for (const m of src.matchAll(reg)) {
-      const [cdef, name, rawBody] = m;
+    for (const [cdef, name, rawBody] of src.matchAll(reg)) {
       this._addStruct(cdef, name, rawBody);
     }
   }
@@ -433,6 +442,7 @@ class ApiInfo {
         ctype: this.getType("void"),
         explicitConst: false,
         explicitPointer: false,
+        nullable: false,
       };
     } else {
       const info = parseTypeRef(returnType);
@@ -441,6 +451,7 @@ class ApiInfo {
         ctype: this.getType(info),
         explicitConst: info.constant === true,
         explicitPointer: info.explicitPointer === true,
+        nullable: false,
       };
     }
   }
@@ -459,6 +470,7 @@ class ApiInfo {
         ctype: this.getType(type),
         explicitPointer: type.explicitPointer === true,
         explicitConst: type.constant === true,
+        nullable: type.nullable === true,
       };
     });
   }
@@ -491,8 +503,7 @@ class ApiInfo {
     // typedef void (*WGPUBufferMapCallback)(WGPUBufferMapAsyncStatus status, void * userdata) WGPU_FUNCTION_ATTRIBUTE;
     const reg =
       /typedef (.*) \(\*([A-Za-z0-9]+)\)\((.*)\) WGPU_FUNCTION_ATTRIBUTE;/g;
-    for (const m of src.matchAll(reg)) {
-      const [_wholeMatch, returnType, name, args] = m;
+    for (const [, returnType, name, args] of src.matchAll(reg)) {
       if (!name.endsWith("Callback")) {
         continue;
       }
@@ -503,16 +514,14 @@ class ApiInfo {
   findExportedFunctions(src: string) {
     const reg =
       /WGPU_EXPORT (.*) ([a-zA-Z0-9_]+)\((.*)\) WGPU_FUNCTION_ATTRIBUTE;/g;
-    for (const m of src.matchAll(reg)) {
-      const [_wholeMatch, returnType, name, args] = m;
+    for (const [, returnType, name, args] of src.matchAll(reg)) {
       this._addFunc(name, args, returnType);
     }
   }
 
   findBitflags(src: string) {
     const reg = /typedef WGPUFlags ([A-Za-z0-9]*)Flags WGPU_ENUM_ATTRIBUTE;/g;
-    for (const m of src.matchAll(reg)) {
-      const [_wholeMatch, enumType] = m;
+    for (const [_wholeMatch, enumType] of src.matchAll(reg)) {
       let ee = this.types.get(enumType);
       if (ee === undefined || !(ee instanceof CEnum)) {
         // hack to deal with special case of
@@ -531,9 +540,14 @@ class ApiInfo {
     }
   }
 
-  prepFuncCall(func: CFunc, isMemberFunc: boolean): [string[], string[]] {
-    let pyArglist = isMemberFunc ? ["self"] : [];
-    let callArglist = isMemberFunc ? ["self._cdata"] : [];
+  prepFuncCall(
+    func: CFunc,
+    isMemberFunc: boolean
+  ): { pyArgs: string[]; callArgs: string[]; staging: string[] } {
+    const pyArgs = isMemberFunc ? ["self"] : [];
+    const callArgs = isMemberFunc ? ["self._cdata"] : [];
+    const staging: string[] = [];
+
     const args = func.args;
     let idx = isMemberFunc ? 1 : 0;
     while (idx < args.length) {
@@ -545,10 +559,16 @@ class ApiInfo {
         arg.name.endsWith("Count")
       ) {
         // assume this is a (count, ptr) combo
-        const lname = this.getListWrapper(next.ctype);
-        pyArglist.push(`${next.name}: ${quoted(lname)}`);
-        callArglist.push(`${next.name}._count`);
-        callArglist.push(`${next.name}._ptr`);
+        const wrapperName = this.getListWrapper(next.ctype);
+        const lname = quoted(wrapperName);
+        const maybeList = pyUnion(lname, `list[${next.ctype.pyName}]`);
+        pyArgs.push(`${next.name}: ${maybeList}`);
+        staging.push(`if isinstance(${next.name}, list):`);
+        staging.push(`    ${next.name}_staged = ${wrapperName}(${next.name})`);
+        staging.push(`else:`);
+        staging.push(`    ${next.name}_staged = ${next.name}`);
+        callArgs.push(`${next.name}_staged._count`);
+        callArgs.push(`${next.name}_staged._ptr`);
         idx += 2;
       } else if (
         arg.ctype.cName === "void" &&
@@ -557,29 +577,41 @@ class ApiInfo {
         next?.name.toLowerCase().endsWith("size")
       ) {
         // assume a (void ptr, size) pair
-        pyArglist.push(
+        pyArgs.push(
           `${arg.name}: ${arg.ctype.pyAnnotation(arg.explicitPointer)}`
         );
-        callArglist.push(`${arg.name}._ptr`);
-        callArglist.push(`${arg.name}._size`);
+        callArgs.push(`${arg.name}._ptr`);
+        callArgs.push(`${arg.name}._size`);
         idx += 2;
       } else if (arg.name === "callback") {
         // assume a (callback, userdata) combo
-        pyArglist.push(
+        pyArgs.push(
           `${arg.name}: ${arg.ctype.pyAnnotation(arg.explicitPointer)}`
         );
-        callArglist.push(`${arg.name}._ptr`);
-        callArglist.push(`${arg.name}._userdata`);
+        callArgs.push(`${arg.name}._ptr`);
+        callArgs.push(`${arg.name}._userdata`);
         idx += 2;
+      } else if (
+        arg.nullable &&
+        (arg.explicitPointer || arg.ctype.kind === "opaque")
+      ) {
+        pyArgs.push(
+          `${arg.name}: ${pyOptional(
+            arg.ctype.pyAnnotation(arg.explicitPointer)
+          )}`
+        );
+        callArgs.push(`_ffi_unwrap_optional(${arg.name})`);
+        //callArgs.push(arg.ctype.unwrap(arg.name, arg.explicitPointer));
+        ++idx;
       } else {
-        pyArglist.push(
+        pyArgs.push(
           `${arg.name}: ${arg.ctype.pyAnnotation(arg.explicitPointer)}`
         );
-        callArglist.push(arg.ctype.unwrap(arg.name, arg.explicitPointer));
+        callArgs.push(arg.ctype.unwrap(arg.name, arg.explicitPointer));
         ++idx;
       }
     }
-    return [pyArglist, callArglist];
+    return { pyArgs, callArgs, staging };
   }
 
   parse(src: string) {
@@ -619,11 +651,11 @@ interface CStructField {
   name: string;
   ctype: CType;
   prop(): string;
-  arg(): string;
+  arg(noInit?: boolean): string;
 }
 
 function listName(pyname: string): string {
-  return `${pyname}List`;
+  return toPyName(`${pyname}List`, true);
 }
 
 class ArrayField implements CStructField {
@@ -633,21 +665,33 @@ class ArrayField implements CStructField {
     public ctype: CType
   ) {}
 
+  listType(): string {
+    return quoted(listName(this.ctype.pyName));
+  }
+
+  argType(): string {
+    return pyUnion(this.listType(), `list[${quoted(this.ctype.pyName)}]`);
+  }
+
   arg(): string {
-    return `${this.name}: ${quoted(listName(this.ctype.pyName))}`;
+    return `${this.name}: ${this.argType()}`;
   }
 
   prop(): string {
     return `
 @property
-def ${this.name}(self) -> ${quoted(listName(this.ctype.pyName))}:
+def ${this.name}(self) -> ${this.listType()}:
     return self._${this.name}
 
 @${this.name}.setter
-def ${this.name}(self, v: ${quoted(listName(this.ctype.pyName))}):
-    self._${this.name} = v
-    self._cdata.${this.countName} = v._count
-    self._cdata.${this.name} = v._ptr`;
+def ${this.name}(self, v: ${this.argType()}):
+    if isinstance(v, list):
+        v2 = ${listName(this.ctype.pyName)}(v)
+    else:
+        v2 = v
+    self._${this.name} = v2
+    self._cdata.${this.countName} = v2._count
+    self._cdata.${this.name} = v2._ptr`;
   }
 }
 
@@ -675,31 +719,66 @@ def ${this.name}(self, v: ${this.ctype.pyAnnotation(false)}):
   }
 }
 
-class ValueField implements CStructField {
-  constructor(public name: string, public ctype: CType) {}
+const DEFAULT_REPLACEMENTS: { [k: string]: string } = {
+  false: "False",
+  true: "True",
+  "2d": "2D",
+  "3d": "3D",
+  cw: "CW",
+  ccw: "CCW",
+};
 
-  arg(): string {
-    return `${this.name}: ${this.ctype.pyAnnotation(false)}`;
+class ValueField implements CStructField {
+  constructor(
+    public name: string,
+    public ctype: CType,
+    public parentClass: string
+  ) {}
+
+  arginit(): string {
+    // HACK:
+    // this a horrible pile of hacks to deal with naming inconsistencies
+    // with webgpu spec vs. webgpu.h
+    if (!(this.ctype.kind === "enum" || this.ctype.kind === "primitive")) {
+      return "";
+    }
+    if (this.ctype.pyName.endsWith("Flags")) {
+      return "";
+    }
+    let docdefault = docs.findDictDefault(this.parentClass, this.name);
+    if (docdefault === undefined) {
+      return "";
+    }
+    docdefault = docdefault.replaceAll('"', "").trim();
+    docdefault = DEFAULT_REPLACEMENTS[docdefault] ?? docdefault;
+    if (this.ctype instanceof CEnum) {
+      // try to turn this into some sane enum?
+      const enumVal = titleCase(docdefault);
+      if (!this.ctype.values.find((v) => v.name === enumVal)) {
+        console.log("Couldn't find enum val: ", enumVal);
+        return "";
+      }
+      docdefault = `${this.ctype.pyName}.${sanitizeIdent(enumVal)}`;
+    }
+    return ` = ${docdefault}`;
+  }
+
+  arg(noInit: boolean = false): string {
+    return `${this.name}: ${this.ctype.pyAnnotation(false)}${
+      noInit ? "" : this.arginit()
+    }`;
   }
 
   prop(): string {
     return `
 @property
 def ${this.name}(self) -> ${this.ctype.pyAnnotation(false)}:
-    return ${this.ctype.wrap(`self._cdata.${this.name}`, false)}
+    return ${this.ctype.wrap(`self._cdata.${this.name}`, false, "self")}
 
 @${this.name}.setter
 def ${this.name}(self, v: ${this.ctype.pyAnnotation(false)}):
     self._cdata.${this.name} = ${this.ctype.unwrap("v", false)}`;
   }
-}
-
-function pyOptional(pyType: string): string {
-  return IS_PY12 ? `${pyType} | None` : `Optional[${pyType}]`;
-}
-
-function pyUnion(a: string, b: string): string {
-  return IS_PY12 ? `${a} | ${b}` : `Union[${a}, ${b}]`;
 }
 
 class PointerField implements CStructField {
@@ -718,8 +797,8 @@ class PointerField implements CStructField {
     return this.nullable ? " = None" : "";
   }
 
-  arg(): string {
-    return `${this.name}: ${this.argtype()}${this.arginit()}`;
+  arg(noInit: boolean = false): string {
+    return `${this.name}: ${this.argtype()}${noInit ? "" : this.arginit()}`;
   }
 
   setterBody(): string[] {
@@ -749,7 +828,7 @@ class PointerField implements CStructField {
     let getter: string = `self._${this.name}`;
     if (this.name !== "nextInChain" && this.ctype.kind === "struct") {
       // special case where we want to return a wrapped pointer
-      // to an interior by-value struct
+      // to an interior pointer
       getter = `${this.ctype.pyName}(cdata = self._cdata.${this.name}, parent = self)`;
     } else if (this.ctype.pyName === "str") {
       // special case returning strings?
@@ -771,8 +850,26 @@ function ptrTo(ctype: string): string {
   return `${ctype} *`;
 }
 
-function ffiNew(ctype: string): string {
-  return `_ffi_new("${ptrTo(ctype)}")`;
+function ffiInit(ctype: string, cdata: string): string {
+  return `_ffi_init("${ptrTo(ctype)}", ${cdata})`;
+}
+
+function getDescriptorArg(
+  func: CFunc,
+  isMemberFunc: boolean
+): CStruct | undefined {
+  const expectedArgCount = isMemberFunc ? 2 : 1;
+  if (func.args.length !== expectedArgCount) {
+    return undefined;
+  }
+  const maybeDescArg = func.args[expectedArgCount - 1];
+  if (
+    maybeDescArg.name === "descriptor" &&
+    maybeDescArg.ctype.cName.endsWith("Descriptor")
+  ) {
+    return maybeDescArg.ctype as CStruct;
+  }
+  return undefined;
 }
 
 function emitFuncDef(
@@ -790,20 +887,47 @@ function emitFuncDef(
     ];
   }
 
-  const [pyArglist, callArglist] = api.prepFuncCall(func, isMemberFunc);
+  const { pyArgs, callArgs, staging } = api.prepFuncCall(func, isMemberFunc);
 
   let retval = "";
-  let theCall = `lib.${func.name}(${callArglist.join(", ")})`;
+  let theCall = `lib.${func.name}(${callArgs.join(", ")})`;
   if (func.ret !== undefined) {
     theCall = func.ret.ctype.wrap(theCall, func.ret.explicitPointer);
     retval = ` -> ${func.ret.ctype.pyAnnotation(func.ret.explicitPointer)}`;
   }
 
-  return [
-    `def ${pyFname}(${pyArglist.join(", ")})${retval}:`,
-    `    return ${theCall}`,
-    ``,
-  ];
+  const callBody = [...staging, `return ${theCall}`];
+
+  const descriptorType = getDescriptorArg(func, isMemberFunc);
+
+  if (descriptorType) {
+    const descArglist = isMemberFunc ? ["self", "*"] : ["*"];
+    const descCallList: string[] = [];
+    for (const field of descriptorType.publicFields()) {
+      descArglist.push(field.arg(false));
+      descCallList.push(`${field.name} = ${field.name}`);
+    }
+
+    const descInit = toPyName(descriptorType.pyName, false);
+
+    const maybeSelf = isMemberFunc ? "self." : "";
+    return [
+      `def ${pyFname}FromDesc(${pyArgs.join(", ")})${retval}:`,
+      ...indent2(1, callBody),
+      ``,
+      `def ${pyFname}(${descArglist.join(", ")})${retval}:`,
+      `    return ${maybeSelf}${pyFname}FromDesc(${descInit}(${descCallList.join(
+        ", "
+      )}))`,
+      ``,
+    ];
+  } else {
+    return [
+      `def ${pyFname}(${pyArgs.join(", ")})${retval}:`,
+      ...indent2(1, callBody),
+      ``,
+    ];
+  }
 }
 
 class COpaque implements CType {
@@ -952,14 +1076,16 @@ class CStruct implements CType {
     return quoted(this.pyName);
   }
 
-  wrap(val: string): string {
-    // OH NO
-    console.warn(`Trying to return concrete struct ${val}: ${this.cName}`);
-    return val;
+  wrap(val: string, isPointer: boolean, parent?: string): string {
+    return `${this.pyName}(cdata = ${val}, parent = ${parent ?? "None"})`;
   }
 
-  unwrap(val: string): string {
-    return `${val}._cdata`;
+  unwrap(val: string, isPointer: boolean): string {
+    if (isPointer) {
+      return `${val}._cdata`;
+    } else {
+      return `_ffi_deref(${val}._cdata)`;
+    }
   }
 
   chainable(): boolean {
@@ -969,17 +1095,25 @@ class CStruct implements CType {
     return name === "chain" && ctype.cName.startsWith("WGPUChainedStruct");
   }
 
+  publicFields(): CStructField[] {
+    if (this.chainable()) {
+      return this.fields.slice(1, this.fields.length);
+    }
+    return this.fields;
+  }
+
+  initArgList(): string {
+    return this.publicFields()
+      .map((f) => f.arg())
+      .join(", ");
+  }
+
   emit(): string {
     if (this.noEmit) {
       return `# ${this.pyName} is specially defined elsewhere`;
     }
 
-    let publicFields = this.fields;
     const chainable = this.chainable();
-    if (chainable) {
-      publicFields = publicFields.slice(1, publicFields.length);
-    }
-
     const className = this.pyName;
     const conName = toPyName(className, false);
     const classdef = `class ${className}${chainable ? "(Chainable)" : ""}`;
@@ -989,17 +1123,14 @@ class CStruct implements CType {
         "CData"
       )} = None, parent: ${pyOptional("Any")} = None):`,
       `    self._parent = parent`,
-      `    if cdata is not None:`,
-      `        self._cdata = cdata`,
-      `    else:`,
-      `        self._cdata = ${ffiNew(this.cName)}`,
+      `    self._cdata = ${ffiInit(this.cName, "cdata")}`,
     ];
     const conlines: string[] = [
       `ret = ${className}(cdata = None, parent = None)`,
     ];
 
     const props: string[] = [];
-    for (const f of publicFields) {
+    for (const f of this.publicFields()) {
       conlines.push(`ret.${f.name} = ${f.name}`);
       props.push(indent(1, f.prop()));
     }
@@ -1019,26 +1150,18 @@ ${classdef}:
 ${indent(1, init.join("\n"))}
 ${props.join("\n")}
 
-def ${conName}(*, ${publicFields
-      .map((f) => f.arg())
-      .join(", ")}) -> ${className}:
+def ${conName}(*, ${this.initArgList()}) -> ${className}:
 ${indent(1, conlines.join("\n"))}
 `;
   }
 }
 
 // TODO/THOUGHTS:
-// * mutated by value structs (wrapping values back?)
-//   * separate wrapped vs. owned classes?
-//   * or separate constructor for values?
-//   * general "inner struct" problem!
-// * merge WGPUNativeFeature into WGPUFeatureName ?
 // * cleanup: list-of-lists indent flattening?
 
 // ERGONOMICS:
-// * thing.func(descriptor(...args)) could 'unpack' to just thing.func(...args)
-// * ThingList could auto-cast a list to ThingList(list)
 // * Flags could auto-cast an int?
+// * callbacks could auto-cast?
 
 // KNOWN ISSUES:
 // * building extension w/ dll needs to renamed
@@ -1056,9 +1179,6 @@ ${indent(1, conlines.join("\n"))}
 
 // QUESTIONS:
 // * do we need to explicitly call `reference` on returned things?
-
-// NICE TO HAVE:
-// * autocast lists to appropriate list types
 
 // * less manual way of dealing with wgpu.h
 // * pretty printing
@@ -1113,7 +1233,8 @@ ffibuilder.cdef(CDEF)
 ffibuilder.set_source(
     "_wgpu_native_cffi", 
     SOURCE, 
-    libraries=['wgpu_native']
+    libraries=['wgpu_native'],
+    library_dirs=['.']
 )   
 
 if __name__ == "__main__":
@@ -1140,6 +1261,24 @@ CData = Any
 
 def _ffi_new(typespec: str, count: ${pyOptional("int")} = None) -> CData:
     return ffi.new(typespec, count)
+
+def _ffi_init(typespec: str, initializer: ${pyOptional("Any")}) -> CData:
+    if initializer is None:
+        return ffi.new(typespec)
+    else:
+        return initializer
+
+def _ffi_deref(cdata):
+    if ffi.typeof(cdata).kind == 'pointer':
+        return cdata[0]
+    else:
+        return cdata
+
+def _ffi_unwrap_optional(val):
+    if val is None:
+        return ffi.NULL
+    else:
+        return val._cdata
 
 def _ffi_unwrap_str(val: ${pyOptional("str")}):
     if val is None:
@@ -1172,8 +1311,8 @@ class ChainedStruct:
         if len(chain) == 0:
             self._cdata = ffi.NULL
             return
-        self._cdata = chain[0]._chain
-        next_ptrs = [link._chain for link in chain[1:]] + [ffi.NULL]
+        self._cdata = ffi.addressof(chain[0]._chain)
+        next_ptrs = [ffi.addressof(link._chain) for link in chain[1:]] + [ffi.NULL]
         for idx, ptr in enumerate(next_ptrs):
             chain[idx]._chain.next = ptr
 
@@ -1204,6 +1343,9 @@ class VoidPtr:
     def __init__(self, data: CData, size: ${pyOptional("int")} = None):
         self._ptr = data
         self._size = size
+
+    def to_bytes(self) -> bytes:
+        return bytes(ffi.buffer(self._ptr, self._size))
 
 ${pyFrags.join("\n")}
 `;

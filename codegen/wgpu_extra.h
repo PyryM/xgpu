@@ -123,7 +123,7 @@ typedef struct WGPUPushConstantRange {
 typedef struct WGPUPipelineLayoutExtras {
     WGPUChainedStruct chain;
     uint32_t pushConstantRangeCount;
-    WGPUPushConstantRange* pushConstantRanges;
+    WGPUPushConstantRange * pushConstantRanges;
 } WGPUPipelineLayoutExtras WGPU_STRUCTURE_ATTRIBUTE;
 
 typedef uint64_t WGPUSubmissionIndex;
@@ -215,7 +215,7 @@ WGPU_EXPORT size_t wgpuInstanceEnumerateAdapters(WGPUInstance instance, WGPUInst
 WGPU_EXPORT WGPUSubmissionIndex wgpuQueueSubmitForIndex(WGPUQueue queue, size_t commandCount, WGPUCommandBuffer const * commands) WGPU_FUNCTION_ATTRIBUTE;
 
 // Returns true if the queue is empty, or false if there are more queue submissions still in flight.
-WGPU_EXPORT WGPUBool wgpuDevicePoll(WGPUDevice device, WGPUBool wait, WGPUWrappedSubmissionIndex const * wrappedSubmissionIndex) WGPU_FUNCTION_ATTRIBUTE;
+WGPU_EXPORT WGPUBool wgpuDevicePoll(WGPUDevice device, WGPUBool wait, WGPU_NULLABLE WGPUWrappedSubmissionIndex const * wrappedSubmissionIndex) WGPU_FUNCTION_ATTRIBUTE;
 
 WGPU_EXPORT void wgpuSetLogCallback(WGPULogCallback callback, void * userdata) WGPU_FUNCTION_ATTRIBUTE;
 
@@ -223,7 +223,7 @@ WGPU_EXPORT void wgpuSetLogLevel(WGPULogLevel level) WGPU_FUNCTION_ATTRIBUTE;
 
 WGPU_EXPORT uint32_t wgpuGetVersion() WGPU_FUNCTION_ATTRIBUTE;
 
-WGPU_EXPORT void wgpuRenderPassEncoderSetPushConstants(WGPURenderPassEncoder encoder, WGPUShaderStageFlags stages, uint32_t offset, uint32_t sizeBytes, void* const data) WGPU_FUNCTION_ATTRIBUTE;
+WGPU_EXPORT void wgpuRenderPassEncoderSetPushConstants(WGPURenderPassEncoder encoder, WGPUShaderStageFlags stages, uint32_t offset, uint32_t sizeBytes, void * const data) WGPU_FUNCTION_ATTRIBUTE;
 
 WGPU_EXPORT void wgpuRenderPassEncoderMultiDrawIndirect(WGPURenderPassEncoder encoder, WGPUBuffer buffer, uint64_t offset, uint32_t count) WGPU_FUNCTION_ATTRIBUTE;
 WGPU_EXPORT void wgpuRenderPassEncoderMultiDrawIndexedIndirect(WGPURenderPassEncoder encoder, WGPUBuffer buffer, uint64_t offset, uint32_t count) WGPU_FUNCTION_ATTRIBUTE;

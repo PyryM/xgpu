@@ -6,11 +6,10 @@ from webgoo import (
     RequestAdapterCallback,
     RequestAdapterStatus,
     createInstance,
-    instanceDescriptor,
     requestAdapterOptions,
 )
 
-instance = createInstance(instanceDescriptor())
+instance = createInstance()
 
 adapter_req = requestAdapterOptions(
     powerPreference=PowerPreference.HighPerformance,

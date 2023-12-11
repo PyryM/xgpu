@@ -106,3 +106,7 @@ export function indent(n: number, lines: string | string[]): string {
   }
   return indent2(n, lines).join("\n");
 }
+
+export function titleCase(s: string): string {
+  return s.split("-").map((frag) => recase(frag, true)).join("")
+}
