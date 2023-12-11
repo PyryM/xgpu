@@ -9,7 +9,9 @@ import {
   recase,
   indent2,
   indent,
+  titleCase,
 } from "./stringmanip";
+import { docs } from "./extract_docs";
 
 const HEADERS = ["codegen/webgpu.h", "codegen/wgpu_extra.h"];
 const SRC = HEADERS.map((fn) => readFileSync(fn).toString("utf8")).join("\n");
@@ -361,12 +363,12 @@ class ApiInfo {
     }
   }
 
-  _createField(name: string, ref: Refinfo): CStructField {
+  _createField(name: string, ref: Refinfo, parent: string): CStructField {
     const type = this.getType(ref);
     if (ref.explicitPointer || type.kind === "opaque") {
       return new PointerField(name, type, ref.nullable ?? false);
     } else {
-      return new ValueField(name, type);
+      return new ValueField(name, type, parent);
     }
   }
 
@@ -407,7 +409,7 @@ class ApiInfo {
         fields.push(new CallbackField(name, this.getType(type)));
         fieldPos += 2;
       } else {
-        fields.push(this._createField(name, type));
+        fields.push(this._createField(name, type, cName));
         ++fieldPos;
       }
     }
@@ -717,11 +719,54 @@ def ${this.name}(self, v: ${this.ctype.pyAnnotation(false)}):
   }
 }
 
-class ValueField implements CStructField {
-  constructor(public name: string, public ctype: CType) {}
+const DEFAULT_REPLACEMENTS: { [k: string]: string } = {
+  false: "False",
+  true: "True",
+  "2d": "2D",
+  "3d": "3D",
+  cw: "CW",
+  ccw: "CCW",
+};
 
-  arg(): string {
-    return `${this.name}: ${this.ctype.pyAnnotation(false)}`;
+class ValueField implements CStructField {
+  constructor(
+    public name: string,
+    public ctype: CType,
+    public parentClass: string
+  ) {}
+
+  arginit(): string {
+    // HACK:
+    // this a horrible pile of hacks to deal with naming inconsistencies
+    // with webgpu spec vs. webgpu.h
+    if (!(this.ctype.kind === "enum" || this.ctype.kind === "primitive")) {
+      return "";
+    }
+    if (this.ctype.pyName.endsWith("Flags")) {
+      return "";
+    }
+    let docdefault = docs.findDictDefault(this.parentClass, this.name);
+    if (docdefault === undefined) {
+      return "";
+    }
+    docdefault = docdefault.replaceAll('"', "").trim();
+    docdefault = DEFAULT_REPLACEMENTS[docdefault] ?? docdefault;
+    if (this.ctype instanceof CEnum) {
+      // try to turn this into some sane enum?
+      const enumVal = titleCase(docdefault);
+      if (!this.ctype.values.find((v) => v.name === enumVal)) {
+        console.log("Couldn't find enum val: ", enumVal);
+        return "";
+      }
+      docdefault = `${this.ctype.pyName}.${sanitizeIdent(enumVal)}`;
+    }
+    return ` = ${docdefault}`;
+  }
+
+  arg(noInit: boolean = false): string {
+    return `${this.name}: ${this.ctype.pyAnnotation(false)}${
+      noInit ? "" : this.arginit()
+    }`;
   }
 
   prop(): string {
