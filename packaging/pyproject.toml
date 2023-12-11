@@ -60,6 +60,6 @@ line-length = 90
 manylinux-x86_64-image = "manylinux_2_28"
 
 [tool.cibuildwheel.linux]
-before-build = "pip install cffi && cd webgoo && python wgpu_native_build.py && ldd _wgpu_native_cffi.*.so"
+before-build = "pip install cffi && cd {project}/build/webgoo && python wgpu_native_build.py && ldd _wgpu_native_cffi.*.so"
 
 #CIBW_BUILD_VERBOSITY
