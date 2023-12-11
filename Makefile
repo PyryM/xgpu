@@ -21,15 +21,20 @@ help: ## Print usage help
 codegen: ## Run the codegen using bun inside docker
 	DOCKER_BUILDKIT=1 \
 	docker build \
+		--file packaging/Dockerfile \
 		--target output \
 		--progress=plain \
-		--output webgoo \
+		--output build/webgoo \
 		. && \
-	cp -r codegen webgoo/codegen
+	cp -r codegen build/webgoo/codegen && \
+	cp packaging/setup.py build && \
+	cp packaging/pyproject.toml build
+
+
 
 .PHONY: fetch
 fetch:  ## Fetch wgpu_native from github release
-	python docker/fetch-native.py --install wgpu_native
+	python packaging/fetch-native.py --install wgpu_native
 
 .PHONY: build
 build: clean codegen fetch ## Run all steps of the build process.
@@ -37,4 +42,4 @@ build: clean codegen fetch ## Run all steps of the build process.
 
 .PHONY: clean
 clean: ## Remove built files.
-	rm -rf build webgoo
+	rm -rf build

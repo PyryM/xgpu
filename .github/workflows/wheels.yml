@@ -8,17 +8,19 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest]
 
     steps:
       - uses: actions/checkout@v4
 
       - name: Run Codegen
         run: |
-          make codegen
+          make build
 
-      - name: Build wheels
+      - name: Build Wheels
         uses: pypa/cibuildwheel@v2.16.2
+        with:
+          package-dir: ./build
 
       - uses: actions/upload-artifact@v3
         with:

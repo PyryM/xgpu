@@ -3,7 +3,6 @@
 and copy them into the home directory for every plaform.
 """
 
-import argparse
 import json
 import logging
 import os
@@ -11,7 +10,7 @@ import sys
 import tarfile
 from fnmatch import fnmatch
 from io import BytesIO
-from platform import system
+from platform import machine, system
 from typing import Optional
 from zipfile import ZipFile
 
@@ -21,7 +20,7 @@ log.addHandler(logging.StreamHandler(sys.stdout))
 _cwd = os.path.abspath(os.path.expanduser(os.path.dirname(__file__)))
 
 
-def fetch(url, sha256):
+def fetch(url: str, sha256: str) -> bytes:
     """A simple standard-library only "fetch remote URL" function.
 
     Parameters
@@ -82,7 +81,7 @@ def handle_fetch(
     chmod: Optional[int] = None,
     extract_skip: Optional[bool] = None,
     extract_only: Optional[bool] = None,
-    strip_components: int = 0,
+    strip_components: int = 0
 ):
     """A macro to fetch a remote resource (usually an executable) and
     move it somewhere on the file system.
@@ -192,26 +191,33 @@ def is_current_platform(platform: str) -> bool:
     else:
         raise ValueError(f"{current} ?= {platform}")
 
+def search(name: str):
+    """
+
+    """
+
+    current_machine = machine()
+
+    for entry in load_config():
+        print( entry)
+        if entry['name'] != name:
+            continue
+        if not is_current_platform(entry['platform']):
+            continue
+        if entry['machine'] != current_machine:
+            continue
+
+        # pop the search fields
+        entry.pop('machine')
+        entry.pop('name')
+        entry.pop('platform')
+
+        return entry
+
+    raise ValueError(f'`{name}` not found!')
+
+
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Install system packages for trimesh.")
-    parser.add_argument("--install", type=str, action="append", help="Install package.")
-    parser.add_argument("--config", type=str, help="Specify a different config JSON path")
+    handle_fetch(**search('wgpu-native'))
 
-    args = parser.parse_args()
-
-    config = load_config(path=args.config)
-
-    # allow comma delimeters and de-duplicate
-    if args.install is None:
-        parser.print_help()
-        exit()
-    else:
-        select = set(" ".join(args.install).replace(",", " ").split())
-
-    for option in config:
-        if option["name"] in select and is_current_platform(option["platform"]):
-            subset = option.copy()
-            subset.pop("name")
-            subset.pop("platform")
-            handle_fetch(**subset)

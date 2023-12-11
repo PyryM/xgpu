@@ -8,7 +8,7 @@ RUN apt-get update && \
 WORKDIR /tmp
 # run the bun build
 COPY codegen ./codegen/
-COPY bun.lockb pyproject.toml .
+COPY bun.lockb packaging/pyproject.toml .
 RUN bun codegen/generate.ts
 
 # run ruff to automatically format and fix linter errors
