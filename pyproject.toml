@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=61.2"]
+requires = ["setuptools>=61.2", "cffi"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -7,6 +7,7 @@ name = "webgoo"
 version = "0.1.0"
 readme = "README.md"
 requires-python = ">=3.7"
+dependencies = ["cffi"]
 
 [project.license]
 text = "proprietary"
@@ -18,6 +19,10 @@ Homepage = "https://github.com/pyrym/webgoopy"
 include-package-data = true
 packages = [
    "webgoo",
+]
+[tool.setuptools.package-data]
+webgoo = [
+    "*.so"
 ]
 
 [tool.ruff]
@@ -50,3 +55,11 @@ ignore = [
 ]
 line-length = 90
 
+[tool.cibuildwheel]
+manylinux-x86_64-image = "manylinux_2_28"
+
+[tool.cibuildwheel.linux]
+before-all = "yum install -y gcc"
+before-build = "pip install cffi && cd webgoo && rm _wgpu_native_cffi* && python wgpu_native_build.py && ls -altrsh && mv webgoo.py __init__.py && patchelf --set-rpath '$ORIGIN'/ _wgpu_native_cffi.*.so && ls -altrsh && ldd _wgpu_native_cffi.*.so && rm wgpu_native_build.py"
+
+#CIBW_BUILD_VERBOSITY
