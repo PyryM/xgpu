@@ -7,7 +7,6 @@ SHELL := bash
 .SUFFIXES:
 
 # version of loader
-VERSION := $(shell git describe --dirty=dev --tags --long --match 'v[0-9]*')
 DATE:=$(shell date '+%Y%m%d-%H%M%S')
 
 # This will output the help for each task
@@ -29,10 +28,6 @@ codegen: ## Run the codegen using bun inside docker
 	ln -s `pwd`/codegen build/codegen
 
 
-.PHONY: cargo
-cargo: ## Run the codegen using bun inside docker
-
-
 .PHONY: clean
-clean:  # Remove built files.
-	rm -rf ./build
+clean: ## Remove built files.
+	rm -rf build
