@@ -59,7 +59,10 @@ line-length = 90
 # wgpu-native does not build with older manylinux
 manylinux-x86_64-image = "manylinux_2_28"
 
+# Skip 32-bit builds
+skip = ["*-win32", "*-manylinux_i686"]
+
 [tool.cibuildwheel.linux]
-before-build = "pip install cffi && cd {project}/build/webgoo && python wgpu_native_build.py && ldd _wgpu_native_cffi.*.so"
+before-build = "pip install cffi && cd webgoo && python wgpu_native_build.py && ldd _wgpu_native_cffi.*.so"
 
 #CIBW_BUILD_VERBOSITY
