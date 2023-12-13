@@ -1,11 +1,13 @@
 [build-system]
-requires = ["setuptools>=61.2"]
+requires = ["setuptools>=61.2", "cffi"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "webgoopy"
+name = "webgoo"
 version = "0.1.0"
 readme = "README.md"
+requires-python = ">=3.7"
+dependencies = ["cffi"]
 
 [project.license]
 text = "proprietary"
@@ -17,6 +19,10 @@ Homepage = "https://github.com/pyrym/webgoopy"
 include-package-data = true
 packages = [
    "webgoo",
+]
+[tool.setuptools.package-data]
+webgoo = [
+    "*.so"
 ]
 
 [tool.ruff]
@@ -48,3 +54,15 @@ ignore = [
     "UP038", # uses `|` instead of `tuple`	
 ]
 line-length = 90
+
+[tool.cibuildwheel]
+# wgpu-native does not build with older manylinux
+manylinux-x86_64-image = "manylinux_2_28"
+
+# Skip 32-bit builds, musl, etc
+skip = ["*-win32", "*-manylinux_i686", "*musl*"]
+
+[tool.cibuildwheel.linux]
+# pip install required because this is not using the `build-system.required`
+# specified in this configuration file but running "loose"
+before-build = "pip install cffi && cd webgoo && python wgpu_native_build.py && ldd _wgpu_native_cffi.*.so"
