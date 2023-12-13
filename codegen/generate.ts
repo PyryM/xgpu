@@ -12,6 +12,7 @@ import {
   titleCase,
 } from "./stringmanip";
 import { docs } from "./extract_docs";
+import { mkdir } from "node:fs/promises";
 
 const HEADERS = ["codegen/webgpu.h", "codegen/wgpu_extra.h"];
 const SRC = HEADERS.map((fn) => readFileSync(fn).toString("utf8")).join("\n");
@@ -1372,8 +1373,16 @@ NULL_VOID_PTR = VoidPtr(data = ffi.NULL, size = 0)
 ${pyFrags.join("\n")}
 `;
 
+try {
+  await mkdir("webgoo");
+} catch (e) {
+  console.log("Note: /webgoo already exists; overwriting existing contents!");
+}
+
 writeFileSync("webgoo/_build_ext.py", cffiBuilderOutput);
 writeFileSync("webgoo/__init__.py", pylibOutput);
 
-await Bun.spawn(["ruff", "format", "webgoo/__init__.py"]).exited
-await Bun.spawn(["ruff", "--fix", "webgoo/__init__.py"]).exited
+await Bun.spawn(["ruff", "format", "webgoo/__init__.py"]).exited;
+await Bun.spawn(["ruff", "--fix", "webgoo/__init__.py"]).exited;
+
+console.log("Done?");
