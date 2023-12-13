@@ -1,5 +1,27 @@
 # Based on https://raw.githubusercontent.com/github/gitignore/main/Node.gitignore
 
+# Build dir
+/build
+
+# Random images
+*.png
+
+# My dump dir
+/ehhhhh
+
+# Emitted C artifacts
+*.obj
+*.c
+*.pyd
+*.so
+*.dll
+*.exp
+*.lib
+*.dylib
+
+# Egg stuff
+*.egg-info
+
 # Logs
 
 logs
