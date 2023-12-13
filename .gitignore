@@ -1,7 +1,11 @@
 # Based on https://raw.githubusercontent.com/github/gitignore/main/Node.gitignore
 
-# Build/install dir
-/webgoo
+# Codegenned files
+/webgoo/__init__.py
+/webgoo/_build_ext.py
+
+# Build dirs
+/webgoo/Release
 /build
 
 # Random images
