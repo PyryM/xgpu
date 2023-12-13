@@ -1162,6 +1162,7 @@ ${indent(1, conlines.join("\n"))}
 // ERGONOMICS:
 // * Flags could auto-cast an int?
 // * callbacks could auto-cast?
+// * a single chainable could be passed as a chained struct?
 
 // KNOWN ISSUES:
 // * building extension w/ dll needs to renamed
@@ -1346,6 +1347,11 @@ class VoidPtr:
 
     def to_bytes(self) -> bytes:
         return bytes(ffi.buffer(self._ptr, self._size))
+
+def cast_any_to_void(thing: Any) -> VoidPtr:
+    return VoidPtr(data = ffi.cast("void *", thing), size = 0)
+
+NULL_VOID_PTR = VoidPtr(data = ffi.NULL, size = 0)
 
 ${pyFrags.join("\n")}
 `;
