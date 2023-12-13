@@ -22,7 +22,10 @@ packages = [
 ]
 [tool.setuptools.package-data]
 webgoo = [
-    "*.so"
+    "*.so",
+    "*.dll",
+    "*.pyd",
+    "*.dylib"
 ]
 
 [tool.ruff]
