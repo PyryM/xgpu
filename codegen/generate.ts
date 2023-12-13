@@ -50,7 +50,12 @@ interface CType {
   pyName: string;
   cName: string;
   pyAnnotation(isPointer: boolean): string;
-  wrap(val: string, isPointer: boolean, parent?: string): string;
+  wrap(
+    val: string,
+    isPointer: boolean,
+    parent?: string,
+    addRef?: boolean
+  ): string;
   unwrap(val: string, isPointer: boolean): string;
   preStore?(target: string, val: string): [string, string];
   emit?(api: ApiInfo): string;
@@ -830,6 +835,9 @@ class PointerField implements CStructField {
       // special case where we want to return a wrapped pointer
       // to an interior pointer
       getter = `${this.ctype.pyName}(cdata = self._cdata.${this.name}, parent = self)`;
+    } else if (this.ctype.kind === "opaque") {
+      console.log("Opaque field return?", this.name);
+      getter = this.ctype.wrap(`self._cdata.${this.name}`, true, "self", true);
     } else if (this.ctype.pyName === "str") {
       // special case returning strings?
       getter = `_ffi_string(self._cdata.${this.name})`;
@@ -930,6 +938,10 @@ function emitFuncDef(
   }
 }
 
+function pyBool(b?: boolean): string {
+  return b ? "True" : "False";
+}
+
 class COpaque implements CType {
   kind: "opaque" = "opaque";
   funcs: Map<string, CFunc> = new Map();
@@ -940,8 +952,13 @@ class COpaque implements CType {
     return quoted(this.pyName);
   }
 
-  wrap(val: string): string {
-    return `${this.pyName}(${val})`;
+  wrap(
+    val: string,
+    isPointer: boolean,
+    parent?: string,
+    addRef?: boolean
+  ): string {
+    return `${this.pyName}(${val}, add_ref = ${pyBool(addRef)})`;
   }
 
   unwrap(val: string): string {
@@ -972,8 +989,21 @@ class COpaque implements CType {
 
     return `
 class ${this.pyName}:
-    def __init__(self, cdata: CData):
-        self._cdata = ffi.gc(cdata, lib.${releaser.name})
+    def __init__(self, cdata: CData, add_ref = False):
+        if cdata != ffi.NULL:
+            self._cdata = ffi.gc(cdata, lib.${releaser.name})
+            if add_ref:
+                lib.${reffer.name}(self._cdata)
+        else:
+            self._cdata = ffi.NULL
+
+    def is_valid(self):
+        return self._cdata != ffi.NULL
+
+    def assert_valid(self):
+        if not self.is_valid():
+            raise RuntimeError("Valid assertion failed for ${this.pyName}")
+
 
 ${funcdefs.join("\n")}
 `;
