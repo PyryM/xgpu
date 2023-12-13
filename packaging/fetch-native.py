@@ -1,7 +1,4 @@
 #!/usr/bin/env python3
-"""A Python 3 standard library only utility to download embree releases
-and copy them into the home directory for every plaform.
-"""
 
 import json
 import logging
@@ -81,6 +78,7 @@ def handle_fetch(
     chmod: Optional[int] = None,
     extract_skip: Optional[bool] = None,
     extract_only: Optional[bool] = None,
+    filetype_routes: Optional[dict[str, Optional[str]]] = None,
     strip_components: int = 0
 ):
     """A macro to fetch a remote resource (usually an executable) and
