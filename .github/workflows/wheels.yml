@@ -27,7 +27,6 @@ jobs:
       - name: Build Wheels
         run: |
           python -m pip install cibuildwheel==2.16.2
-          cd webgoo
           python -m cibuildwheel --output-dir wheelhouse
 
       - uses: actions/upload-artifact@v3
