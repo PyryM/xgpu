@@ -68,4 +68,4 @@ skip = ["*-win32", "*-manylinux_i686", "*musl*"]
 [tool.cibuildwheel.linux]
 # pip install required because this is not using the `build-system.required`
 # specified in this configuration file but running "loose"
-before-build = "pip install cffi && cd webgoo && python wgpu_native_build.py && ldd _wgpu_native_cffi.*.so"
+before-build = "pip install cffi && cd webgoo && python _build_ext.py && ldd _wgpu_native_cffi.*.so"
