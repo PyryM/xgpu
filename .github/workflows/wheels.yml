@@ -12,14 +12,21 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Run Codegen
+      - uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+      - name: Run Codegen (Pyry's Docker-free version)
         run: |
-          make build
+          bun codegen/fetch_wgpu_bins.ts
+          bun codegen/generate.ts
+          python -m pip install cffi
+          cd webgoo
+          python _build_ext.py
+
       - name: Build Wheels
         run: |
           python -m pip install cibuildwheel==2.16.2
-          cd build
+          cd webgoo
           python -m cibuildwheel --output-dir wheelhouse
 
       - uses: actions/upload-artifact@v3

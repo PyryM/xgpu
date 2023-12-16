@@ -8,6 +8,10 @@
 /webgoo/Release
 /build
 
+# Unzipped download dir
+/wgpu_native_unzipped
+*.zip
+
 # Random images
 *.png
 
