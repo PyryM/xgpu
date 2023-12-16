@@ -1399,6 +1399,14 @@ def cast_any_to_void(thing: Any) -> VoidPtr:
 
 NULL_VOID_PTR = VoidPtr(data = ffi.NULL, size = 0)
 
+def getVersionStr() -> str:
+    version_int = getVersion()
+    a = (version_int >> 24) & 0xFF
+    b = (version_int >> 16) & 0xFF
+    c = (version_int >> 8) & 0xFF
+    d = (version_int >> 0) & 0xFF
+    return f"{a}.{b}.{c}.{d}"
+
 ${pyFrags.join("\n")}
 `;
 
