@@ -65,7 +65,7 @@ def get_adapter(power: webgoo.PowerPreference) -> webgoo.Adapter:
     adapter: list[Optional[webgoo.Adapter]] = [None]
 
     def adapterCB(status: webgoo.RequestAdapterStatus, gotten: webgoo.Adapter, msg: str):
-        print("Got adapter with msg:", msg, ", status:", status)
+        print("Got adapter with msg:", msg, ", status:", status.name)
         adapter[0] = gotten
 
     cb = webgoo.RequestAdapterCallback(adapterCB)
@@ -90,7 +90,7 @@ def get_device(adapter: webgoo.Adapter) -> webgoo.Device:
     device: list[Optional[webgoo.Device]] = [None]
 
     def deviceCB(status: webgoo.RequestDeviceStatus, gotten: webgoo.Device, msg: str):
-        print("Got device with msg:", msg, ", status:", status)
+        print("Got device with msg:", msg, ", status:", status.name)
         device[0] = gotten
 
     def deviceLostCB(reason: webgoo.DeviceLostReason, msg: str):
@@ -121,7 +121,7 @@ def main(power_preference=webgoo.PowerPreference.HighPerformance):
 
 
 def _mapped_cb(status):
-    print("Mapped?", status)
+    print("Mapped?", status.name)
     if status != webgoo.BufferMapAsyncStatus.Success:
         raise RuntimeError(f"Mapping error! {status}")
 
