@@ -5,8 +5,8 @@
 /webgoo/_build_ext.py
 
 # Fetched headers
-/webgoo/wgpu.h
-/webgoo/webgpu.h
+/webgoo/include/wgpu.h
+/webgoo/include/webgpu.h
 
 # Build dirs
 /webgoo/Release
