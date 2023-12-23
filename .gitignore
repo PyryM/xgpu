@@ -4,6 +4,10 @@
 /webgoo/bindings.py
 /webgoo/_build_ext.py
 
+# Fetched headers
+/webgoo/wgpu.h
+/webgoo/webgpu.h
+
 # Build dirs
 /webgoo/Release
 /build
