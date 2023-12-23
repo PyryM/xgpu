@@ -8,6 +8,9 @@
 /webgoo/Release
 /build
 
+# WebGPU spec files
+*.bs
+
 # Unzipped download dir
 /wgpu_native_unzipped
 *.zip
