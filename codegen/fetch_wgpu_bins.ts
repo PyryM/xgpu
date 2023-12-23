@@ -59,3 +59,6 @@ for (const [src, dest] of COPIES) {
   console.log(`Copying ${src} -> ${dest}`);
   await Bun.spawn(["cp", src, dest]).exited;
 }
+
+const DOCS_URL = "https://raw.githubusercontent.com/gpuweb/gpuweb/main/spec/index.bs";
+await downloadFile(DOCS_URL, "codegen/webgpu_spec.bs");
