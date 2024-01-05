@@ -49,7 +49,7 @@ interface CType {
   kind: "opaque" | "enum" | "primitive" | "struct";
   pyName: string;
   cName: string;
-  pyAnnotation(isPointer: boolean): string;
+  pyAnnotation(isPointer: boolean, isReturn: boolean): string;
   wrap(
     val: string,
     isPointer: boolean,
@@ -142,8 +142,12 @@ class CFlags implements CType {
     public etype: CEnum
   ) {}
 
-  pyAnnotation(): string {
-    return quoted(this.pyName);
+  pyAnnotation(isPointer: boolean, isReturn: boolean): string {
+    if(!isReturn) {
+      return pyUnion(quoted(this.pyName), quoted(this.etype.pyName))
+    } else {
+      return quoted(this.pyName);
+    }
   }
 
   wrap(val: string): string {
@@ -583,7 +587,7 @@ class ApiInfo {
       ) {
         // assume a (void ptr, size) pair
         pyArgs.push(
-          `${arg.name}: ${arg.ctype.pyAnnotation(arg.explicitPointer)}`
+          `${arg.name}: ${arg.ctype.pyAnnotation(arg.explicitPointer, false)}`
         );
         callArgs.push(`${arg.name}._ptr`);
         callArgs.push(`${arg.name}._size`);
@@ -591,7 +595,7 @@ class ApiInfo {
       } else if (arg.name === "callback") {
         // assume a (callback, userdata) combo
         pyArgs.push(
-          `${arg.name}: ${arg.ctype.pyAnnotation(arg.explicitPointer)}`
+          `${arg.name}: ${arg.ctype.pyAnnotation(arg.explicitPointer, false)}`
         );
         callArgs.push(`${arg.name}._ptr`);
         callArgs.push(`${arg.name}._userdata`);
@@ -602,7 +606,7 @@ class ApiInfo {
       ) {
         pyArgs.push(
           `${arg.name}: ${pyOptional(
-            arg.ctype.pyAnnotation(arg.explicitPointer)
+            arg.ctype.pyAnnotation(arg.explicitPointer, false)
           )}`
         );
         callArgs.push(`_ffi_unwrap_optional(${arg.name})`);
@@ -610,7 +614,7 @@ class ApiInfo {
         ++idx;
       } else {
         pyArgs.push(
-          `${arg.name}: ${arg.ctype.pyAnnotation(arg.explicitPointer)}`
+          `${arg.name}: ${arg.ctype.pyAnnotation(arg.explicitPointer, false)}`
         );
         callArgs.push(arg.ctype.unwrap(arg.name, arg.explicitPointer));
         ++idx;
@@ -706,17 +710,17 @@ class CallbackField implements CStructField {
   constructor(public name: string, public ctype: CType) {}
 
   arg(): string {
-    return `${this.name}: ${this.ctype.pyAnnotation(false)}`;
+    return `${this.name}: ${this.ctype.pyAnnotation(false, false)}`;
   }
 
   prop(): string {
     return `
 @property
-def ${this.name}(self) -> ${this.ctype.pyAnnotation(false)}:
+def ${this.name}(self) -> ${this.ctype.pyAnnotation(false, true)}:
     return self._${this.name}
 
 @${this.name}.setter
-def ${this.name}(self, v: ${this.ctype.pyAnnotation(false)}):
+def ${this.name}(self, v: ${this.ctype.pyAnnotation(false, false)}):
     self._${this.name} = v
     self._cdata.${this.name} = v._ptr
     self._cdata.${this.name.replaceAll("Callback", "Userdata")} = v._userdata
@@ -769,7 +773,7 @@ class ValueField implements CStructField {
   }
 
   arg(noInit: boolean = false): string {
-    return `${this.name}: ${this.ctype.pyAnnotation(false)}${
+    return `${this.name}: ${this.ctype.pyAnnotation(false, false)}${
       noInit ? "" : this.arginit()
     }`;
   }
@@ -777,11 +781,11 @@ class ValueField implements CStructField {
   prop(): string {
     return `
 @property
-def ${this.name}(self) -> ${this.ctype.pyAnnotation(false)}:
+def ${this.name}(self) -> ${this.ctype.pyAnnotation(false, true)}:
     return ${this.ctype.wrap(`self._cdata.${this.name}`, false, "self")}
 
 @${this.name}.setter
-def ${this.name}(self, v: ${this.ctype.pyAnnotation(false)}):
+def ${this.name}(self, v: ${this.ctype.pyAnnotation(false, false)}):
     self._cdata.${this.name} = ${this.ctype.unwrap("v", false)}`;
   }
 }
@@ -794,7 +798,7 @@ class PointerField implements CStructField {
   ) {}
 
   argtype(): string {
-    const annotation = this.ctype.pyAnnotation(true);
+    const annotation = this.ctype.pyAnnotation(true, false);
     return this.nullable ? pyOptional(annotation) : annotation;
   }
 
@@ -901,7 +905,7 @@ function emitFuncDef(
   let theCall = `lib.${func.name}(${callArgs.join(", ")})`;
   if (func.ret !== undefined) {
     theCall = func.ret.ctype.wrap(theCall, func.ret.explicitPointer);
-    retval = ` -> ${func.ret.ctype.pyAnnotation(func.ret.explicitPointer)}`;
+    retval = ` -> ${func.ret.ctype.pyAnnotation(func.ret.explicitPointer, true)}`;
   }
 
   const callBody = [...staging, `return ${theCall}`];
@@ -1045,12 +1049,12 @@ class CallbackWrapper implements Emittable {
     const rawArglist = args.map((arg) => arg.name);
     const arglist = args
       .slice(0, args.length - 1)
-      .map((arg) => arg.ctype.pyAnnotation(arg.explicitPointer));
+      .map((arg) => arg.ctype.pyAnnotation(arg.explicitPointer, false));
     const unpackList = args
       .slice(0, args.length - 1)
       .map((arg) => arg.ctype.wrap(arg.name, arg.explicitPointer));
     const pytype = `Callable[[${arglist}], ${ret.ctype.pyAnnotation(
-      ret.explicitPointer
+      ret.explicitPointer, true
     )}]`;
 
     const mapName = `_callback_map_${this.func.pyName}`;
@@ -1083,7 +1087,7 @@ class ListWrapper implements Emittable {
   emit(): string {
     return `
 class ${listName(this.ctype.pyName)}:
-    def __init__(self, items: list[${this.ctype.pyAnnotation(false)}]):
+    def __init__(self, items: list[${this.ctype.pyAnnotation(false, false)}]):
         self._count = len(items)
         self._ptr = _ffi_new('${this.ctype.cName}[]', self._count)
         for idx, item in enumerate(items):
@@ -1190,13 +1194,8 @@ ${indent(1, conlines.join("\n"))}
 // * cleanup: list-of-lists indent flattening?
 
 // ERGONOMICS:
-// * Flags could auto-cast an int?
 // * callbacks could auto-cast?
 // * a single chainable could be passed as a chained struct?
-
-// KNOWN ISSUES:
-// * building extension w/ dll needs to renamed
-//   'wgpu_native.dll.lib' -> 'wgpu_native.lib'
 
 // * Adapter.enumerateFeatures: shoves features into an-array-by-pointer
 //  (The way you're supposed to use this function is HACKY:
