@@ -970,9 +970,12 @@ class COpaque implements CType {
   }
 
   addFunc(func: CFunc): void {
-    const pyFname = toPyName(
+    let pyFname = toPyName(
       removePrefixCaseInsensitive(func.name, this.cName)
     );
+    if(pyFname === "release" || pyFname === "reference") {
+      pyFname = `_${pyFname}`;
+    }
     this.funcs.set(pyFname, func);
   }
 
@@ -985,8 +988,8 @@ class COpaque implements CType {
     for (const [pyFname, func] of this.funcs.entries()) {
       funcdefs.push(this.emitFunc(api, pyFname, func));
     }
-    const reffer = this.funcs.get("reference");
-    const releaser = this.funcs.get("release");
+    const reffer = this.funcs.get("_reference");
+    const releaser = this.funcs.get("_release");
     if (reffer === undefined || releaser === undefined) {
       throw new Error(`Opaque ${this.cName} missing reference or release!`);
     }
@@ -1000,6 +1003,12 @@ class ${this.pyName}:
                 lib.${reffer.name}(self._cdata)
         else:
             self._cdata = ffi.NULL
+
+    def release(self):
+        if self._cdata == ffi.NULL:
+            return
+        ffi.release(self._cdata)
+        self._cdata = ffi.NULL
 
     def is_valid(self):
         return self._cdata != ffi.NULL
