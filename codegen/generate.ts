@@ -12,6 +12,7 @@ import {
   titleCase,
 } from "./stringmanip";
 import { docs } from "./extract_docs";
+import { PATCHED_FUNCTIONS, BAD_FUNCTIONS } from "./patches";
 
 const HEADERS = ["webgoo/include/webgpu.h", "webgoo/include/wgpu_extra.h"];
 const SRC = HEADERS.map((fn) => readFileSync(fn).toString("utf8")).join("\n");
@@ -23,10 +24,9 @@ const SPECIAL_CLASSES: Set<string> = new Set([
   "WGPUChainedStructOut",
 ]);
 
-const BAD_FUNCTIONS: Map<string, string> = new Map([
-  ["wgpuAdapterEnumerateFeatures", "This is unsafe. Use hasFeature."],
-  ["wgpuDeviceEnumerateFeatures", "This is unsafe. Use hasFeature."],
-  ["wgpuGetProcAddress", "Untyped function pointer return."],
+const SPECIAL_MERGED_ENUMS: Map<string, string> = new Map([
+  ["WGPUNativeFeature", "WGPUFeatureName"],
+  ["WGPUNativeSType", "WGPUSType"],
 ]);
 
 interface FuncArg {
@@ -105,6 +105,7 @@ class CEnum implements CType {
 
   mergeValues(values: CEnumVal[]) {
     for (const { name, val } of values) {
+      console.log("MERGING", name, val);
       this.values.push({ name, val });
       if (name !== "Force32") {
         this.sanitized.push({ name: sanitizeIdent(name), val });
@@ -143,8 +144,8 @@ class CFlags implements CType {
   ) {}
 
   pyAnnotation(isPointer: boolean, isReturn: boolean): string {
-    if(!isReturn) {
-      return pyUnion(quoted(this.pyName), quoted(this.etype.pyName))
+    if (!isReturn) {
+      return pyUnion(quoted(this.pyName), quoted(this.etype.pyName));
     } else {
       return quoted(this.pyName);
     }
@@ -351,13 +352,18 @@ class ApiInfo {
         body.split(",").map((e) => parseEnumEntry(name.trim(), e))
       );
       const cName = name.trim();
-      if (cName === "WGPUNativeSType") {
-        // HACK: merge into existing SType enum
-        const stypeEnum = this.types.get("WGPUSType") as CEnum;
-        const fixedEntries = entries.map(({ name, val }) => ({
-          name: removePrefix(name, "WGPUSType_"),
-          val,
-        }));
+      const targetName = SPECIAL_MERGED_ENUMS.get(cName);
+
+      if (targetName !== undefined) {
+        // a 'special' extension enum that needs to be merged into an existing enum
+        const stypeEnum = this.types.get(targetName) as CEnum;
+        const fixedEntries = entries.map(({ name, val }) => {
+          const [a, b] = name.split("_");
+          return {
+            name: b ?? a,
+            val,
+          };
+        });
         stypeEnum.mergeValues(fixedEntries);
       } else {
         this.types.set(cName, new CEnum(cName, toPyName(cName, true), entries));
@@ -890,6 +896,11 @@ function emitFuncDef(
   func: CFunc,
   isMemberFunc: boolean
 ): string[] {
+  const patched = PATCHED_FUNCTIONS.get(func.name);
+  if (patched) {
+    return patched;
+  }
+
   const badReason = BAD_FUNCTIONS.get(func.name);
   if (badReason) {
     return [
@@ -905,7 +916,10 @@ function emitFuncDef(
   let theCall = `lib.${func.name}(${callArgs.join(", ")})`;
   if (func.ret !== undefined) {
     theCall = func.ret.ctype.wrap(theCall, func.ret.explicitPointer);
-    retval = ` -> ${func.ret.ctype.pyAnnotation(func.ret.explicitPointer, true)}`;
+    retval = ` -> ${func.ret.ctype.pyAnnotation(
+      func.ret.explicitPointer,
+      true
+    )}`;
   }
 
   const callBody = [...staging, `return ${theCall}`];
@@ -970,10 +984,8 @@ class COpaque implements CType {
   }
 
   addFunc(func: CFunc): void {
-    let pyFname = toPyName(
-      removePrefixCaseInsensitive(func.name, this.cName)
-    );
-    if(pyFname === "release" || pyFname === "reference") {
+    let pyFname = toPyName(removePrefixCaseInsensitive(func.name, this.cName));
+    if (pyFname === "release" || pyFname === "reference") {
       pyFname = `_${pyFname}`;
     }
     this.funcs.set(pyFname, func);
@@ -1063,7 +1075,8 @@ class CallbackWrapper implements Emittable {
       .slice(0, args.length - 1)
       .map((arg) => arg.ctype.wrap(arg.name, arg.explicitPointer));
     const pytype = `Callable[[${arglist}], ${ret.ctype.pyAnnotation(
-      ret.explicitPointer, true
+      ret.explicitPointer,
+      true
     )}]`;
 
     const mapName = `_callback_map_${this.func.pyName}`;
