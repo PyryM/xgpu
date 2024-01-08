@@ -1,24 +1,30 @@
 import time
 from typing import Optional
 
-from . import bindings as webgoo
+from . import bindings as wg
 
 
-def get_adapter(power: webgoo.PowerPreference) -> webgoo.Adapter:
-    adapter: list[Optional[webgoo.Adapter]] = [None]
+def get_adapter(
+    instance: Optional[wg.Instance] = None,
+    power=wg.PowerPreference.HighPerformance,
+    surface: Optional[wg.Surface] = None,
+) -> tuple[wg.Adapter, wg.Instance]:
+    adapter: list[Optional[wg.Adapter]] = [None]
 
-    def adapterCB(status: webgoo.RequestAdapterStatus, gotten: webgoo.Adapter, msg: str):
+    def adapterCB(status: wg.RequestAdapterStatus, gotten: wg.Adapter, msg: str):
         print("Got adapter with msg:", msg, ", status:", status.name)
         adapter[0] = gotten
 
-    cb = webgoo.RequestAdapterCallback(adapterCB)
+    cb = wg.RequestAdapterCallback(adapterCB)
 
-    instance = webgoo.createInstance()
+    if instance is None:
+        instance = wg.createInstance()
     instance.requestAdapter(
-        webgoo.requestAdapterOptions(
+        wg.requestAdapterOptions(
             powerPreference=power,
-            backendType=webgoo.BackendType.Undefined,
+            backendType=wg.BackendType.Undefined,
             forceFallbackAdapter=False,
+            compatibleSurface=surface,
         ),
         cb,
     )
@@ -26,26 +32,30 @@ def get_adapter(power: webgoo.PowerPreference) -> webgoo.Adapter:
     while adapter[0] is None:
         time.sleep(0.1)
 
-    return adapter[0]
+    return (adapter[0], instance)
 
 
-def get_device(adapter: webgoo.Adapter) -> webgoo.Device:
-    device: list[Optional[webgoo.Device]] = [None]
+def get_device(
+    adapter: wg.Adapter, features: Optional[list[wg.FeatureName]] = None
+) -> wg.Device:
+    device: list[Optional[wg.Device]] = [None]
 
-    def deviceCB(status: webgoo.RequestDeviceStatus, gotten: webgoo.Device, msg: str):
+    def deviceCB(status: wg.RequestDeviceStatus, gotten: wg.Device, msg: str):
         print("Got device with msg:", msg, ", status:", status.name)
         device[0] = gotten
 
-    def deviceLostCB(reason: webgoo.DeviceLostReason, msg: str):
+    def deviceLostCB(reason: wg.DeviceLostReason, msg: str):
         print("Lost device!:", reason, msg)
 
-    dlcb = webgoo.DeviceLostCallback(deviceLostCB)
-    cb = webgoo.RequestDeviceCallback(deviceCB)
+    dlcb = wg.DeviceLostCallback(deviceLostCB)
+    cb = wg.RequestDeviceCallback(deviceCB)
+    if features is None:
+        features = adapter.enumerateFeatures()
 
     adapter.requestDevice(
-        webgoo.deviceDescriptor(
-            requiredFeatures=[],
-            defaultQueue=webgoo.queueDescriptor(),
+        wg.deviceDescriptor(
+            requiredFeatures=features,
+            defaultQueue=wg.queueDescriptor(),
             deviceLostCallback=dlcb,
         ),
         cb,
@@ -59,16 +69,16 @@ def get_device(adapter: webgoo.Adapter) -> webgoo.Device:
 
 def _mapped_cb(status):
     print("Mapped?", status.name)
-    if status != webgoo.BufferMapAsyncStatus.Success:
+    if status != wg.BufferMapAsyncStatus.Success:
         raise RuntimeError(f"Mapping error! {status}")
 
 
-mapped_cb = webgoo.BufferMapCallback(_mapped_cb)
+mapped_cb = wg.BufferMapCallback(_mapped_cb)
 
 
-def read_buffer(device: webgoo.Device, buffer: webgoo.Buffer, offset: int, size: int):
+def read_buffer(device: wg.Device, buffer: wg.Buffer, offset: int, size: int):
     buffer.mapAsync(
-        webgoo.MapModeFlags([webgoo.MapMode.Read]),
+        wg.MapModeFlags([wg.MapMode.Read]),
         offset=offset,
         size=size,
         callback=mapped_cb,
@@ -79,30 +89,28 @@ def read_buffer(device: webgoo.Device, buffer: webgoo.Buffer, offset: int, size:
     return mapping.to_bytes()
 
 
-def read_rgba_texture(device: webgoo.Device, tex: webgoo.Texture, size: tuple[int, int]):
-    (w, h) = size
+def read_rgba_texture(device: wg.Device, tex: wg.Texture):
+    (w, h) = (tex.getWidth(), tex.getHeight())
     bytesize = w * h * 4
     # create a staging buffer?
     readbuff = device.createBuffer(
-        usage=webgoo.BufferUsageFlags(
-            [webgoo.BufferUsage.CopyDst, webgoo.BufferUsage.MapRead]
-        ),
+        usage=wg.BufferUsageFlags([wg.BufferUsage.CopyDst, wg.BufferUsage.MapRead]),
         size=bytesize,
         mappedAtCreation=False,
     )
     encoder = device.createCommandEncoder()
     encoder.copyTextureToBuffer(
-        source=webgoo.imageCopyTexture(
+        source=wg.imageCopyTexture(
             texture=tex,
             mipLevel=0,
-            origin=webgoo.origin3D(x=0, y=0, z=0),
-            aspect=webgoo.TextureAspect.All,
+            origin=wg.origin3D(x=0, y=0, z=0),
+            aspect=wg.TextureAspect.All,
         ),
-        destination=webgoo.imageCopyBuffer(
-            layout=webgoo.textureDataLayout(offset=0, bytesPerRow=w * 4, rowsPerImage=h),
+        destination=wg.imageCopyBuffer(
+            layout=wg.textureDataLayout(offset=0, bytesPerRow=w * 4, rowsPerImage=h),
             buffer=readbuff,
         ),
-        copySize=webgoo.extent3D(width=w, height=h, depthOrArrayLayers=1),
+        copySize=wg.extent3D(width=w, height=h, depthOrArrayLayers=1),
     )
     device.getQueue().submit([encoder.finish()])
     return read_buffer(device, readbuff, 0, bytesize)
