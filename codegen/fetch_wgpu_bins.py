@@ -48,7 +48,7 @@ VERSION = "0.18.1.4"
 
 SYSNAME = uname().system.lower()
 IS_WINDOWS = SYSNAME == "windows" or ("microsoft" in uname().release.lower())
-OS = "windows" if IS_WINDOWS else SYSNAME
+OS = fix_name("windows" if IS_WINDOWS else SYSNAME)
 ARCH = fix_name(uname().machine.lower())
 URL = f"{BASE_URL}v{VERSION}/wgpu-{OS}-{ARCH}-release.zip"
 
