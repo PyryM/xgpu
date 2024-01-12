@@ -2,6 +2,7 @@ import time
 from typing import Optional
 
 from . import bindings as wg
+from ._wgpu_native_cffi import ffi
 
 
 def get_adapter(
@@ -114,3 +115,12 @@ def read_rgba_texture(device: wg.Device, tex: wg.Texture):
     )
     device.getQueue().submit([encoder.finish()])
     return read_buffer(device, readbuff, 0, bytesize)
+
+
+def create_buffer_with_data(device: wg.Device, data: bytes) -> wg.Buffer:
+    bsize = len(data)
+    buffer = device.createBuffer(usage = wg.BufferUsage.CopySrc, size=bsize, mappedAtCreation=True)
+    range = buffer.getMappedRange(0, bsize)
+    ffi.memmove(range._ptr, data, bsize)
+    buffer.unmap()
+    return buffer
