@@ -26,13 +26,13 @@ jobs:
 
       - name: Run Codegen (Docker)
         if: matrix.os == 'windows-latest'
-        run: > 
+        run: >
           docker run
-	        -v "/var/run/docker.sock":"/var/run/docker.sock"
-          -v ${{ github.workspace }}:/work  
+          -v "/var/run/docker.sock":"/var/run/docker.sock"
+          -v ${{ github.workspace }}:/work
           -w /work
           --env IS_WINDOWS=true
-	        oven/bun:debian bash codegen.sh
+          oven/bun:debian bash codegen.sh
 
       - name: Autoformat and Lint
         run: |
