@@ -31,7 +31,9 @@ const SYSLIBS: Map<string, (string | SrcDest)[]> = new Map([
 // https://github.com/gfx-rs/wgpu-native/releases/download/v0.18.1.4/wgpu-linux-x86_64-release.zip
 const BASE_URL = "https://github.com/gfx-rs/wgpu-native/releases/download/";
 const VERSION = "0.18.1.4";
-const IS_WINDOWS = release().toLowerCase().includes("microsoft");
+const IS_WINDOWS =
+  release().toLowerCase().includes("microsoft") ||
+  process.env.IS_WINDOWS === "true";
 const OS = IS_WINDOWS ? "windows" : fixname(platform());
 const ARCH = fixname(arch());
 const URL = `${BASE_URL}v${VERSION}/wgpu-${OS}-${ARCH}-release.zip`;
@@ -60,5 +62,6 @@ for (const [src, dest] of COPIES) {
   await Bun.spawn(["cp", src, dest]).exited;
 }
 
-const DOCS_URL = "https://raw.githubusercontent.com/gpuweb/gpuweb/main/spec/index.bs";
+const DOCS_URL =
+  "https://raw.githubusercontent.com/gpuweb/gpuweb/main/spec/index.bs";
 await downloadFile(DOCS_URL, "codegen/webgpu_spec.bs");

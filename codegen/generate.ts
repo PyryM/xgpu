@@ -1421,7 +1421,9 @@ ${pyFrags.join("\n")}
 writeFileSync("webgoo/_build_ext.py", cffiBuilderOutput);
 writeFileSync("webgoo/bindings.py", pylibOutput);
 
+/*
 await Bun.spawn(["ruff", "format", "webgoo/"]).exited;
 await Bun.spawn(["ruff", "--fix", "webgoo/"]).exited;
+*/
 
 console.log("Done?");
