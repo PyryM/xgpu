@@ -119,7 +119,9 @@ def read_rgba_texture(device: wg.Device, tex: wg.Texture):
 
 def create_buffer_with_data(device: wg.Device, data: bytes) -> wg.Buffer:
     bsize = len(data)
-    buffer = device.createBuffer(usage = wg.BufferUsage.CopySrc, size=bsize, mappedAtCreation=True)
+    buffer = device.createBuffer(
+        usage=wg.BufferUsage.CopySrc, size=bsize, mappedAtCreation=True
+    )
     range = buffer.getMappedRange(0, bsize)
     ffi.memmove(range._ptr, data, bsize)
     buffer.unmap()

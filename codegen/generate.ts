@@ -71,8 +71,8 @@ function pyOptional(pyType: string): string {
   return IS_PY12 ? `${pyType} | None` : `Optional[${pyType}]`;
 }
 
-function pyUnion(a: string, b: string): string {
-  return IS_PY12 ? `${a} | ${b}` : `Union[${a}, ${b}]`;
+function pyUnion(...args: string[]): string {
+  return IS_PY12 ? args.join(" | ") : `Union[${args.join(", ")}]`;
 }
 
 function onlyDefined<T>(items: (T | undefined)[]): T[] {
@@ -98,6 +98,7 @@ class CEnum implements CType {
   kind: "enum" = "enum";
   sanitized: { name: string; val: string }[] = [];
   values: CEnumVal[] = [];
+  flagType?: string
 
   constructor(public cName: string, public pyName: string, values: CEnumVal[]) {
     this.mergeValues(values);
@@ -188,6 +189,9 @@ class ${this.pyName}:
             self.value = flags
         else:
             self.value = sum(set(flags))
+
+    def __or__(self, rhs: ${pyUnion(quoted(this.pyName), etypename)}) -> ${quoted(this.pyName)}:
+        return ${this.pyName}(int(self) | int(rhs))
 
     def __int__(self) -> int:
         return self.value

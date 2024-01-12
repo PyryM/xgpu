@@ -705,6 +705,9 @@ class BufferUsageFlags:
         else:
             self.value = sum(set(flags))
 
+    def __or__(self, rhs: Union["BufferUsageFlags", "BufferUsage"]) -> "BufferUsageFlags":
+        return BufferUsageFlags(int(self) | int(rhs))
+
     def __int__(self) -> int:
         return self.value
 
@@ -826,6 +829,11 @@ class ColorWriteMaskFlags:
         else:
             self.value = sum(set(flags))
 
+    def __or__(
+        self, rhs: Union["ColorWriteMaskFlags", "ColorWriteMask"]
+    ) -> "ColorWriteMaskFlags":
+        return ColorWriteMaskFlags(int(self) | int(rhs))
+
     def __int__(self) -> int:
         return self.value
 
@@ -892,6 +900,9 @@ class MapModeFlags:
         else:
             self.value = sum(set(flags))
 
+    def __or__(self, rhs: Union["MapModeFlags", "MapMode"]) -> "MapModeFlags":
+        return MapModeFlags(int(self) | int(rhs))
+
     def __int__(self) -> int:
         return self.value
 
@@ -924,6 +935,9 @@ class ShaderStageFlags:
             self.value = flags
         else:
             self.value = sum(set(flags))
+
+    def __or__(self, rhs: Union["ShaderStageFlags", "ShaderStage"]) -> "ShaderStageFlags":
+        return ShaderStageFlags(int(self) | int(rhs))
 
     def __int__(self) -> int:
         return self.value
@@ -968,6 +982,11 @@ class TextureUsageFlags:
             self.value = flags
         else:
             self.value = sum(set(flags))
+
+    def __or__(
+        self, rhs: Union["TextureUsageFlags", "TextureUsage"]
+    ) -> "TextureUsageFlags":
+        return TextureUsageFlags(int(self) | int(rhs))
 
     def __int__(self) -> int:
         return self.value
@@ -1034,6 +1053,11 @@ class InstanceBackendFlags:
             self.value = flags
         else:
             self.value = sum(set(flags))
+
+    def __or__(
+        self, rhs: Union["InstanceBackendFlags", "InstanceBackend"]
+    ) -> "InstanceBackendFlags":
+        return InstanceBackendFlags(int(self) | int(rhs))
 
     def __int__(self) -> int:
         return self.value
@@ -1111,6 +1135,9 @@ class InstanceFlags:
             self.value = flags
         else:
             self.value = sum(set(flags))
+
+    def __or__(self, rhs: Union["InstanceFlags", "InstanceFlag"]) -> "InstanceFlags":
+        return InstanceFlags(int(self) | int(rhs))
 
     def __int__(self) -> int:
         return self.value
