@@ -1,6 +1,9 @@
 name: Build Wheels
 
-on: [push, pull_request]
+on: 
+  push:
+    branches: main
+  pull_request: {}
 
 jobs:
   build_wheels:
@@ -8,7 +11,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
       - uses: actions/checkout@v4
