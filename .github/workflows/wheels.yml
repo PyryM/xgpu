@@ -29,7 +29,7 @@ jobs:
         run: >
           docker run
           -v "/var/run/docker.sock":"/var/run/docker.sock"
-          -v ${{ github.workspace }}:/work
+          -v "${{ github.workspace }}":/work
           -w /work
           --env IS_WINDOWS=true
           oven/bun:debian bash codegen.sh
