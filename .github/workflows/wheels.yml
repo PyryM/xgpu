@@ -6,8 +6,28 @@ on:
   pull_request: {}
 
 jobs:
+  codegen:
+    name: Run Codegen
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+      - name: Run Codegen
+        run: |
+          bun codegen/fetch_wgpu_bins.ts
+          bun codegen/generate.ts
+          python -m pip install cffi
+          cd webgoo
+          python _build_ext.py
+
   build_wheels:
     name: Build wheels on ${{ matrix.os }}
+    needs: codegen
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
