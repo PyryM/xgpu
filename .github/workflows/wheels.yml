@@ -21,7 +21,7 @@ jobs:
         run: |
           bun codegen/fetch_wgpu_bins.ts
           bun codegen/generate.ts
-          python -m pip install cffi
+          python -m pip install cffi ruff
           cd webgoo
           python _build_ext.py
       - uses: actions/upload-artifact@v3
