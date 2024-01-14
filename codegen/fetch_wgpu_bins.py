@@ -1,18 +1,55 @@
-import os
+import hashlib
 import shutil
 import zipfile
 from platform import uname
+from typing import Optional
+from urllib.request import urlopen
 
-import requests
+
+def fetch(url: str, sha256: Optional[str] = None) -> bytes:
+    """
+    A simple standard-library only "fetch remote URL" function.
+
+    Parameters
+    ------------
+    url
+      Location of remote resource.
+    sha256
+      The SHA256 hash of the resource once retrieved,
+      will raise a `ValueError` if the hash doesn't match.
+
+    Returns
+    -------------
+    data
+      Retrieved data.
+    """
+    data = urlopen(url).read()
+
+    if sha256 is not None:
+        hashed = hashlib.sha256(data).hexdigest()
+        if hashed != sha256:
+            raise ValueError("sha256 hash does not match!")
+
+    return data
 
 
-def download_file(url, local_path):
-    resp = requests.get(url)
-    if resp.status_code == 404:
+def download_file(url: str, local_path: str) -> None:
+    """
+    Download a remote file and write it to the local file system.
+
+    Parameters
+    ------------
+    url
+      URL to download.
+    local_path
+      File location to write retrieved data.
+    """
+    response = fetch(url)
+    if len(response) == 0:
         raise Exception(f"404: {url}")
     with open(local_path, "wb") as f:
-        f.write(resp.content)
-    print(f"Downloaded {os.path.getsize(local_path)} bytes -> {local_path}")
+        f.write(response)
+    print(f"Downloaded {len(response)} bytes -> {local_path}")
 
 
 class Lib:
