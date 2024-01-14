@@ -1312,6 +1312,9 @@ if __name__ == "__main__":
     # todo : this is platform specific, we should check the extension of path_compiled
     if sys.platform.startswith("linux"):
         subprocess.check_call(['patchelf', "--set-rpath", "$ORIGIN", path_compiled], cwd=cwd)
+    elif sys.platform.startswith("darwin"):
+        # on mac change the @rpath to a @loader_path
+        subprocess.check_call(['install_name_tool', "-change", "@rpath/libwgpu_native.dylib", "@loader_path/libwgpu_native.dylib", path_compiled], cwd=cwd)
 
     
 `;
