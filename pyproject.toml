@@ -70,4 +70,4 @@ before-build = "pip install cffi && cd webgoo && python _build_ext.py"
 skip = ["*-win32", "*-manylinux_i686", "*musl*"]
 
 # just make sure the library imports for now
-test-command = "python -c 'import webgoo'"
+test-command = 'python -c "import webgoo"'
