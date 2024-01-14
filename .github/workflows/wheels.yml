@@ -24,6 +24,9 @@ jobs:
           python -m pip install cffi
           cd webgoo
           python _build_ext.py
+      - uses: actions/upload-artifact@v3
+        with:
+          path: ./webgoo/*.py
 
   build_wheels:
     name: Build wheels on ${{ matrix.os }}
