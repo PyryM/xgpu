@@ -1,5 +1,5 @@
 import time
-from typing import Optional
+from typing import Optional, Union
 
 from . import bindings as wg
 from ._wgpu_native_cffi import ffi
@@ -79,7 +79,7 @@ mapped_cb = wg.BufferMapCallback(_mapped_cb)
 
 def read_buffer(device: wg.Device, buffer: wg.Buffer, offset: int, size: int):
     buffer.mapAsync(
-        wg.MapModeFlags([wg.MapMode.Read]),
+        wg.MapMode.Read,
         offset=offset,
         size=size,
         callback=mapped_cb,
@@ -87,7 +87,9 @@ def read_buffer(device: wg.Device, buffer: wg.Buffer, offset: int, size: int):
     device.poll(True, wrappedSubmissionIndex=None)
     # assume we're now mapped? (seems dicey!)
     mapping = buffer.getMappedRange(0, size)
-    return mapping.to_bytes()
+    res = mapping.to_bytes()
+    buffer.unmap()
+    return res
 
 
 def read_rgba_texture(device: wg.Device, tex: wg.Texture):
@@ -95,7 +97,7 @@ def read_rgba_texture(device: wg.Device, tex: wg.Texture):
     bytesize = w * h * 4
     # create a staging buffer?
     readbuff = device.createBuffer(
-        usage=wg.BufferUsageFlags([wg.BufferUsage.CopyDst, wg.BufferUsage.MapRead]),
+        usage=wg.BufferUsage.CopyDst | wg.BufferUsage.MapRead,
         size=bytesize,
         mappedAtCreation=False,
     )
@@ -117,11 +119,11 @@ def read_rgba_texture(device: wg.Device, tex: wg.Texture):
     return read_buffer(device, readbuff, 0, bytesize)
 
 
-def create_buffer_with_data(device: wg.Device, data: bytes) -> wg.Buffer:
+def create_buffer_with_data(
+    device: wg.Device, data: bytes, usage: Union[wg.BufferUsage, wg.BufferUsageFlags]
+) -> wg.Buffer:
     bsize = len(data)
-    buffer = device.createBuffer(
-        usage=wg.BufferUsage.CopySrc, size=bsize, mappedAtCreation=True
-    )
+    buffer = device.createBuffer(usage=usage, size=bsize, mappedAtCreation=True)
     range = buffer.getMappedRange(0, bsize)
     ffi.memmove(range._ptr, data, bsize)
     buffer.unmap()
