@@ -43,7 +43,6 @@ jobs:
       - uses: actions/checkout@v4
       - name: Download binaries
         run: |
-          python -m pip install ruff requests
           python codegen/fetch_wgpu_bins.py
       - uses: actions/download-artifact@v4
         with:
