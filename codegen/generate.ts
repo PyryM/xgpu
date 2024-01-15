@@ -18,6 +18,21 @@ import {
   FORCE_NULLABLE_ARGS,
 } from "./patches";
 
+function readDocs(): Map<string, string> {
+  const ret = new Map();
+  try {
+    const comments = JSON.parse(
+      readFileSync("codegen/docs.json").toString("utf8")
+    );
+    for (const k in comments) {
+      ret.set(k, comments[k]);
+    }
+  } catch {
+    console.log("Unable to read comments.json!");
+  }
+  return ret;
+}
+
 function readHeader(fn: string): string {
   let header = readFileSync(fn).toString("utf8");
   // make sure the "*" on a pointer type has a space
@@ -30,6 +45,7 @@ function readHeader(fn: string): string {
   return header;
 }
 
+const DOCS = readDocs();
 const HEADERS = ["webgoo/include/webgpu.h", "webgoo/include/wgpu.h"];
 const SRC = HEADERS.map(readHeader).join("\n");
 
@@ -1242,6 +1258,7 @@ class CStruct implements CType {
     const className = this.pyName;
     const conName = toPyName(className, false);
     const classdef = `class ${className}${chainable ? "(Chainable)" : ""}`;
+    const classdoc = DOCS.get(className) ?? `""" TODO: docs """`;
 
     const init: string[] = [
       `def __init__(self, *, cdata: ${pyOptional(
@@ -1272,6 +1289,7 @@ class CStruct implements CType {
 
     return `
 ${classdef}:
+${indent(1, classdoc)}
 ${indent(1, init.join("\n"))}
 ${props.join("\n")}
 
