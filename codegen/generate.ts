@@ -12,10 +12,26 @@ import {
   titleCase,
 } from "./stringmanip";
 import { docs } from "./extract_docs";
-import { PATCHED_FUNCTIONS, BAD_FUNCTIONS } from "./patches";
+import {
+  PATCHED_FUNCTIONS,
+  BAD_FUNCTIONS,
+  FORCE_NULLABLE_ARGS,
+} from "./patches";
 
-const HEADERS = ["webgoo/include/webgpu.h", "webgoo/include/wgpu_extra.h"];
-const SRC = HEADERS.map((fn) => readFileSync(fn).toString("utf8")).join("\n");
+function readHeader(fn: string): string {
+  let header = readFileSync(fn).toString("utf8");
+  // make sure the "*" on a pointer type has a space
+  // (e.g., "void*" -> "void *")
+  header = header.replaceAll(/([A-Za-z0-9_])+\*/g, (match) => {
+    const ret = `${match.slice(0, match.length - 1)} *`;
+    console.log(match, "->", ret);
+    return ret;
+  });
+  return header;
+}
+
+const HEADERS = ["webgoo/include/webgpu.h", "webgoo/include/wgpu.h"];
+const SRC = HEADERS.map(readHeader).join("\n");
 
 const IS_PY12 = false;
 
@@ -261,6 +277,42 @@ function parseTypedIdent(entry: string): { name: string; type: Refinfo } {
   return { name, type: parseTypeRef(type) };
 }
 
+function pad(s: string, len: number, pad: string): string {
+  return pad.repeat(Math.max(0, len - s.length)) + s;
+}
+
+function formatHexConstant(val: number): string {
+  return `0x${pad(val.toString(16), 8, "0")}`;
+}
+
+function convertEnumValuesToConstants(
+  parentName: string,
+  entries: CEnumVal[]
+): CEnumVal[] {
+  const ret: CEnumVal[] = [];
+  for (let { name, val } of entries) {
+    let nVal = Number(val);
+    if (!isFinite(nVal)) {
+      // replace instances of previous enum values
+      // (e.g., for a value constructed like "THING_1 | THING_2")
+      for (const subentry of entries) {
+        val = val.replaceAll(
+          `${parentName}_${subentry.name}`,
+          `(${subentry.val})`
+        );
+      }
+      nVal = eval(val);
+      console.log("Evaled to:", val, "->", nVal);
+      if (!isFinite(nVal)) {
+        console.log("Could not parse enum entry:", name, val);
+        nVal = 0;
+      }
+    }
+    ret.push({ name, val: formatHexConstant(nVal) });
+  }
+  return ret;
+}
+
 function prim(cName: string, pyName: string): CType {
   return {
     cName,
@@ -360,11 +412,15 @@ class ApiInfo {
   findEnums(src: string) {
     const enumExp = /typedef enum ([a-zA-Z0-9]*) \{([^\}]*)\}/g;
     for (const [_wholeMatch, name, body] of src.matchAll(enumExp)) {
-      const entries = onlyDefined(
-        body.split(",").map((e) => parseEnumEntry(name.trim(), e))
+      let entries = onlyDefined(
+        body
+          .replaceAll("\n", " ")
+          .split(",")
+          .map((e) => parseEnumEntry(name.trim(), e))
       );
       const cName = name.trim();
       const targetName = SPECIAL_MERGED_ENUMS.get(cName);
+      entries = convertEnumValuesToConstants(cName, entries);
 
       if (targetName !== undefined) {
         // a 'special' extension enum that needs to be merged into an existing enum
@@ -384,7 +440,7 @@ class ApiInfo {
   }
 
   findOpaquePointers(src: string) {
-    const reg = /typedef struct ([a-zA-Z0-9]+)\* ([a-zA-Z]+)([^;]*);/g;
+    const reg = /typedef struct ([a-zA-Z0-9]+)\s?\* ([a-zA-Z]+)([^;]*);/g;
     for (const [, , cName] of src.matchAll(reg)) {
       this.types.set(cName, new COpaque(cName, toPyName(cName, true)));
     }
@@ -497,7 +553,7 @@ class ApiInfo {
         ctype: this.getType(type),
         explicitPointer: type.explicitPointer === true,
         explicitConst: type.constant === true,
-        nullable: type.nullable === true,
+        nullable: type.nullable === true || FORCE_NULLABLE_ARGS.has(name),
       };
     });
   }
@@ -529,7 +585,7 @@ class ApiInfo {
   findCallbackTypes(src: string) {
     // typedef void (*WGPUBufferMapCallback)(WGPUBufferMapAsyncStatus status, void * userdata) WGPU_FUNCTION_ATTRIBUTE;
     const reg =
-      /typedef (.*) \(\*([A-Za-z0-9]+)\)\((.*)\) WGPU_FUNCTION_ATTRIBUTE;/g;
+      /typedef (.*) \(\*([A-Za-z0-9]+)\)\((.*)\)(?: WGPU_FUNCTION_ATTRIBUTE)?;/g;
     for (const [, returnType, name, args] of src.matchAll(reg)) {
       if (!name.endsWith("Callback")) {
         continue;
@@ -540,14 +596,15 @@ class ApiInfo {
 
   findExportedFunctions(src: string) {
     const reg =
-      /WGPU_EXPORT (.*) ([a-zA-Z0-9_]+)\((.*)\) WGPU_FUNCTION_ATTRIBUTE;/g;
+      /\n\s*(?:WGPU_EXPORT )?(.*) ([a-zA-Z0-9_]+)\((.*)\)(?: WGPU_FUNCTION_ATTRIBUTE)?;/g;
     for (const [, returnType, name, args] of src.matchAll(reg)) {
       this._addFunc(name, args, returnType);
     }
   }
 
   findBitflags(src: string) {
-    const reg = /typedef WGPUFlags ([A-Za-z0-9]*)Flags WGPU_ENUM_ATTRIBUTE;/g;
+    const reg =
+      /typedef WGPUFlags ([A-Za-z0-9]*)Flags(?: WGPU_ENUM_ATTRIBUTE)?;/g;
     for (const [_wholeMatch, enumType] of src.matchAll(reg)) {
       let ee = this.types.get(enumType);
       if (ee === undefined || !(ee instanceof CEnum)) {
