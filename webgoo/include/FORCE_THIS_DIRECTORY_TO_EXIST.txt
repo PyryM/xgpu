@@ -1,0 +1,1 @@
+This directory must exist or things get angry and committing this file is simpler than the alternatives.
