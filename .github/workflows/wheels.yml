@@ -25,7 +25,7 @@ jobs:
         run: |
           python codegen/fetch_wgpu_bins.py
           bun codegen/generate.ts
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v3
         with:
           name: codegen-${{ github.run_id }}-${{ github.run_number }}
           path: ./webgoo/*.py
@@ -42,7 +42,7 @@ jobs:
       - name: Download binaries
         run: |
           python codegen/fetch_wgpu_bins.py
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v3
         with:
           name: codegen-${{ github.run_id }}-${{ github.run_number }}
           path: webgoo/
