@@ -1,6 +1,6 @@
 function listFeatures(raw_ffi_func: string): string[] {
   return [
-    'def enumerateFeatures(self) -> list["FeatureName"]:',
+    'def enumerateFeatures(self) -> List["FeatureName"]:',
     `    # Hand-written because of idiosyncratic convention for using this function`,
     `    feature_count = lib.${raw_ffi_func}(self._cdata, ffi.NULL)`,
     `    feature_list = ffi.new("WGPUFeatureName[]", feature_count)`,

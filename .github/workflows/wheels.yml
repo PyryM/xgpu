@@ -6,25 +6,50 @@ on:
   pull_request: {}
 
 jobs:
+  codegen:
+    name: Run Codegen
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+      - name: Install Ruff
+        run: |
+          python -m pip install cffi ruff
+      - name: Run Codegen
+        run: |
+          python codegen/fetch_wgpu_bins.py
+          bun codegen/generate.ts
+      - uses: actions/upload-artifact@v3
+        with:
+          name: codegen-${{ github.run_id }}-${{ github.run_number }}
+          path: ./webgoo/*.py
+
   build_wheels:
     name: Build wheels on ${{ matrix.os }}
+    needs: codegen
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
-
+        os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
       - uses: actions/checkout@v4
       - name: Download binaries
         run: |
-          python -m pip install ruff requests
           python codegen/fetch_wgpu_bins.py
-
+      - uses: actions/download-artifact@v3
+        with:
+          name: codegen-${{ github.run_id }}-${{ github.run_number }}
+          path: webgoo/
       - name: Build Wheels
         run: |
           python -m pip install cibuildwheel==2.16.2
           python -m cibuildwheel --output-dir wheelhouse
-
       - uses: actions/upload-artifact@v3
         with:
           path: ./wheelhouse/*.whl
