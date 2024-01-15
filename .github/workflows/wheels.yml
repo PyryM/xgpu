@@ -25,8 +25,6 @@ jobs:
         run: |
           python codegen/fetch_wgpu_bins.py
           bun codegen/generate.ts
-          cd webgoo
-          python _build_ext.py
       - uses: actions/upload-artifact@v4
         with:
           name: codegen-python
