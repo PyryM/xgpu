@@ -46,6 +46,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 }
 """
 
+
 def main():
     WIDTH = 1024
     HEIGHT = 1024
@@ -57,12 +58,14 @@ def main():
     (adapter, _) = get_adapter(instance, xg.PowerPreference.HighPerformance, surface)
     device = get_device(adapter)
 
-    window.configure_surface(device)
+    window_tex_format = xg.TextureFormat.BGRA8Unorm
+    # surface.getPreferredFormat(adapter)
+    print("Window tex format:", window_tex_format.name)
+
+    window.configure_surface(device, window_tex_format)
 
     shader = device.createShaderModule(
-        nextInChain=xg.ChainedStruct(
-            [xg.shaderModuleWGSLDescriptor(code=shader_source)]
-        ),
+        nextInChain=xg.ChainedStruct([xg.shaderModuleWGSLDescriptor(code=shader_source)]),
         hints=[],
     )
 
@@ -80,11 +83,9 @@ def main():
         frontFace=xg.FrontFace.CCW,
         cullMode=xg.CullMode._None,
     )
-    vertex = xg.vertexState(
-        module=shader, entryPoint="vs_main", constants=[], buffers=[]
-    )
+    vertex = xg.vertexState(module=shader, entryPoint="vs_main", constants=[], buffers=[])
     color_target = xg.colorTargetState(
-        format=xg.TextureFormat.RGBA8Unorm,
+        format=window_tex_format,
         blend=xg.blendState(color=REPLACE, alpha=REPLACE),
         writeMask=xg.ColorWriteMask.All,
     )
@@ -111,10 +112,10 @@ def main():
         print("Tex status?", surf_tex.status.name)
 
         color_view = surf_tex.texture.createView(
-            format = xg.TextureFormat.RGBA8Unorm,
+            format=xg.TextureFormat.Undefined,
             dimension=xg.TextureViewDimension._2D,
             mipLevelCount=1,
-            arrayLayerCount=1
+            arrayLayerCount=1,
         )
 
         color_attachment = xg.renderPassColorAttachment(
