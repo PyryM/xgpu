@@ -8,8 +8,8 @@ https://github.com/pygfx/wgpu-py/blob/main/examples/triangle.py
 
 import glfw_window
 
-import webgoo as wg
-from webgoo.conveniences import get_adapter, get_device
+import xgpu as xg
+from xgpu.conveniences import get_adapter, get_device
 
 shader_source = """
 struct VertexInput {
@@ -52,44 +52,44 @@ def main():
 
     window = glfw_window.GLFWWindow(WIDTH, HEIGHT, "woo")
 
-    instance = wg.createInstance()
+    instance = xg.createInstance()
     surface = window.get_surface(instance)
-    (adapter, _) = get_adapter(instance, wg.PowerPreference.HighPerformance, surface)
+    (adapter, _) = get_adapter(instance, xg.PowerPreference.HighPerformance, surface)
     device = get_device(adapter)
 
     window.configure_surface(device)
 
     shader = device.createShaderModule(
-        nextInChain=wg.ChainedStruct(
-            [wg.shaderModuleWGSLDescriptor(code=shader_source)]
+        nextInChain=xg.ChainedStruct(
+            [xg.shaderModuleWGSLDescriptor(code=shader_source)]
         ),
         hints=[],
     )
 
     layout = device.createPipelineLayout(bindGroupLayouts=[])
 
-    REPLACE = wg.blendComponent(
-        srcFactor=wg.BlendFactor.One,
-        dstFactor=wg.BlendFactor.Zero,
-        operation=wg.BlendOperation.Add,
+    REPLACE = xg.blendComponent(
+        srcFactor=xg.BlendFactor.One,
+        dstFactor=xg.BlendFactor.Zero,
+        operation=xg.BlendOperation.Add,
     )
 
-    primitive = wg.primitiveState(
-        topology=wg.PrimitiveTopology.TriangleList,
-        stripIndexFormat=wg.IndexFormat.Undefined,
-        frontFace=wg.FrontFace.CCW,
-        cullMode=wg.CullMode._None,
+    primitive = xg.primitiveState(
+        topology=xg.PrimitiveTopology.TriangleList,
+        stripIndexFormat=xg.IndexFormat.Undefined,
+        frontFace=xg.FrontFace.CCW,
+        cullMode=xg.CullMode._None,
     )
-    vertex = wg.vertexState(
+    vertex = xg.vertexState(
         module=shader, entryPoint="vs_main", constants=[], buffers=[]
     )
-    color_target = wg.colorTargetState(
-        format=wg.TextureFormat.RGBA8Unorm,
-        blend=wg.blendState(color=REPLACE, alpha=REPLACE),
-        writeMask=wg.ColorWriteMask.All,
+    color_target = xg.colorTargetState(
+        format=xg.TextureFormat.RGBA8Unorm,
+        blend=xg.blendState(color=REPLACE, alpha=REPLACE),
+        writeMask=xg.ColorWriteMask.All,
     )
-    multisample = wg.multisampleState()
-    fragment = wg.fragmentState(
+    multisample = xg.multisampleState()
+    fragment = xg.fragmentState(
         module=shader, entryPoint="fs_main", constants=[], targets=[color_target]
     )
 
@@ -102,7 +102,7 @@ def main():
         fragment=fragment,
     )
 
-    surf_tex = wg.SurfaceTexture()
+    surf_tex = xg.SurfaceTexture()
 
     while window.poll():
         command_encoder = device.createCommandEncoder()
@@ -111,17 +111,17 @@ def main():
         print("Tex status?", surf_tex.status.name)
 
         color_view = surf_tex.texture.createView(
-            format = wg.TextureFormat.RGBA8Unorm,
-            dimension=wg.TextureViewDimension._2D,
+            format = xg.TextureFormat.RGBA8Unorm,
+            dimension=xg.TextureViewDimension._2D,
             mipLevelCount=1,
             arrayLayerCount=1
         )
 
-        color_attachment = wg.renderPassColorAttachment(
+        color_attachment = xg.renderPassColorAttachment(
             view=color_view,
-            loadOp=wg.LoadOp.Clear,
-            storeOp=wg.StoreOp.Store,
-            clearValue=wg.color(r=0.5, g=0.5, b=0.5, a=1.0),
+            loadOp=xg.LoadOp.Clear,
+            storeOp=xg.StoreOp.Store,
+            clearValue=xg.color(r=0.5, g=0.5, b=0.5, a=1.0),
         )
         render_pass = command_encoder.beginRenderPass(colorAttachments=[color_attachment])
 

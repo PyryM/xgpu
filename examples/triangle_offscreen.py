@@ -10,8 +10,8 @@ import time
 
 from PIL import Image
 
-import webgoo as wg
-from webgoo.conveniences import get_adapter, get_device, read_rgba_texture
+import xgpu as xg
+from xgpu.conveniences import get_adapter, get_device, read_rgba_texture
 
 shader_source = """
 struct VertexInput {
@@ -48,7 +48,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 }
 """
 
-def main(power_preference=wg.PowerPreference.HighPerformance):
+def main(power_preference=xg.PowerPreference.HighPerformance):
     t0 = time.time()
     (adapter, _) = get_adapter(instance=None, power=power_preference)
     device = get_device(adapter)
@@ -62,13 +62,13 @@ def write_image(filename: str, data: bytes, size: tuple[int, int]):
     img.save(filename)
 
 
-def _main(device: wg.Device):
+def _main(device: xg.Device):
     WIDTH = 1024
     HEIGHT = 1024
 
     shader = device.createShaderModule(
-        nextInChain=wg.ChainedStruct(
-            [wg.shaderModuleWGSLDescriptor(code=shader_source)]
+        nextInChain=xg.ChainedStruct(
+            [xg.shaderModuleWGSLDescriptor(code=shader_source)]
         ),
         hints=[],
     )
@@ -76,27 +76,27 @@ def _main(device: wg.Device):
     layout = device.createPipelineLayout(bindGroupLayouts=[])
 
     color_tex = device.createTexture(
-        usage=wg.TextureUsageFlags(
-            [wg.TextureUsage.RenderAttachment, wg.TextureUsage.CopySrc]
+        usage=xg.TextureUsageFlags(
+            [xg.TextureUsage.RenderAttachment, xg.TextureUsage.CopySrc]
         ),
-        size=wg.extent3D(width=WIDTH, height=HEIGHT, depthOrArrayLayers=1),
-        format=wg.TextureFormat.RGBA8Unorm,
-        viewFormats=[wg.TextureFormat.RGBA8Unorm],
+        size=xg.extent3D(width=WIDTH, height=HEIGHT, depthOrArrayLayers=1),
+        format=xg.TextureFormat.RGBA8Unorm,
+        viewFormats=[xg.TextureFormat.RGBA8Unorm],
     )
 
-    primitive = wg.primitiveState(
-        topology=wg.PrimitiveTopology.TriangleList,
-        stripIndexFormat=wg.IndexFormat.Undefined,
+    primitive = xg.primitiveState(
+        topology=xg.PrimitiveTopology.TriangleList,
+        stripIndexFormat=xg.IndexFormat.Undefined,
     )
-    vertex = wg.vertexState(
+    vertex = xg.vertexState(
         module=shader, entryPoint="vs_main", constants=[], buffers=[]
     )
-    color_target = wg.colorTargetState(
-        format=wg.TextureFormat.RGBA8Unorm,
-        writeMask=wg.ColorWriteMaskFlags([wg.ColorWriteMask.All]),
+    color_target = xg.colorTargetState(
+        format=xg.TextureFormat.RGBA8Unorm,
+        writeMask=xg.ColorWriteMaskFlags([xg.ColorWriteMask.All]),
     )
-    multisample = wg.multisampleState()
-    fragment = wg.fragmentState(
+    multisample = xg.multisampleState()
+    fragment = xg.fragmentState(
         module=shader, entryPoint="fs_main", constants=[], targets=[color_target]
     )
 
@@ -109,18 +109,18 @@ def _main(device: wg.Device):
     )
 
     color_view = color_tex.createView(
-        format=wg.TextureFormat.RGBA8Unorm,
-        dimension=wg.TextureViewDimension._2D,
+        format=xg.TextureFormat.RGBA8Unorm,
+        dimension=xg.TextureViewDimension._2D,
         mipLevelCount=1,
         arrayLayerCount=1,
-        aspect=wg.TextureAspect.All,
+        aspect=xg.TextureAspect.All,
     )
 
-    color_attachment = wg.renderPassColorAttachment(
+    color_attachment = xg.renderPassColorAttachment(
         view=color_view,
-        loadOp=wg.LoadOp.Clear,
-        storeOp=wg.StoreOp.Store,
-        clearValue=wg.color(r=0.5, g=0.5, b=0.5, a=1.0),
+        loadOp=xg.LoadOp.Clear,
+        storeOp=xg.StoreOp.Store,
+        clearValue=xg.color(r=0.5, g=0.5, b=0.5, a=1.0),
     )
 
     command_encoder = device.createCommandEncoder()

@@ -1,2 +1,2 @@
-# webgoopy
+# xgpu
 webgpu python bindings

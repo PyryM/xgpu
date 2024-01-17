@@ -1,15 +1,15 @@
 # Based on https://raw.githubusercontent.com/github/gitignore/main/Node.gitignore
 
 # Codegenned files
-# /webgoo/bindings.py
-# /webgoo/_build_ext.py
+/xgpu/bindings.py
+/xgpu/_build_ext.py
 
 # Fetched headers
-/webgoo/include/wgpu.h
-/webgoo/include/webgpu.h
+/xgpu/include/wgpu.h
+/xgpu/include/webgpu.h
 
 # Build dirs
-/webgoo/Release
+/xgpu/Release
 /build
 
 # WebGPU spec files

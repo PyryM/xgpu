@@ -1,5 +1,5 @@
 {
-  "name": "webgoopy",
+  "name": "xgpu",
   "module": "codegen/generate.ts",
   "type": "module",
   "devDependencies": {

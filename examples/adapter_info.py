@@ -2,16 +2,16 @@ import time
 
 
 def main():
-    import webgoo.conveniences as wgutils
+    import xgpu.conveniences as xgutils
 
-    (adapter, instance) = wgutils.get_adapter()
+    (adapter, instance) = xgutils.get_adapter()
     adapter.assert_valid()
     features = adapter.enumerateFeatures()
     print("Adapter supported features:")
     for f in features:
         print(f.name)
 
-    _device = wgutils.get_device(adapter)
+    _device = xgutils.get_device(adapter)
     _device.assert_valid()
     print("Device supported features:")
     features = _device.enumerateFeatures()

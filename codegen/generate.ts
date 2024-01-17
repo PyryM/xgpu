@@ -30,7 +30,8 @@ function readHeader(fn: string): string {
   return header;
 }
 
-const HEADERS = ["webgoo/include/webgpu.h", "webgoo/include/wgpu.h"];
+const PNAME = "xgpu";
+const HEADERS = [`${PNAME}/include/webgpu.h`, `${PNAME}/include/wgpu.h`];
 const SRC = HEADERS.map(readHeader).join("\n");
 
 const IS_PY12 = false;
@@ -1502,10 +1503,10 @@ def getVersionStr() -> str:
 ${pyFrags.join("\n")}
 `;
 
-writeFileSync("webgoo/_build_ext.py", cffiBuilderOutput);
-writeFileSync("webgoo/bindings.py", pylibOutput);
+writeFileSync(`${PNAME}/_build_ext.py`, cffiBuilderOutput);
+writeFileSync(`${PNAME}/bindings.py`, pylibOutput);
 
-await Bun.spawn(["ruff", "format", "webgoo/"]).exited;
-await Bun.spawn(["ruff", "--fix", "webgoo/"]).exited;
+await Bun.spawn(["ruff", "format", `${PNAME}/`]).exited;
+await Bun.spawn(["ruff", "--fix", `${PNAME}/`]).exited;
 
 console.log("Done?");

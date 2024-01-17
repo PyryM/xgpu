@@ -98,13 +98,13 @@ with zipfile.ZipFile("wgpu_native.zip", "r") as zip_ref:
     zip_ref.extractall(UNZIP_PATH)
 
 LIBS = [
-    (f"{UNZIP_PATH}/{lib.src}", f"webgoo/{lib.dest}")
+    (f"{UNZIP_PATH}/{lib.src}", f"xgpu/{lib.dest}")
     for lib in SYSLIBS.get(OS, [Lib("libwgpu_native.so")])
 ]
 
 COPIES = [
-    (f"{UNZIP_PATH}/webgpu.h", "webgoo/include/webgpu.h"),
-    (f"{UNZIP_PATH}/wgpu.h", "webgoo/include/wgpu.h"),
+    (f"{UNZIP_PATH}/webgpu.h", "xgpu/include/webgpu.h"),
+    (f"{UNZIP_PATH}/wgpu.h", "xgpu/include/wgpu.h"),
     *LIBS,
 ]
 

@@ -3,8 +3,8 @@ import sys
 
 import glfw
 
-import webgoo
-from webgoo import (
+import xgpu
+from xgpu import (
     ChainedStruct,
     Device,
     Instance,
@@ -58,7 +58,7 @@ def get_handles(window):
 
 
 class GLFWWindow:
-    def __init__(self, w: int, h: int, title="webgoo"):
+    def __init__(self, w: int, h: int, title="xgpu"):
         self.width = w
         self.height = h
         glfw.init()
@@ -82,15 +82,15 @@ class GLFWWindow:
         if self._surface is None:
             return
         if self._surf_config is None:
-            self._surf_config = webgoo.surfaceConfiguration(
+            self._surf_config = xgpu.surfaceConfiguration(
                 device=device,
-                usage=webgoo.TextureUsageFlags([webgoo.TextureUsage.RenderAttachment]),
-                viewFormats=[webgoo.TextureFormat.RGBA8Unorm],
-                format=webgoo.TextureFormat.RGBA8Unorm,
-                alphaMode=webgoo.CompositeAlphaMode.Auto,
+                usage=xgpu.TextureUsageFlags([xgpu.TextureUsage.RenderAttachment]),
+                viewFormats=[xgpu.TextureFormat.RGBA8Unorm],
+                format=xgpu.TextureFormat.RGBA8Unorm,
+                alphaMode=xgpu.CompositeAlphaMode.Auto,
                 width=self.width,
                 height=self.height,
-                presentMode=webgoo.PresentMode.Fifo
+                presentMode=xgpu.PresentMode.Fifo
             )
         self._surf_config.width = self.width
         self._surf_config.height = self.height
@@ -108,19 +108,19 @@ class GLFWWindow:
 
     def get_surface_descriptor(self) -> SurfaceDescriptor:
         if sys.platform.startswith("win"):  # no-cover
-            inner = webgoo.surfaceDescriptorFromWindowsHWND(
-                hinstance=webgoo.NULL_VOID_PTR,
+            inner = xgpu.surfaceDescriptorFromWindowsHWND(
+                hinstance=xgpu.NULL_VOID_PTR,
                 hwnd=cast_any_to_void(self.window_handle),
             )
         elif sys.platform.startswith("linux"):  # no-cover
             if is_wayland:
                 # todo: wayland seems to be broken right now
-                inner = webgoo.surfaceDescriptorFromWaylandSurface(
+                inner = xgpu.surfaceDescriptorFromWaylandSurface(
                     display=cast_any_to_void(self.display_id),
                     surface=cast_any_to_void(self.window_handle),
                 )
             else:
-                inner = webgoo.surfaceDescriptorFromXlibWindow(
+                inner = xgpu.surfaceDescriptorFromXlibWindow(
                     display=cast_any_to_void(self.display_id), window=self.window_handle
                 )
         else:  # no-cover
