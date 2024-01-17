@@ -126,6 +126,10 @@ shader = device.createShaderModule(
 )
 ```
 
+#### Byte buffers, void pointers
+
+TODO:
+
 ### Codegen
 
 The code generation was written in Typescript and runs in `bun`. Python users shouldn’t have to touch this.
