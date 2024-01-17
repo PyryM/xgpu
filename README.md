@@ -1,7 +1,5 @@
 # xgpu
 
-# xgpu
-
 `xgpu` is a Python 3.7+ binding of [webgpu-native](https://github.com/gfx-rs/wgpu-native) which is auto-generated at build-time and tracks the upstream releases as closely as possible. It is currently in beta, and until it is more mature most users should probably use [wgpu-py](https://github.com/pygfx/wgpu-py).
 
 ### Install
