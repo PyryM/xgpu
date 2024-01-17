@@ -3,7 +3,6 @@ name: Build Wheels
 on: 
   push:
     branches: main
-  pull_request: {}
 
 jobs:
   codegen:
