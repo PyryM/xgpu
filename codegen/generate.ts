@@ -357,15 +357,16 @@ class ApiInfo {
       this.types.set(cName, prim(cName, pyName));
     }
 
+    // Note hacks here to call them "DataPtr"s
     this.types.set("void", {
       cName: "void",
       pyName: "VOID",
       kind: "primitive",
-      pyAnnotation: (isPointer) => (isPointer ? "VoidPtr" : "None"),
+      pyAnnotation: (isPointer) => (isPointer ? "DataPtr" : "None"),
       wrap: (v, isPointer) => {
         if (isPointer) {
           // HORRIBLE HACK: assumes "size" is an argument!
-          return `VoidPtr(${v}, size)`;
+          return `DataPtr(${v}, size)`;
         }
         return v;
       },
@@ -662,9 +663,7 @@ class ApiInfo {
         next?.name.toLowerCase().endsWith("size")
       ) {
         // assume a (void ptr, size) pair
-        pyArgs.push(
-          `${arg.name}: ${arg.ctype.pyAnnotation(arg.explicitPointer, false)}`
-        );
+        pyArgs.push(`${arg.name}: DataPtr`);
         callArgs.push(`${arg.name}._ptr`);
         callArgs.push(`${arg.name}._size`);
         idx += 2;
@@ -874,7 +873,11 @@ class PointerField implements CStructField {
   ) {}
 
   argtype(): string {
-    const annotation = this.ctype.pyAnnotation(true, false);
+    let annotation = this.ctype.pyAnnotation(true, false);
+    if(this.ctype.cName === "void") {
+      // HACK
+      annotation = "VoidPtr";
+    }
     return this.nullable ? pyOptional(annotation) : annotation;
   }
 
@@ -916,12 +919,14 @@ class PointerField implements CStructField {
       // to an interior pointer
       getter = `${this.ctype.pyName}(cdata = self._cdata.${this.name}, parent = self)`;
     } else if (this.ctype.kind === "opaque") {
-      console.log("Opaque field return?", this.name);
       getter = this.ctype.wrap(`self._cdata.${this.name}`, true, "self", true);
     } else if (this.ctype.pyName === "str") {
       // special case returning strings?
       getter = `_ffi_string(self._cdata.${this.name})`;
     }
+    //  else {
+    //   getter = this.ctype.wrap(`self._cdata.${this.name}`, true, "self", true);
+    // }
 
     return `
 @property
@@ -1479,18 +1484,49 @@ class CBMap:
         if idx in self.callbacks:
             del self.callbacks[idx]
 
+def _ffi_void_cast(thing: Any):
+    return ffi.cast("void *", thing)
+
 class VoidPtr:
-    def __init__(self, data: CData, size: ${pyOptional("int")} = None):
+    NULL: "VoidPtr"
+
+    @classmethod
+    def raw_cast(cls, ptr: Any) -> "VoidPtr":
+        return VoidPtr(_ffi_void_cast(ptr))
+
+    def __init__(self, ptr: CData):
+        self._ptr = ptr
+
+VoidPtr.NULL = VoidPtr(ffi.NULL)
+
+class DataPtr:
+    NULL: "DataPtr"
+
+    @classmethod
+    def allocate(cls, size: int) -> "DataPtr":
+        return DataPtr(ffi.new('char[]', size), size)
+
+    @classmethod
+    def wrap(cls, buffer) -> "DataPtr":
+        cdata = ffi.from_buffer(buffer)
+        return DataPtr(cdata, len(cdata))
+
+    def __init__(self, data: CData, size: int):
         self._ptr = data
         self._size = size
 
+    def buffer_view(self):
+        return ffi.buffer(self._ptr, self._size)
+
+    def copy_bytes(self, src: bytes, count: ${pyOptional("int")} = None):
+        if count is None:
+            count = len(src)
+        ffi.memmove(self._ptr, src, count)
+
     def to_bytes(self) -> bytes:
-        return bytes(ffi.buffer(self._ptr, self._size))
+        return bytes(self.buffer_view())
 
-def cast_any_to_void(thing: Any) -> VoidPtr:
-    return VoidPtr(data = ffi.cast("void *", thing), size = 0)
-
-NULL_VOID_PTR = VoidPtr(data = ffi.NULL, size = 0)
+DataPtr.NULL = DataPtr(data=ffi.NULL, size=0)
 
 def getVersionStr() -> str:
     version_int = getVersion()

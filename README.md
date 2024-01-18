@@ -128,7 +128,32 @@ shader = device.createShaderModule(
 
 #### Byte buffers, void pointers
 
-TODO:
+`xgpu` has two translations for `void *`: `VoidPtr` represents a pointer to
+opaque data (e.g., a window handle) while `DataPtr` represents a pointer
+to a *sized* data structure (e.g., texture data you want to upload). 
+
+For example,
+```python
+# Note use of VoidPtr.NULL and VoidPtr.raw_cast
+surf_desc = xgpu.surfaceDescriptorFromWindowsHWND(
+    hinstance=xgpu.VoidPtr.NULL,
+    hwnd=xgpu.VoidPtr.raw_cast(self.window_handle),
+)
+
+# DataPtr.wrap can wrap anything supporting the 'buffer' interface
+bytedata = bytearray(100)
+wrapped = xgpu.DataPtr.wrap(bytedata)
+
+queue.writeBuffer(
+  buffer=some_buffer, 
+  bufferOffset=0,
+  data=wrapped
+)
+
+# This includes numpy arrays
+my_array = np.ones(100, dtype=np.float32)
+wrapped = xgpu.DataPtr.wrap(my_array)
+```
 
 ### Codegen
 

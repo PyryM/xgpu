@@ -10,7 +10,6 @@ from xgpu import (
     Instance,
     Surface,
     SurfaceDescriptor,
-    cast_any_to_void,
     surfaceDescriptor,
 )
 
@@ -106,31 +105,29 @@ class GLFWWindow:
         if self._surface is not None:
             return self._surface
         desc = self.get_surface_descriptor()
-        print("Got surface descriptor?")
         self._surface = instance.createSurfaceFromDesc(desc)
-        print("Got surface?")
+        print("Got surface.")
         return self._surface
 
     def get_surface_descriptor(self) -> SurfaceDescriptor:
-        if sys.platform.startswith("win"):  # no-cover
+        if sys.platform.startswith("win"):
             inner = xgpu.surfaceDescriptorFromWindowsHWND(
-                hinstance=xgpu.NULL_VOID_PTR,
-                hwnd=cast_any_to_void(self.window_handle),
+                hinstance=xgpu.VoidPtr.NULL,
+                hwnd=xgpu.VoidPtr.raw_cast(self.window_handle),
             )
-        elif sys.platform.startswith("linux"):  # no-cover
+        elif sys.platform.startswith("linux"):
             if is_wayland():
-                print("WAYLAND???")
-                # todo: wayland seems to be broken right now
+                print("WAYLAND?")
                 inner = xgpu.surfaceDescriptorFromWaylandSurface(
-                    display=cast_any_to_void(self.display_id),
-                    surface=cast_any_to_void(self.window_handle),
+                    display=xgpu.VoidPtr.raw_cast(self.display_id),
+                    surface=xgpu.VoidPtr.raw_cast(self.window_handle),
                 )
             else:
-                print("XLIB????")
+                print("XLIB?")
                 inner = xgpu.surfaceDescriptorFromXlibWindow(
-                    display=cast_any_to_void(self.display_id), window=self.window_handle
+                    display=xgpu.VoidPtr.raw_cast(self.display_id), window=self.window_handle
                 )
-        else:  # no-cover
-            raise RuntimeError("Get a better OS")
+        else:
+            raise RuntimeError("This OS not supported yet: consider installing Ubuntu")
 
         return surfaceDescriptor(nextInChain=ChainedStruct([inner]))
