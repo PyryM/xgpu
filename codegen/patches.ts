@@ -16,11 +16,6 @@ export const FORCE_NULLABLE_ARGS: Set<string> = new Set([
 
 export const PATCHED_FUNCTIONS: Map<string, string[]> = new Map([
   ["wgpuAdapterEnumerateFeatures", listFeatures("Adapter")],
-  ["wgpuDeviceEnumerateFeatures", listFeatures("Device")],
+  ["wgpuDeviceEnumerateFeatures", listFeatures("Device")]
 ]);
 
-export const BAD_FUNCTIONS: Map<string, string> = new Map([
-  ["wgpuAdapterEnumerateFeatures", "This is unsafe. Use hasFeature."],
-  ["wgpuDeviceEnumerateFeatures", "This is unsafe. Use hasFeature."],
-  ["wgpuGetProcAddress", "Untyped function pointer return."],
-]);

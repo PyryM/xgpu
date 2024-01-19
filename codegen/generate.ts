@@ -14,7 +14,6 @@ import {
 import { docs } from "./extract_docs";
 import {
   PATCHED_FUNCTIONS,
-  BAD_FUNCTIONS,
   FORCE_NULLABLE_ARGS,
 } from "./patches";
 
@@ -374,6 +373,15 @@ class ApiInfo {
         }
         return v;
       },
+    });
+
+    this.types.set("WGPUProc", {
+      cName: "WGPUProc",
+      pyName: "VoidPtr",
+      kind: "primitive",
+      pyAnnotation: () => "VoidPtr",
+      wrap: (v) => `VoidPtr(${v})`,
+      unwrap: (v) => `${v}._ptr`
     });
 
     // C `char *` is treated specially as Python `str`
@@ -972,15 +980,6 @@ function emitFuncDef(
   const patched = PATCHED_FUNCTIONS.get(func.name);
   if (patched) {
     return patched;
-  }
-
-  const badReason = BAD_FUNCTIONS.get(func.name);
-  if (badReason) {
-    return [
-      `# ${func.name} is marked as a MISBEHAVED FUNCTION:`,
-      `# ${badReason}`,
-      ``,
-    ];
   }
 
   const { pyArgs, callArgs, staging } = api.prepFuncCall(func, isMemberFunc);
