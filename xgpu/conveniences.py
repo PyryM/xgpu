@@ -2,7 +2,6 @@ import time
 from typing import Optional, Union
 
 from . import bindings as xg
-from ._wgpu_native_cffi import ffi
 
 
 def get_adapter(
@@ -84,7 +83,7 @@ def read_buffer(device: xg.Device, buffer: xg.Buffer, offset: int, size: int):
         size=size,
         callback=mapped_cb,
     )
-    device.poll(True, wrappedSubmissionIndex=None)
+    device.poll(wait=True, wrappedSubmissionIndex=None)
     # assume we're now mapped? (seems dicey!)
     mapping = buffer.getMappedRange(0, size)
     res = mapping.to_bytes()
@@ -125,6 +124,6 @@ def create_buffer_with_data(
     bsize = len(data)
     buffer = device.createBuffer(usage=usage, size=bsize, mappedAtCreation=True)
     range = buffer.getMappedRange(0, bsize)
-    ffi.memmove(range._ptr, data, bsize)
+    range.copy_bytes(data, bsize)
     buffer.unmap()
     return buffer

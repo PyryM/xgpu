@@ -48,6 +48,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 }
 """
 
+
 def main(power_preference=xg.PowerPreference.HighPerformance):
     t0 = time.time()
     (adapter, _) = get_adapter(instance=None, power=power_preference)
@@ -67,18 +68,14 @@ def _main(device: xg.Device):
     HEIGHT = 1024
 
     shader = device.createShaderModule(
-        nextInChain=xg.ChainedStruct(
-            [xg.shaderModuleWGSLDescriptor(code=shader_source)]
-        ),
+        nextInChain=xg.ChainedStruct([xg.shaderModuleWGSLDescriptor(code=shader_source)]),
         hints=[],
     )
 
     layout = device.createPipelineLayout(bindGroupLayouts=[])
 
     color_tex = device.createTexture(
-        usage=xg.TextureUsageFlags(
-            [xg.TextureUsage.RenderAttachment, xg.TextureUsage.CopySrc]
-        ),
+        usage=xg.TextureUsage.RenderAttachment | xg.TextureUsage.CopySrc,
         size=xg.extent3D(width=WIDTH, height=HEIGHT, depthOrArrayLayers=1),
         format=xg.TextureFormat.RGBA8Unorm,
         viewFormats=[xg.TextureFormat.RGBA8Unorm],
@@ -88,12 +85,10 @@ def _main(device: xg.Device):
         topology=xg.PrimitiveTopology.TriangleList,
         stripIndexFormat=xg.IndexFormat.Undefined,
     )
-    vertex = xg.vertexState(
-        module=shader, entryPoint="vs_main", constants=[], buffers=[]
-    )
+    vertex = xg.vertexState(module=shader, entryPoint="vs_main", constants=[], buffers=[])
     color_target = xg.colorTargetState(
         format=xg.TextureFormat.RGBA8Unorm,
-        writeMask=xg.ColorWriteMaskFlags([xg.ColorWriteMask.All]),
+        writeMask=xg.ColorWriteMask.All,
     )
     multisample = xg.multisampleState()
     fragment = xg.fragmentState(
@@ -112,8 +107,7 @@ def _main(device: xg.Device):
         format=xg.TextureFormat.RGBA8Unorm,
         dimension=xg.TextureViewDimension._2D,
         mipLevelCount=1,
-        arrayLayerCount=1,
-        aspect=xg.TextureAspect.All,
+        arrayLayerCount=1
     )
 
     color_attachment = xg.renderPassColorAttachment(
