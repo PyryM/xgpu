@@ -75,9 +75,7 @@ def _main(device: xg.Device):
     layout = device.createPipelineLayout(bindGroupLayouts=[])
 
     color_tex = device.createTexture(
-        usage=xg.TextureUsageFlags(
-            [xg.TextureUsage.RenderAttachment, xg.TextureUsage.CopySrc]
-        ),
+        usage=xg.TextureUsage.RenderAttachment | xg.TextureUsage.CopySrc,
         size=xg.extent3D(width=WIDTH, height=HEIGHT, depthOrArrayLayers=1),
         format=xg.TextureFormat.RGBA8Unorm,
         viewFormats=[xg.TextureFormat.RGBA8Unorm],
@@ -90,7 +88,7 @@ def _main(device: xg.Device):
     vertex = xg.vertexState(module=shader, entryPoint="vs_main", constants=[], buffers=[])
     color_target = xg.colorTargetState(
         format=xg.TextureFormat.RGBA8Unorm,
-        writeMask=xg.ColorWriteMaskFlags([xg.ColorWriteMask.All]),
+        writeMask=xg.ColorWriteMask.All,
     )
     multisample = xg.multisampleState()
     fragment = xg.fragmentState(
@@ -109,8 +107,7 @@ def _main(device: xg.Device):
         format=xg.TextureFormat.RGBA8Unorm,
         dimension=xg.TextureViewDimension._2D,
         mipLevelCount=1,
-        arrayLayerCount=1,
-        aspect=xg.TextureAspect.All,
+        arrayLayerCount=1
     )
 
     color_attachment = xg.renderPassColorAttachment(

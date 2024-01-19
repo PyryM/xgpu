@@ -80,8 +80,6 @@ def main():
     primitive = xg.primitiveState(
         topology=xg.PrimitiveTopology.TriangleList,
         stripIndexFormat=xg.IndexFormat.Undefined,
-        frontFace=xg.FrontFace.CCW,
-        cullMode=xg.CullMode._None,
     )
     vertex = xg.vertexState(module=shader, entryPoint="vs_main", constants=[], buffers=[])
     color_target = xg.colorTargetState(
