@@ -93,10 +93,22 @@ in the natural way:
 
 ```python
 usage = xgpu.BufferUsage.MapRead | xgpu.BufferUsage.CopyDst
-# Note that flags types are not bare integers!
-print(type(usage)) # "<class 'xgpu.bindings.BufferUsageFlags'>"
-print(str(usage))  # "BufferUsage.MapRead | BufferUsage.CopyDst"
-print(int(usage))  # 9
+print(usage) # prints: 9
+```
+
+This works because `IntEnums` inherit all the int methods include bitwise
+operations; however, this discards the type information. 
+A slightly more annoying but type-safer way is:
+
+```python
+usage = xgpu.BufferUsage.MapRead.asflag() | xgpu.BufferUsage.CopyDst
+print(usage) # prints: BufferUsage.MapRead | BufferUsage.CopyDst
+```
+
+You can also create typed flags from bare ints:
+```python
+usage = xgpu.BufferUsageFlags(0b1001)
+print(usage) # prints: BufferUsage.MapRead | BufferUsage.CopyDst
 ```
 
 #### Callbacks

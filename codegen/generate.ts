@@ -151,10 +151,8 @@ class CEnum implements CType {
     if (this.flagType) {
       const ftq = quoted(this.flagType);
       frags.push(``);
-      frags.push(
-        `    def __or__(self, rhs: ${quoted(this.pyName)}) -> ${ftq}:`
-      );
-      frags.push(`        return ${this.flagType}(int(self) | int(rhs))`);
+      frags.push(`    def asflag(self) -> ${ftq}:`);
+      frags.push(`        return ${this.flagType}(self)`);
     }
     return frags.join("\n") + "\n";
   }
@@ -173,7 +171,7 @@ class CFlags implements CType {
 
   pyAnnotation(isPointer: boolean, isReturn: boolean): string {
     if (!isReturn) {
-      return pyUnion(quoted(this.pyName), quoted(this.etype.pyName));
+      return pyUnion(quoted(this.pyName), quoted(this.etype.pyName), "int");
     } else {
       return quoted(this.pyName);
     }
