@@ -200,7 +200,7 @@ def main():
     cpu_global_ubuff['view_proj_mat'] = proj_perspective(np.pi/3.0, 1.0, 0.1, 10.0).T
 
     frame = 0
-    while window.poll():
+    while window.poll() and frame < 1000:
         frame += 1
         command_encoder = device.createCommandEncoder()
 
