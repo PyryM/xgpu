@@ -247,6 +247,8 @@ def main(canvas):
 
         queue.submit([command_encoder.finish()])
         if frame < 1000:
+            if frame % 100 == 0:
+                print(frame)
             canvas.request_draw(draw_frame)
 
     canvas.request_draw(draw_frame)

@@ -201,6 +201,8 @@ def main():
 
     frame = 0
     while window.poll() and frame < 1000:
+        if frame % 100 == 0:
+            print(frame)
         frame += 1
         command_encoder = device.createCommandEncoder()
 
