@@ -3,7 +3,7 @@ Stress test doing a lot of draw calls the naive way (without instancing)
 """
 
 import glfw_window
-from layout_utils import buffer_layout_entry
+from examples.example_utils import buffer_layout_entry
 
 import xgpu as xg
 from xgpu.conveniences import get_adapter, get_device, create_buffer_with_data
@@ -177,14 +177,14 @@ def main():
         usage=xg.BufferUsage.Uniform | xg.BufferUsage.CopyDst,
         size=GLOBALUNIFORMS_DTYPE.itemsize
     )
-    cpu_global_ubuff = np.array((), dtype=GLOBALUNIFORMS_DTYPE)
+    cpu_global_ubuff = np.zeros((), dtype=GLOBALUNIFORMS_DTYPE)
     global_ubuff_staging = xg.DataPtr.wrap(cpu_global_ubuff)
 
     draw_ubuff = device.createBuffer(
         usage = xg.BufferUsage.Uniform | xg.BufferUsage.CopyDst,
         size=DRAWUNIFORMS_DTYPE.itemsize*PRIM_COUNT
     )
-    cpu_draw_ubuff = np.array(PRIM_COUNT, dtype=DRAWUNIFORMS_DTYPE)
+    cpu_draw_ubuff = np.zeros((PRIM_COUNT), dtype=DRAWUNIFORMS_DTYPE)
     draw_ubuff_staging = xg.DataPtr.wrap(cpu_draw_ubuff)
 
     while window.poll():
