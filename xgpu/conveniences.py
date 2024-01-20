@@ -36,7 +36,9 @@ def get_adapter(
 
 
 def get_device(
-    adapter: xg.Adapter, features: Optional[list[xg.FeatureName]] = None
+    adapter: xg.Adapter,
+    features: Optional[list[xg.FeatureName]] = None,
+    limits: Optional[xg.RequiredLimits] = None,
 ) -> xg.Device:
     device: list[Optional[xg.Device]] = [None]
 
@@ -50,11 +52,19 @@ def get_device(
     dlcb = xg.DeviceLostCallback(deviceLostCB)
     cb = xg.RequestDeviceCallback(deviceCB)
     if features is None:
+        print("Requesting all available features")
         features = adapter.enumerateFeatures()
+
+    if limits is None:
+        print("Requesting maximal supported limits")
+        supported = xg.SupportedLimits()
+        adapter.getLimits(supported)
+        limits = xg.requiredLimits(limits=supported.limits)
 
     adapter.requestDevice(
         xg.deviceDescriptor(
             requiredFeatures=features,
+            requiredLimits=limits,
             defaultQueue=xg.queueDescriptor(),
             deviceLostCallback=dlcb,
         ),

@@ -3,14 +3,22 @@ Stress test doing a lot of draw calls the naive way (without instancing)
 """
 
 import glfw_window
-from examples.example_utils import buffer_layout_entry
+import numpy as np
+from example_utils import buffer_layout_entry, proj_perspective
+from scipy.spatial.transform import Rotation
 
 import xgpu as xg
-from xgpu.conveniences import get_adapter, get_device, create_buffer_with_data
+from xgpu.conveniences import create_buffer_with_data, get_adapter, get_device
 
-import numpy as np
 
-shader_source = """
+def transform_matrix(rot, pos, scale=1.0):
+    r = Rotation.from_euler('zyx', rot, degrees=True)
+    tf = np.eye(4, dtype=np.float32)
+    tf[0:3,0:3] = r.as_matrix() * scale
+    tf[0:3,3] = pos
+    return tf
+
+SHADER_SOURCE = """
 struct GlobalUniforms {
   @align(16) view_proj_mat: mat4x4<f32>
 }
@@ -45,7 +53,7 @@ DRAWUNIFORMS_DTYPE = np.dtype(
         "names": ["model_mat", "color"],
         "formats": [np.dtype((np.float32, (4, 4))), np.dtype((np.float32, 4))],
         "offsets": [0, 64],
-        "itemsize": 80,
+        "itemsize": 128, # HACK: uniform buffers have weird alignment requirements!
     }
 )
 
@@ -67,17 +75,17 @@ def create_geometry_buffers(device: xg.Device):
 
     vdata = bytes(np.array(raw_verts, dtype=np.float32))
     raw_indices = [
-        2, 6, 7,
+        2, 7, 6,
         2, 3, 7,
-        0, 4, 5,
+        0, 5, 4,
         0, 1, 5,
-        0, 2, 6,
+        0, 6, 2,
         0, 4, 6,
-        1, 3, 7,
+        1, 7, 3,
         1, 5, 7,
-        0, 2, 3,
+        0, 3, 2,
         0, 1, 3,
-        4, 6, 7,
+        4, 7, 6,
         4, 5, 7
     ]
     idata = bytes(np.array(raw_indices, dtype=np.uint16))
@@ -116,7 +124,7 @@ def main():
     window.configure_surface(device, window_tex_format)
 
     shader = device.createShaderModule(
-        nextInChain=xg.ChainedStruct([xg.shaderModuleWGSLDescriptor(code=shader_source)]),
+        nextInChain=xg.ChainedStruct([xg.shaderModuleWGSLDescriptor(code=SHADER_SOURCE)]),
         hints=[],
     )
 
@@ -128,6 +136,7 @@ def main():
     primitive = xg.primitiveState(
         topology=xg.PrimitiveTopology.TriangleList,
         stripIndexFormat=xg.IndexFormat.Undefined,
+        #cullMode=xg.CullMode.Back,
     )
     color_target = xg.colorTargetState(
         format=window_tex_format,
@@ -143,7 +152,7 @@ def main():
                 constants=[],
                 buffers=[
                     xg.vertexBufferLayout(
-                        arrayStride=32,
+                        arrayStride=16,
                         stepMode=xg.VertexStepMode.Vertex,
                         attributes=[
                             xg.vertexAttribute(
@@ -164,11 +173,12 @@ def main():
                 targets=[color_target],
             ),
         )
+    render_pipeline.assert_valid()
 
     surf_tex = xg.SurfaceTexture()
 
-    ROWS = 100
-    COLS = 100
+    ROWS = 30
+    COLS = 30
     PRIM_COUNT = ROWS * COLS
 
     vbuff, ibuff = create_geometry_buffers(device)
@@ -187,17 +197,26 @@ def main():
     cpu_draw_ubuff = np.zeros((PRIM_COUNT), dtype=DRAWUNIFORMS_DTYPE)
     draw_ubuff_staging = xg.DataPtr.wrap(cpu_draw_ubuff)
 
+    cpu_global_ubuff['view_proj_mat'] = proj_perspective(np.pi/3.0, 1.0, 0.1, 10.0).T
+
+    frame = 0
     while window.poll():
+        frame += 1
         command_encoder = device.createCommandEncoder()
 
-        # TODO: actually calculate uniforms here!
+        uidx = 0
+        for y in np.linspace(-1.0, 1.0, ROWS):
+            for x in np.linspace(-1.0, 1.0, COLS):
+                modelmat = transform_matrix([frame * 2, frame * 3, frame * 4], [x, y, -2.0], 0.7/ROWS)
+                cpu_draw_ubuff[uidx]['model_mat'] = modelmat.T
+                cpu_draw_ubuff[uidx]['color'] = (1.0, 1.0, 1.0, 1.0)
+                uidx += 1
 
         queue = device.getQueue()
         queue.writeBuffer(global_ubuff, 0, global_ubuff_staging)
         queue.writeBuffer(draw_ubuff, 0, draw_ubuff_staging)
 
         surface.getCurrentTexture(surf_tex)
-        print("Tex status?", surf_tex.status.name)
 
         color_view = surf_tex.texture.createView(
             format=xg.TextureFormat.Undefined,
@@ -228,20 +247,27 @@ def main():
         ])
         render_pass.setBindGroup(0, global_bg, [])
 
+        bgs = []
         for drawidx in range(ROWS*COLS):
-            draw_bg = device.createBindGroup(layout=bind_layout, entries=[
+            bgs.append(device.createBindGroup(layout=bind_layout, entries=[
                 xg.bindGroupEntry(
                     binding=0,
                     buffer=draw_ubuff,
                     offset=drawidx*DRAWUNIFORMS_DTYPE.itemsize,
                     size=DRAWUNIFORMS_DTYPE.itemsize,
                 ),
-            ])
-            render_pass.setBindGroup(1, draw_bg, [])
+            ]))
+
+        for bg in bgs:
+            render_pass.setBindGroup(1, bg, [])
             render_pass.drawIndexed(12*3, 1, 0, 0, 0)
         render_pass.end()
 
         queue.submit([command_encoder.finish()])
+
+        for bg in bgs:
+            bg.release()
+
         surface.present()
 
         color_view.release()
