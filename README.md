@@ -23,6 +23,10 @@ after upstream wgpu_native has a new release. `xgpu` addresses the first by
 being fully type-hinted and red-squiggle-free, and the second by being 
 automatically generated from the raw upstream C headers.
 
+`xgpu` is also significantly faster than `wgpu`, with some frequently called
+functions like `device.createBindGroup` being 2x to 3x faster in `xgpu`. 
+Startup time is faster as well.
+
 ### Conventions/Philosophy
 
 `xgpu` is a mostly 1-to-1 binding of `webgpu.h` (+`wgpu.h` from `wgpu_native`).
