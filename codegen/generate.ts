@@ -1296,11 +1296,6 @@ ${indent(1, conlines.join("\n"))}
 // * callbacks could auto-cast?
 // * a single chainable could be passed as a chained struct?
 
-// * Adapter.enumerateFeatures: shoves features into an-array-by-pointer
-//  (The way you're supposed to use this function is HACKY:
-//   first you call it with null and it returns how many features, then
-//   you allocate space and call again with pointer to that space!)
-
 // * cleanup: merge all the types into just CType
 //   * have .isPointer, and .inner
 //   * have a .resolve() that can deal w/ forward references
@@ -1309,7 +1304,6 @@ ${indent(1, conlines.join("\n"))}
 // QUESTIONS:
 // * do we need to explicitly call `reference` on returned things?
 
-// * less manual way of dealing with wgpu.h
 // * pretty printing
 // * maybe use https://cffi.readthedocs.io/en/stable/ref.html#ffi-new-handle-ffi-from-handle
 //   instead of current int userdata approach? (could store callback itself as handle?)
