@@ -1393,7 +1393,7 @@ from typing import Any, Iterator, Callable, Optional, Union, List
 
 from ._wgpu_native_cffi import ffi, lib
 
-def funny_version_name() -> str:
+def getFunnyVersionName() -> str:
     return "bronzed-bunting"
 
 # make typing temporarily happy until I can figure out if there's
