@@ -3,15 +3,15 @@ Stress test doing a lot of draw calls the naive way (without instancing)
 """
 
 import numpy as np
+import trimesh
 import wgpu
 from example_utils import proj_perspective
-from scipy.spatial.transform import Rotation
 
 
 def transform_matrix(rot, pos, scale=1.0):
-    r = Rotation.from_euler("zyx", rot, degrees=True)
+    r = trimesh.transformations.euler_matrix(rot[0], rot[1], rot[2])
     tf = np.eye(4, dtype=np.float32)
-    tf[0:3, 0:3] = r.as_matrix() * scale
+    tf[0:3, 0:3] = r[0:3, 0:3] * scale
     tf[0:3, 3] = pos
     return tf
 
@@ -223,7 +223,7 @@ def main(canvas):
         for y in np.linspace(-1.0, 1.0, ROWS):
             for x in np.linspace(-1.0, 1.0, COLS):
                 modelmat = transform_matrix(
-                    [frame * 2, frame * 3, frame * 4], [x, y, -2.0], 0.7 / ROWS
+                    [frame * 0.02 + x, frame * 0.03 + y, frame * 0.04], [x, y, -2.0], 0.7 / ROWS
                 )
                 cpu_draw_ubuff[uidx]["model_mat"] = modelmat.T
                 cpu_draw_ubuff[uidx]["color"] = (1.0, 1.0, 1.0, 1.0)
