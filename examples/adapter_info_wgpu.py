@@ -4,6 +4,9 @@ import time
 def main():
     import wgpu
 
+    def print_props(props):
+        print(f"{props['device']} [{props['backend_type']}], {props['description']}")
+
     def print_features(features):
         flist = sorted([str(f) for f in features])
         print("Features:", ", ".join(flist))
@@ -16,6 +19,7 @@ def main():
     adapter = wgpu.gpu.request_adapter(power_preference="high-performance")
     features = adapter.features
     print("========== ADAPTER ==========")
+    print_props(adapter.request_adapter_info())
     print_features(features)
     print_limits(adapter.limits)
 
