@@ -107,7 +107,7 @@ def _main(device: xg.Device):
         format=xg.TextureFormat.RGBA8Unorm,
         dimension=xg.TextureViewDimension._2D,
         mipLevelCount=1,
-        arrayLayerCount=1
+        arrayLayerCount=1,
     )
 
     color_attachment = xg.renderPassColorAttachment(

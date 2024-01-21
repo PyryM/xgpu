@@ -32,6 +32,7 @@ def proj_perspective(fov_y_radians, aspect_ratio, near, far):
         -vwidth / 2.0, vwidth / 2.0, -vheight / 2.0, vheight / 2.0, near, far
     )
 
+
 def buffer_layout_entry(binding, visibility, bind_type, dynamic_offset=False, min_size=0):
     entry = xg.BindGroupLayoutEntry(cdata=None, parent=None)
     entry.binding = binding

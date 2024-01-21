@@ -125,7 +125,8 @@ class GLFWWindow:
             else:
                 print("XLIB?")
                 inner = xgpu.surfaceDescriptorFromXlibWindow(
-                    display=xgpu.VoidPtr.raw_cast(self.display_id), window=self.window_handle
+                    display=xgpu.VoidPtr.raw_cast(self.display_id),
+                    window=self.window_handle,
                 )
         else:
             raise RuntimeError("This OS not supported yet: consider installing Ubuntu")
