@@ -1179,9 +1179,14 @@ class ListWrapper implements Emittable {
   constructor(public ctype: CType) {}
 
   emit(): string {
+    // TODO:
+    // we're always stashing the input list to avoid garbage collection issues
+    // when the items themselves might contain pointers/lists, but perhaps
+    // we should actually *check* on a per-struct basis if this is necessary
     return `
 class ${listName(this.ctype.pyName)}:
     def __init__(self, items: List[${this.ctype.pyAnnotation(false, false)}]):
+        self._stashed = items
         self._count = len(items)
         self._ptr = _ffi_new('${this.ctype.cName}[]', self._count)
         for idx, item in enumerate(items):
