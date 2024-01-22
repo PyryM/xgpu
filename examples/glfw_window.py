@@ -74,7 +74,6 @@ class GLFWWindow:
         print("window:", self.window_handle)
         print("display:", self.display_id)
         self._surface = None
-        self._surf_config = None
 
     def poll(self) -> bool:
         glfw.poll_events()
@@ -84,20 +83,16 @@ class GLFWWindow:
         print("Configuring surface?")
         if self._surface is None:
             return
-        if self._surf_config is None:
-            self._surf_config = xgpu.surfaceConfiguration(
-                device=device,
-                usage=xgpu.TextureUsageFlags([xgpu.TextureUsage.RenderAttachment]),
-                viewFormats=[format],
-                format=format,
-                alphaMode=xgpu.CompositeAlphaMode.Auto,
-                width=self.width,
-                height=self.height,
-                presentMode=xgpu.PresentMode.Fifo,
-            )
-        self._surf_config.width = self.width
-        self._surf_config.height = self.height
-        self._surface.configure(self._surf_config)
+        self._surface.configure(
+            device=device,
+            usage=xgpu.TextureUsage.RenderAttachment,
+            viewFormats=[format],
+            format=format,
+            alphaMode=xgpu.CompositeAlphaMode.Auto,
+            width=self.width,
+            height=self.height,
+            presentMode=xgpu.PresentMode.Fifo,
+        )
         print("Configured surface?")
 
     def get_surface(self, instance: Instance) -> Surface:

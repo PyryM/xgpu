@@ -12,10 +12,7 @@ import {
   titleCase,
 } from "./stringmanip";
 import { docs } from "./extract_docs";
-import {
-  PATCHED_FUNCTIONS,
-  FORCE_NULLABLE_ARGS,
-} from "./patches";
+import { PATCHED_FUNCTIONS, FORCE_NULLABLE_ARGS } from "./patches";
 
 function readHeader(fn: string): string {
   let header = readFileSync(fn).toString("utf8");
@@ -381,7 +378,7 @@ class ApiInfo {
       kind: "primitive",
       pyAnnotation: () => "VoidPtr",
       wrap: (v) => `VoidPtr(${v})`,
-      unwrap: (v) => `${v}._ptr`
+      unwrap: (v) => `${v}._ptr`,
     });
 
     // C `char *` is treated specially as Python `str`
@@ -880,7 +877,7 @@ class PointerField implements CStructField {
 
   argtype(): string {
     let annotation = this.ctype.pyAnnotation(true, false);
-    if(this.ctype.cName === "void") {
+    if (this.ctype.cName === "void") {
       // HACK
       annotation = "VoidPtr";
     }
@@ -963,8 +960,10 @@ function getDescriptorArg(
   }
   const maybeDescArg = func.args[expectedArgCount - 1];
   if (
-    maybeDescArg.name === "descriptor" &&
-    maybeDescArg.ctype.cName.endsWith("Descriptor")
+    (maybeDescArg.name === "descriptor" &&
+      maybeDescArg.ctype.cName.endsWith("Descriptor")) ||
+    (maybeDescArg.name === "config" &&
+      maybeDescArg.ctype.cName.endsWith("Configuration"))
   ) {
     return maybeDescArg.ctype as CStruct;
   }

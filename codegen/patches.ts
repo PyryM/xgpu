@@ -10,12 +10,21 @@ function listFeatures(className: string): string[] {
   ];
 }
 
+function notImplemented(name: string): string[] {
+  return [
+    `# ${name} is not implemented`,
+    `# def ${name}(...):`,
+    ``
+  ];
+}
+
 export const FORCE_NULLABLE_ARGS: Set<string> = new Set([
   "wrappedSubmissionIndex",
 ]);
 
 export const PATCHED_FUNCTIONS: Map<string, string[]> = new Map([
   ["wgpuAdapterEnumerateFeatures", listFeatures("Adapter")],
-  ["wgpuDeviceEnumerateFeatures", listFeatures("Device")]
+  ["wgpuDeviceEnumerateFeatures", listFeatures("Device")],
+  ["wgpuSurfaceGetCapabilities", notImplemented("GetCapabilities")]
 ]);
 

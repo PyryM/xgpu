@@ -7,11 +7,12 @@ import time
 import glfw_window
 import numpy as np
 import trimesh
-from example_utils import buffer_layout_entry, proj_perspective
+from example_utils import proj_perspective
 from numpy.typing import NDArray
 
 import xgpu as xg
-from xgpu.conveniences import create_buffer_with_data, get_adapter, get_device
+from xgpu.conveniences import get_adapter, get_device
+from xgpu.extensions import XDevice, XSurface, bufferLayoutEntry
 
 
 def set_transform(target: NDArray, rot, scale: float, pos: NDArray):
@@ -62,7 +63,7 @@ GLOBALUNIFORMS_DTYPE = np.dtype(
 )
 
 
-def create_geometry_buffers(device: xg.Device):
+def create_geometry_buffers(device: XDevice):
     raw_verts = []
     for z in [-1.0, 1.0]:
         for y in [-1.0, 1.0]:
@@ -81,8 +82,8 @@ def create_geometry_buffers(device: xg.Device):
     raw_indices = [int(s) for s in indexlist.split()]
     idata = bytes(np.array(raw_indices, dtype=np.uint16))
 
-    vbuff = create_buffer_with_data(device, vdata, xg.BufferUsage.Vertex)
-    ibuff = create_buffer_with_data(device, idata, xg.BufferUsage.Index)
+    vbuff = device.createBufferWithData(vdata, xg.BufferUsage.Vertex)
+    ibuff = device.createBufferWithData(idata, xg.BufferUsage.Index)
     return vbuff, ibuff
 
 
@@ -93,13 +94,11 @@ def main():
     window = glfw_window.GLFWWindow(WIDTH, HEIGHT, "woo")
 
     instance = xg.createInstance()
-    surface = window.get_surface(instance)
+    surface = XSurface(window.get_surface(instance))
     (adapter, _) = get_adapter(instance, xg.PowerPreference.HighPerformance, surface)
-    device = get_device(adapter)
+    device = XDevice(get_device(adapter))
 
-    limits = xg.SupportedLimits()
-    device.getLimits(limits)
-    uniform_align = limits.limits.minUniformBufferOffsetAlignment
+    uniform_align = device.getLimits2().minUniformBufferOffsetAlignment
     print("Alignment requirement:", uniform_align)
     DRAWUNIFORMS_DTYPE = np.dtype(
         {
@@ -113,10 +112,10 @@ def main():
     # same layout for both global and draw uniforms
     bind_layout = device.createBindGroupLayout(
         entries=[
-            buffer_layout_entry(
+            bufferLayoutEntry(
                 binding=0,
                 visibility=xg.ShaderStage.Vertex | xg.ShaderStage.Fragment,
-                bind_type=xg.BufferBindingType.Uniform,
+                type=xg.BufferBindingType.Uniform,
             ),
         ]
     )
@@ -130,10 +129,7 @@ def main():
 
     window.configure_surface(device, window_tex_format)
 
-    shader = device.createShaderModule(
-        nextInChain=xg.ChainedStruct([xg.shaderModuleWGSLDescriptor(code=SHADER_SOURCE)]),
-        hints=[],
-    )
+    shader = device.createWGSLShaderModule(code=SHADER_SOURCE)
 
     REPLACE = xg.blendComponent(
         srcFactor=xg.BlendFactor.One,
@@ -182,8 +178,6 @@ def main():
         ),
     )
     render_pipeline.assert_valid()
-
-    surf_tex = xg.SurfaceTexture()
 
     ROWS = 32
     COLS = 32
@@ -242,8 +236,7 @@ def main():
         queue.writeBuffer(global_ubuff, 0, global_ubuff_staging)
         queue.writeBuffer(draw_ubuff, 0, draw_ubuff_staging)
 
-        surface.getCurrentTexture(surf_tex)
-
+        surf_tex = surface.getCurrentTexture2()
         color_view = surf_tex.texture.createView(
             format=xg.TextureFormat.Undefined,
             dimension=xg.TextureViewDimension._2D,
