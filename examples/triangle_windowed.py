@@ -10,6 +10,7 @@ import glfw_window
 
 import xgpu as xg
 from xgpu.conveniences import get_adapter, get_device
+from xgpu.extensions import XDevice, XSurface
 
 shader_source = """
 struct VertexInput {
@@ -54,9 +55,9 @@ def main():
     window = glfw_window.GLFWWindow(WIDTH, HEIGHT, "woo")
 
     instance = xg.createInstance()
-    surface = window.get_surface(instance)
+    surface = XSurface(window.get_surface(instance))
     (adapter, _) = get_adapter(instance, xg.PowerPreference.HighPerformance, surface)
-    device = get_device(adapter)
+    device = XDevice(get_device(adapter))
 
     window_tex_format = xg.TextureFormat.BGRA8Unorm
     # surface.getPreferredFormat(adapter)
@@ -64,11 +65,7 @@ def main():
 
     window.configure_surface(device, window_tex_format)
 
-    shader = device.createShaderModule(
-        nextInChain=xg.ChainedStruct([xg.shaderModuleWGSLDescriptor(code=shader_source)]),
-        hints=[],
-    )
-
+    shader = device.createWGSLShaderModule(code=shader_source)
     layout = device.createPipelineLayout(bindGroupLayouts=[])
 
     REPLACE = xg.blendComponent(
@@ -101,12 +98,10 @@ def main():
         fragment=fragment,
     )
 
-    surf_tex = xg.SurfaceTexture()
-
     while window.poll():
         command_encoder = device.createCommandEncoder()
 
-        surface.getCurrentTexture(surf_tex)
+        surf_tex = surface.getCurrentTexture2()
         print("Tex status?", surf_tex.status.name)
 
         color_view = surf_tex.texture.createView(

@@ -12,10 +12,7 @@ import {
   titleCase,
 } from "./stringmanip";
 import { docs } from "./extract_docs";
-import {
-  PATCHED_FUNCTIONS,
-  FORCE_NULLABLE_ARGS,
-} from "./patches";
+import { PATCHED_FUNCTIONS, FORCE_NULLABLE_ARGS } from "./patches";
 
 function readHeader(fn: string): string {
   let header = readFileSync(fn).toString("utf8");
@@ -381,7 +378,7 @@ class ApiInfo {
       kind: "primitive",
       pyAnnotation: () => "VoidPtr",
       wrap: (v) => `VoidPtr(${v})`,
-      unwrap: (v) => `${v}._ptr`
+      unwrap: (v) => `${v}._ptr`,
     });
 
     // C `char *` is treated specially as Python `str`
@@ -880,7 +877,7 @@ class PointerField implements CStructField {
 
   argtype(): string {
     let annotation = this.ctype.pyAnnotation(true, false);
-    if(this.ctype.cName === "void") {
+    if (this.ctype.cName === "void") {
       // HACK
       annotation = "VoidPtr";
     }
@@ -963,8 +960,10 @@ function getDescriptorArg(
   }
   const maybeDescArg = func.args[expectedArgCount - 1];
   if (
-    maybeDescArg.name === "descriptor" &&
-    maybeDescArg.ctype.cName.endsWith("Descriptor")
+    (maybeDescArg.name === "descriptor" &&
+      maybeDescArg.ctype.cName.endsWith("Descriptor")) ||
+    (maybeDescArg.name === "config" &&
+      maybeDescArg.ctype.cName.endsWith("Configuration"))
   ) {
     return maybeDescArg.ctype as CStruct;
   }
@@ -1179,9 +1178,14 @@ class ListWrapper implements Emittable {
   constructor(public ctype: CType) {}
 
   emit(): string {
+    // TODO:
+    // we're always stashing the input list to avoid garbage collection issues
+    // when the items themselves might contain pointers/lists, but perhaps
+    // we should actually *check* on a per-struct basis if this is necessary
     return `
 class ${listName(this.ctype.pyName)}:
     def __init__(self, items: List[${this.ctype.pyAnnotation(false, false)}]):
+        self._stashed = items
         self._count = len(items)
         self._ptr = _ffi_new('${this.ctype.cName}[]', self._count)
         for idx, item in enumerate(items):
@@ -1291,11 +1295,6 @@ ${indent(1, conlines.join("\n"))}
 // * callbacks could auto-cast?
 // * a single chainable could be passed as a chained struct?
 
-// * Adapter.enumerateFeatures: shoves features into an-array-by-pointer
-//  (The way you're supposed to use this function is HACKY:
-//   first you call it with null and it returns how many features, then
-//   you allocate space and call again with pointer to that space!)
-
 // * cleanup: merge all the types into just CType
 //   * have .isPointer, and .inner
 //   * have a .resolve() that can deal w/ forward references
@@ -1304,7 +1303,6 @@ ${indent(1, conlines.join("\n"))}
 // QUESTIONS:
 // * do we need to explicitly call `reference` on returned things?
 
-// * less manual way of dealing with wgpu.h
 // * pretty printing
 // * maybe use https://cffi.readthedocs.io/en/stable/ref.html#ffi-new-handle-ffi-from-handle
 //   instead of current int userdata approach? (could store callback itself as handle?)
@@ -1394,8 +1392,8 @@ from typing import Any, Iterator, Callable, Optional, Union, List
 
 from ._wgpu_native_cffi import ffi, lib
 
-def funny_version_name() -> str:
-    return "aggressive-alpaca"
+def getFunnyVersionName() -> str:
+    return "bronzed-bunting"
 
 # make typing temporarily happy until I can figure out if there's
 # a better way to have type information about CData fields
