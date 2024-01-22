@@ -185,8 +185,8 @@ def main():
 
     surf_tex = xg.SurfaceTexture()
 
-    ROWS = 30
-    COLS = 30
+    ROWS = 32
+    COLS = 32
     PRIM_COUNT = ROWS * COLS
 
     vbuff, ibuff = create_geometry_buffers(device)
@@ -207,9 +207,16 @@ def main():
 
     cpu_global_ubuff["view_proj_mat"] = proj_perspective(np.pi / 3.0, 1.0, 0.1, 10.0).T
 
-    perf_times = []
     frame = 0
+    perf_times = []
+    frame_times = []
+    last_frame_t = time.perf_counter_ns()
+
     while window.poll():
+        cur_ft = time.perf_counter_ns()
+        frame_times.append((cur_ft - last_frame_t) / 1e6)
+        last_frame_t = cur_ft
+
         # Update model matrices: this is surprisingly expensive in Python,
         # so we don't include this time in the performance measurements
         uidx = 0
@@ -218,9 +225,10 @@ def main():
             for x in np.linspace(-1.0, 1.0, COLS):
                 pos[0] = x
                 pos[1] = y
+                r = 5.0 * ((x**2.0) + (y**2.0)) ** 0.5
                 set_transform(
                     cpu_draw_ubuff[uidx]["model_mat"],
-                    [frame * 0.02 + x + y, frame * 0.03 + x, frame * 0.04 + y],
+                    [frame * 0.02 + r, frame * 0.03 + r, frame * 0.04],
                     0.7 / ROWS,
                     pos,
                 )
@@ -309,7 +317,10 @@ def main():
             print(frame)
         elif frame == 1000:
             # write performance info
-            print("Mean time per frame:", np.mean(perf_times))
+            print("Mean API time per frame:", np.mean(perf_times))
+            print("Mean full time per frame:", np.mean(frame_times))
+            with open("full_frame_timings_xgpu.txt", "w") as dest:
+                dest.write("\n".join([str(t) for t in frame_times]))
             with open("timings_xgpu.txt", "w") as dest:
                 dest.write("\n".join([str(t) for t in perf_times]))
         frame += 1
