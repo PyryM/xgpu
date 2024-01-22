@@ -2,18 +2,21 @@
 Stress test doing a lot of draw calls the naive way (without instancing)
 """
 
+import time
+
 import numpy as np
 import trimesh
 import wgpu
 from example_utils import proj_perspective
+from numpy.typing import NDArray
 
 
-def transform_matrix(rot, pos, scale=1.0):
+def set_transform(target: NDArray, rot, scale: float, pos: NDArray):
+    # Note: webgpu expects column-major array order
     r = trimesh.transformations.euler_matrix(rot[0], rot[1], rot[2])
-    tf = np.eye(4, dtype=np.float32)
-    tf[0:3, 0:3] = r[0:3, 0:3] * scale
-    tf[0:3, 3] = pos
-    return tf
+    target[0:3, 0:3] = r[0:3, 0:3].T * scale
+    target[3, 0:3] = pos
+    target[3, 3] = 1.0
 
 
 SHADER_SOURCE = """
@@ -46,15 +49,6 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 }
 """
 
-DRAWUNIFORMS_DTYPE = np.dtype(
-    {
-        "names": ["model_mat", "color"],
-        "formats": [np.dtype((np.float32, (4, 4))), np.dtype((np.float32, 4))],
-        "offsets": [0, 64],
-        "itemsize": 128,  # HACK: uniform buffers have weird alignment requirements!
-    }
-)
-
 GLOBALUNIFORMS_DTYPE = np.dtype(
     {
         "names": ["view_proj_mat"],
@@ -73,44 +67,15 @@ def create_geometry_buffers(device: wgpu.GPUDevice):
                 raw_verts.extend([x, y, z, 1.0])
 
     vdata = bytes(np.array(raw_verts, dtype=np.float32))
-    raw_indices = [
-        2,
-        7,
-        6,
-        2,
-        3,
-        7,
-        0,
-        5,
-        4,
-        0,
-        1,
-        5,
-        0,
-        6,
-        2,
-        0,
-        4,
-        6,
-        1,
-        7,
-        3,
-        1,
-        5,
-        7,
-        0,
-        3,
-        2,
-        0,
-        1,
-        3,
-        4,
-        7,
-        6,
-        4,
-        5,
-        7,
-    ]
+    indexlist = """
+    0 1 3 3 2 0
+    1 5 7 7 3 1
+    4 6 7 7 5 4
+    2 6 4 4 0 2
+    0 4 5 5 1 0
+    3 7 6 6 2 3
+    """
+    raw_indices = [int(s) for s in indexlist.split()]
     idata = bytes(np.array(raw_indices, dtype=np.uint16))
 
     vbuff = device.create_buffer_with_data(data=vdata, usage=wgpu.BufferUsage.VERTEX)
@@ -120,13 +85,22 @@ def create_geometry_buffers(device: wgpu.GPUDevice):
 
 def main(canvas):
     adapter = wgpu.gpu.request_adapter(power_preference="high-performance")
-    device = adapter.request_device(
-        required_limits={"min_uniform_buffer_offset_alignment": 64}
-    )
+    device = adapter.request_device(required_limits=adapter.limits)
 
     present_context = canvas.get_context()
     window_tex_format = present_context.get_preferred_format(device.adapter)
     present_context.configure(device=device, format=window_tex_format)
+
+    uniform_align = device.limits["min_uniform_buffer_offset_alignment"]
+    print("Alignment requirement:", uniform_align)
+    DRAWUNIFORMS_DTYPE = np.dtype(
+        {
+            "names": ["model_mat", "color"],
+            "formats": [np.dtype((np.float32, (4, 4))), np.dtype((np.float32, 4))],
+            "offsets": [0, 64],
+            "itemsize": max(uniform_align, 128),
+        }
+    )
 
     # same layout for both global and draw uniforms
     bind_layout = device.create_bind_group_layout(
@@ -155,6 +129,8 @@ def main(canvas):
     }
     primitive = {
         "topology": wgpu.PrimitiveTopology.triangle_list,
+        "front_face": wgpu.FrontFace.cw,
+        "cull_mode": wgpu.CullMode.back,
     }
     color_target = {
         "format": window_tex_format,
@@ -211,29 +187,37 @@ def main(canvas):
     cpu_global_ubuff["view_proj_mat"] = proj_perspective(np.pi / 3.0, 1.0, 0.1, 10.0).T
 
     gframe = [0]
+    perf_times = []
 
     def draw_frame():
-        current_texture = present_context.get_current_texture()
-        command_encoder = device.create_command_encoder()
-
-        gframe[0] += 1
         frame = gframe[0]
 
+        # Update model matrices: this is surprisingly expensive in Python,
+        # so we don't include this time in the performance measurements
         uidx = 0
+        pos = np.array([0.0, 0.0, -2.0], dtype=np.float32)
         for y in np.linspace(-1.0, 1.0, ROWS):
             for x in np.linspace(-1.0, 1.0, COLS):
-                modelmat = transform_matrix(
-                    [frame * 0.02 + x, frame * 0.03 + y, frame * 0.04], [x, y, -2.0], 0.7 / ROWS
+                pos[0] = x
+                pos[1] = y
+                set_transform(
+                    cpu_draw_ubuff[uidx]["model_mat"],
+                    [frame * 0.02 + x + y, frame * 0.03 + x, frame * 0.04 + y],
+                    0.7 / ROWS,
+                    pos,
                 )
-                cpu_draw_ubuff[uidx]["model_mat"] = modelmat.T
                 cpu_draw_ubuff[uidx]["color"] = (1.0, 1.0, 1.0, 1.0)
                 uidx += 1
 
+        # Time this block of webgpu calls
+        t0 = time.perf_counter_ns()
+        command_encoder = device.create_command_encoder()
         queue = device.queue
         queue.write_buffer(global_ubuff, 0, cpu_global_ubuff)
         queue.write_buffer(draw_ubuff, 0, cpu_draw_ubuff)
 
-        color_view = current_texture  # .create_view()
+        current_texture = present_context.get_current_texture()
+        color_view = current_texture.create_view()
 
         color_attachment = {
             "view": color_view,
@@ -288,10 +272,22 @@ def main(canvas):
         render_pass.end()
 
         queue.submit([command_encoder.finish()])
-        if frame < 1000:
-            if frame % 100 == 0:
-                print(frame)
-            canvas.request_draw(draw_frame)
+
+        # We end timing here because if we time surface.present()
+        # we'll just measure vsync timing
+        dt = time.perf_counter_ns() - t0
+
+        perf_times.append(dt / 1e6)  # convert to ms
+        if frame < 1000 and frame % 100 == 0:
+            print(frame)
+        elif frame == 1000:
+            # write performance info
+            print("Mean time per frame:", np.mean(perf_times))
+            with open("timings_wgpu.txt", "w") as dest:
+                dest.write("\n".join([str(t) for t in perf_times]))
+        gframe[0] += 1
+
+        canvas.request_draw(draw_frame)
 
     canvas.request_draw(draw_frame)
     return device
