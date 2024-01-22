@@ -11,7 +11,8 @@ import time
 from PIL import Image
 
 import xgpu as xg
-from xgpu.conveniences import get_adapter, get_device, read_rgba_texture
+from xgpu.conveniences import get_adapter, get_device
+from xgpu.extensions import XDevice
 
 shader_source = """
 struct VertexInput {
@@ -52,7 +53,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 def main(power_preference=xg.PowerPreference.HighPerformance):
     t0 = time.time()
     (adapter, _) = get_adapter(instance=None, power=power_preference)
-    device = get_device(adapter)
+    device = XDevice(get_device(adapter))
     dt = time.time() - t0
     print(f"Took: {dt}")
     return _main(device)
@@ -63,15 +64,11 @@ def write_image(filename: str, data: bytes, size: tuple[int, int]):
     img.save(filename)
 
 
-def _main(device: xg.Device):
+def _main(device: XDevice):
     WIDTH = 1024
     HEIGHT = 1024
 
-    shader = device.createShaderModule(
-        nextInChain=xg.ChainedStruct([xg.shaderModuleWGSLDescriptor(code=shader_source)]),
-        hints=[],
-    )
-
+    shader = device.createWGSLShaderModule(code=shader_source)
     layout = device.createPipelineLayout(bindGroupLayouts=[])
 
     color_tex = device.createTexture(
@@ -128,7 +125,7 @@ def _main(device: xg.Device):
     device.getQueue().submit([command_encoder.finish()])
 
     FILENAME = "test.png"
-    texdata = read_rgba_texture(device, color_tex)
+    texdata = device.readRGBATexture(color_tex)
     print("Tex data size:", len(texdata))
     write_image(FILENAME, texdata, (WIDTH, HEIGHT))
     print(f"Done: saved to {FILENAME}")

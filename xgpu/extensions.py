@@ -47,6 +47,32 @@ class XDevice(xg.Device):
         buffer.unmap()
         return res
 
+    def readRGBATexture(self, tex: xg.Texture) -> bytes:
+        (w, h) = (tex.getWidth(), tex.getHeight())
+        bytesize = w * h * 4
+        # create a staging buffer?
+        readbuff = self.createBuffer(
+            usage=xg.BufferUsage.CopyDst | xg.BufferUsage.MapRead,
+            size=bytesize,
+            mappedAtCreation=False,
+        )
+        encoder = self.createCommandEncoder()
+        encoder.copyTextureToBuffer(
+            source=xg.imageCopyTexture(
+                texture=tex,
+                mipLevel=0,
+                origin=xg.origin3D(x=0, y=0, z=0),
+                aspect=xg.TextureAspect.All,
+            ),
+            destination=xg.imageCopyBuffer(
+                layout=xg.textureDataLayout(offset=0, bytesPerRow=w * 4, rowsPerImage=h),
+                buffer=readbuff,
+            ),
+            copySize=xg.extent3D(width=w, height=h, depthOrArrayLayers=1),
+        )
+        self.getQueue().submit([encoder.finish()])
+        return self.readBuffer(readbuff, 0, bytesize)
+
     def getLimits2(self) -> xg.Limits:
         happy = self.getLimits(self.limits)
         if not happy:
