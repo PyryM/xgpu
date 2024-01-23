@@ -81,7 +81,7 @@ def fix_name(name):
 
 
 BASE_URL = "https://github.com/gfx-rs/wgpu-native/releases/download/"
-VERSION = "0.18.1.4"
+VERSION = "0.19.1.1"
 
 SYSNAME = uname().system.lower()
 IS_WINDOWS = SYSNAME == "windows" or ("microsoft" in uname().release.lower())

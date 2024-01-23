@@ -16,6 +16,12 @@ class XDevice(xg.Device):
     def __init__(self, inner: xg.Device):
         super().__init__(inner._cdata)
         self.limits = xg.SupportedLimits()
+        self.queue = super().getQueue()
+
+    def getQueue(self) -> xg.Queue:
+        # Workaround for reference counting issue with queues in
+        # wgpu-native 0.19.1.1
+        return self.queue
 
     def createWGSLShaderModule(self, code: str) -> xg.ShaderModule:
         return self.createShaderModule(
