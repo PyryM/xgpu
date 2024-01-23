@@ -12,7 +12,8 @@ import {
   titleCase,
 } from "./stringmanip";
 import { docs } from "./extract_docs";
-import { PATCHED_FUNCTIONS, FORCE_NULLABLE_ARGS } from "./patches";
+import { PATCHED_FUNCTIONS, FORCE_NULLABLE_ARGS, PATCHED_CLASSES } from "./patches";
+import { pyBool, toPyName, pyUnion, pyOptional, pyList } from "./pygen";
 
 function readHeader(fn: string): string {
   let header = readFileSync(fn).toString("utf8");
@@ -29,8 +30,6 @@ function readHeader(fn: string): string {
 const PNAME = "xgpu";
 const HEADERS = [`${PNAME}/include/webgpu.h`, `${PNAME}/include/wgpu.h`];
 const SRC = HEADERS.map(readHeader).join("\n");
-
-const IS_PY12 = false;
 
 const SPECIAL_CLASSES: Set<string> = new Set([
   "WGPUChainedStruct",
@@ -80,14 +79,6 @@ interface CEnumVal {
   val: string;
 }
 
-function pyOptional(pyType: string): string {
-  return IS_PY12 ? `${pyType} | None` : `Optional[${pyType}]`;
-}
-
-function pyUnion(...args: string[]): string {
-  return IS_PY12 ? args.join(" | ") : `Union[${args.join(", ")}]`;
-}
-
 function onlyDefined<T>(items: (T | undefined)[]): T[] {
   const res: T[] = [];
   for (const item of items) {
@@ -119,7 +110,6 @@ class CEnum implements CType {
 
   mergeValues(values: CEnumVal[]) {
     for (const { name, val } of values) {
-      console.log("MERGING", name, val);
       this.values.push({ name, val });
       if (name !== "Force32") {
         this.sanitized.push({ name: sanitizeIdent(name), val });
@@ -184,10 +174,11 @@ class CFlags implements CType {
   emit(): string {
     const etypename = this.etype.pyAnnotation();
     const ftq = quoted(this.pyName);
+    const flist = pyList(etypename); 
 
     return `
 class ${this.pyName}:
-    def __init__(self, flags: ${pyUnion(`List[${etypename}]`, `int`, ftq)}):
+    def __init__(self, flags: ${pyUnion(flist, `int`, ftq)}):
         if isinstance(flags, list):
             self.value = sum(set(flags))
         else:
@@ -228,10 +219,6 @@ function parseEnumEntry(
   }
   const [name, val] = entry.split("=").map((e) => e.trim());
   return { name: cleanup(name, parentName), val };
-}
-
-function toPyName(ident: string, isClass = false): string {
-  return recase(removePrefix(ident, ["WGPU", "wgpu"]), isClass);
 }
 
 interface Refinfo {
@@ -650,7 +637,7 @@ class ApiInfo {
         // assume this is a (count, ptr) combo
         const wrapperName = this.getListWrapper(next.ctype);
         const lname = quoted(wrapperName);
-        const maybeList = pyUnion(lname, `List[${next.ctype.pyName}]`);
+        const maybeList = pyUnion(lname, pyList(next.ctype.pyName));
         pyArgs.push(`${next.name}: ${maybeList}`);
         staging.push(`if isinstance(${next.name}, list):`);
         staging.push(`    ${next.name}_staged = ${wrapperName}(${next.name})`);
@@ -757,7 +744,7 @@ class ArrayField implements CStructField {
   }
 
   argType(): string {
-    return pyUnion(this.listType(), `List[${quoted(this.ctype.pyName)}]`);
+    return pyUnion(this.listType(), pyList(quoted(this.ctype.pyName)));
   }
 
   arg(): string {
@@ -1027,10 +1014,6 @@ function emitFuncDef(
   }
 }
 
-function pyBool(b?: boolean): string {
-  return b ? "True" : "False";
-}
-
 class COpaque implements CType {
   kind: "opaque" = "opaque";
   funcs: Map<string, CFunc> = new Map();
@@ -1182,9 +1165,10 @@ class ListWrapper implements Emittable {
     // we're always stashing the input list to avoid garbage collection issues
     // when the items themselves might contain pointers/lists, but perhaps
     // we should actually *check* on a per-struct basis if this is necessary
+    const ltype = pyList(this.ctype.pyAnnotation(false, false));
     return `
 class ${listName(this.ctype.pyName)}:
-    def __init__(self, items: List[${this.ctype.pyAnnotation(false, false)}]):
+    def __init__(self, items: ${ltype}):
         self._stashed = items
         self._count = len(items)
         self._ptr = _ffi_new('${this.ctype.cName}[]', self._count)
@@ -1319,7 +1303,10 @@ const cdefFrags: string[] = [cleanHeader(SRC, EMPTY_DEFINES)];
 
 pyFrags.push("# Basic types");
 for (const [_name, ctype] of api.types.entries()) {
-  if (ctype.emit) {
+  const patched = PATCHED_CLASSES.get(ctype.cName);
+  if (patched) {
+    pyFrags.push(patched)
+  } else if (ctype.emit) {
     pyFrags.push(ctype.emit(api));
   }
 }
