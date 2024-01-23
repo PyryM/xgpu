@@ -59,6 +59,15 @@ def main():
     (adapter, _) = get_adapter(instance, xg.PowerPreference.HighPerformance, surface)
     device = XDevice(get_device(adapter))
 
+    # Lets list some capabilities of this surface
+    surf_caps = surface.getCapabilities(adapter)
+    print("==== Surface Caps ====")
+    print("Formats:", ", ".join([fmt.name for fmt in surf_caps.formats]))
+    print("Present modes:", ", ".join([mode.name for mode in surf_caps.presentModes]))
+    print(
+        "Composite+alpha modes:", ", ".join([mode.name for mode in surf_caps.alphaModes])
+    )
+
     window_tex_format = xg.TextureFormat.BGRA8Unorm
     # surface.getPreferredFormat(adapter)
     print("Window tex format:", window_tex_format.name)
@@ -102,7 +111,6 @@ def main():
         command_encoder = device.createCommandEncoder()
 
         surf_tex = surface.getCurrentTexture2()
-        print("Tex status?", surf_tex.status.name)
 
         color_view = surf_tex.texture.createView(
             format=xg.TextureFormat.Undefined,
