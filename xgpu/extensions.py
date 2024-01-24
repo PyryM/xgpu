@@ -50,7 +50,7 @@ class XDevice(xg.Device):
         )
 
     def createBufferWithData(
-        self, data: bytes, usage: Union[xg.BufferUsage, xg.BufferUsageFlags]
+        self, data: bytes, usage: Union[xg.BufferUsage, xg.BufferUsageFlags, int]
     ) -> xg.Buffer:
         bsize = len(data)
         buffer = self.createBuffer(usage=usage, size=bsize, mappedAtCreation=True)
