@@ -12,6 +12,23 @@ def _mapped_cb(status):
 mapped_cb = xg.BufferMapCallback(_mapped_cb)
 
 
+class XAdapter(xg.Adapter):
+    def __init__(self, inner: xg.Adapter):
+        super().__init__(inner._cdata)
+        self.properties = xg.AdapterProperties()
+        self.limits = xg.SupportedLimits()
+
+    def getLimits2(self) -> xg.Limits:
+        happy = self.getLimits(self.limits)
+        if not happy:
+            raise RuntimeError("Failed to get limits.")
+        return self.limits.limits
+
+    def getProperties2(self) -> xg.AdapterProperties:
+        self.getProperties(self.properties)
+        return self.properties
+
+
 class XDevice(xg.Device):
     def __init__(self, inner: xg.Device):
         super().__init__(inner._cdata)
@@ -56,6 +73,32 @@ class XDevice(xg.Device):
         res = mapping.to_bytes()
         buffer.unmap()
         return res
+
+    def readRawTexture(
+        self, tex: xg.Texture, bytesize: int, layout: xg.TextureDataLayout
+    ) -> bytes:
+        (w, h, d) = (tex.getWidth(), tex.getHeight(), tex.getDepthOrArrayLayers())
+        readbuff = self.createBuffer(
+            usage=xg.BufferUsage.CopyDst | xg.BufferUsage.MapRead,
+            size=bytesize,
+            mappedAtCreation=False,
+        )
+        encoder = self.createCommandEncoder()
+        encoder.copyTextureToBuffer(
+            source=xg.imageCopyTexture(
+                texture=tex,
+                mipLevel=0,
+                origin=xg.origin3D(x=0, y=0, z=0),
+                aspect=xg.TextureAspect.All,
+            ),
+            destination=xg.imageCopyBuffer(
+                layout=layout,
+                buffer=readbuff,
+            ),
+            copySize=xg.extent3D(width=w, height=h, depthOrArrayLayers=d),
+        )
+        self.getQueue().submit([encoder.finish()])
+        return self.readBuffer(readbuff, 0, bytesize)
 
     def readRGBATexture(self, tex: xg.Texture) -> bytes:
         (w, h) = (tex.getWidth(), tex.getHeight())

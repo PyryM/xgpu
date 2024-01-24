@@ -2,6 +2,7 @@ import time
 from typing import Optional
 
 from . import bindings as xg
+from .extensions import XAdapter, XDevice
 
 
 def maybe_chain(item: Optional[xg.Chainable] = None) -> Optional[xg.ChainedStruct]:
@@ -26,7 +27,7 @@ def get_adapter(
     instance: Optional[xg.Instance] = None,
     power=xg.PowerPreference.HighPerformance,
     surface: Optional[xg.Surface] = None,
-) -> tuple[xg.Adapter, xg.Instance]:
+) -> tuple[XAdapter, xg.Instance]:
     adapter: list[Optional[xg.Adapter]] = [None]
 
     def adapterCB(status: xg.RequestAdapterStatus, gotten: xg.Adapter, msg: str):
@@ -50,14 +51,14 @@ def get_adapter(
     while adapter[0] is None:
         time.sleep(0.1)
 
-    return (adapter[0], instance)
+    return (XAdapter(adapter[0]), instance)
 
 
 def get_device(
     adapter: xg.Adapter,
     features: Optional[list[xg.FeatureName]] = None,
     limits: Optional[xg.RequiredLimits] = None,
-) -> xg.Device:
+) -> XDevice:
     device: list[Optional[xg.Device]] = [None]
 
     def deviceCB(status: xg.RequestDeviceStatus, gotten: xg.Device, msg: str):
@@ -92,4 +93,4 @@ def get_device(
     while device[0] is None:
         time.sleep(0.1)
 
-    return device[0]
+    return XDevice(device[0])
