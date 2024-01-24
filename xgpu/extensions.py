@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Optional, Union
 
 from . import bindings as xg
 
@@ -23,9 +23,12 @@ class XDevice(xg.Device):
         # wgpu-native 0.19.1.1
         return self.queue
 
-    def createWGSLShaderModule(self, code: str) -> xg.ShaderModule:
+    def createWGSLShaderModule(
+        self, code: str, label: Optional[str] = None
+    ) -> xg.ShaderModule:
         return self.createShaderModule(
             nextInChain=xg.ChainedStruct([xg.shaderModuleWGSLDescriptor(code=code)]),
+            label=label,
             hints=[],
         )
 
@@ -47,7 +50,8 @@ class XDevice(xg.Device):
             callback=mapped_cb,
         )
         self.poll(wait=True, wrappedSubmissionIndex=None)
-        # assume we're now mapped? (seems dicey!)
+        # TODO: NYI: wgpuBufferGetMapState not implemented (wgpu-native 0.19.1.1)
+        # assert buffer.getMapState() == xg.BufferMapState.Mapped, "Buffer is not mapped!"
         mapping = buffer.getMappedRange(0, size)
         res = mapping.to_bytes()
         buffer.unmap()

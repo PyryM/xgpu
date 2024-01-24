@@ -11,7 +11,7 @@ from example_utils import proj_perspective
 from numpy.typing import NDArray
 
 import xgpu as xg
-from xgpu.conveniences import get_adapter, get_device
+from xgpu.conveniences import get_adapter, get_device, get_instance
 from xgpu.extensions import XDevice, XSurface, bufferLayoutEntry
 
 
@@ -93,7 +93,9 @@ def main():
 
     window = glfw_window.GLFWWindow(WIDTH, HEIGHT, "woo")
 
-    instance = xg.createInstance()
+    # Enable shader debug if you want to have wgsl source available
+    # (e.g., in RenderDoc)
+    instance = get_instance(shader_debug=False)
     surface = XSurface(window.get_surface(instance))
     (adapter, _) = get_adapter(instance, xg.PowerPreference.HighPerformance, surface)
     device = XDevice(get_device(adapter))
@@ -129,7 +131,7 @@ def main():
 
     window.configure_surface(device, window_tex_format)
 
-    shader = device.createWGSLShaderModule(code=SHADER_SOURCE)
+    shader = device.createWGSLShaderModule(code=SHADER_SOURCE, label="colorcube.wgsl")
 
     REPLACE = xg.blendComponent(
         srcFactor=xg.BlendFactor.One,
@@ -177,7 +179,7 @@ def main():
             targets=[color_target],
         ),
     )
-    render_pipeline.assert_valid()
+    assert render_pipeline.isValid(), "Failed to create pipeline!"
 
     ROWS = 32
     COLS = 32

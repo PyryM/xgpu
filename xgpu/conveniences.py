@@ -4,6 +4,24 @@ from typing import Optional
 from . import bindings as xg
 
 
+def maybe_chain(item: Optional[xg.Chainable] = None) -> Optional[xg.ChainedStruct]:
+    if item is None:
+        return None
+    return xg.ChainedStruct([item])
+
+
+def get_instance(shader_debug=False, validation=False) -> xg.Instance:
+    extras = None
+    if shader_debug or validation:
+        extras = xg.InstanceExtras()
+        if shader_debug:
+            extras.flags |= xg.InstanceFlag.Debug
+        if validation:
+            extras.flags |= xg.InstanceFlag.Validation
+        print("Instance flags:", extras.flags)
+    return xg.createInstance(nextInChain=maybe_chain(extras))
+
+
 def get_adapter(
     instance: Optional[xg.Instance] = None,
     power=xg.PowerPreference.HighPerformance,
@@ -18,7 +36,7 @@ def get_adapter(
     cb = xg.RequestAdapterCallback(adapterCB)
 
     if instance is None:
-        instance = xg.createInstance()
+        instance = get_instance()
     instance.requestAdapter(
         xg.requestAdapterOptions(
             powerPreference=power,

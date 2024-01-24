@@ -197,6 +197,9 @@ class ${this.pyName}:
         return self.value & int(flag) > 0
 
     def __iter__(self) -> Iterator[${etypename}]:
+        if self.value == 0:
+            yield ${this.etype.pyName}(0)
+            return
         for v in ${this.etype.pyName}:
             if self.value & int(v) > 0:
                 yield v
@@ -1076,13 +1079,8 @@ class ${this.pyName}:
         ffi.release(self._cdata)
         self._cdata = ffi.NULL
 
-    def is_valid(self):
+    def isValid(self):
         return self._cdata != ffi.NULL
-
-    def assert_valid(self):
-        if not self.is_valid():
-            raise RuntimeError("Valid assertion failed for ${this.pyName}")
-
 
 ${funcdefs.join("\n")}
 `;

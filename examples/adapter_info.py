@@ -20,7 +20,7 @@ def main():
                 print(f"{k} -> {getattr(limits, k)}")
 
     (adapter, instance) = xgutils.get_adapter()
-    adapter.assert_valid()
+    assert adapter.isValid(), "Failed to get adapter"
     features = adapter.enumerateFeatures()
     print("========== ADAPTER ==========")
     limits = xgpu.SupportedLimits()
@@ -32,7 +32,7 @@ def main():
     print_limits(limits.limits)
 
     device = xgutils.get_device(adapter)
-    device.assert_valid()
+    assert device.isValid(), "Failed to get device"
     print("========== DEVICE ==========")
     features = device.enumerateFeatures()
     print_features(features)
