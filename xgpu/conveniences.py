@@ -73,7 +73,7 @@ def get_adapter(
 
 def get_device(
     adapter: xg.Adapter,
-    features: Optional[list[xg.FeatureName]] = None,
+    features: Optional[List[xg.FeatureName]] = None,
     limits: Optional[xg.RequiredLimits] = None,
     timeout: float = 60,
 ) -> XDevice:
