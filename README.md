@@ -130,6 +130,11 @@ usage = xgpu.BufferUsageFlags(0b1001)
 print(usage) # prints: BufferUsage.MapRead | BufferUsage.CopyDst
 ```
 
+You can test for a particular flag with the python `in` operator:
+```python
+has_map_read = xgpu.BufferUsage.MapRead in mybuffer.getUsage()
+```
+
 #### Callbacks
 
 Callbacks must be explicitly wrapped in the appropriate callback type:

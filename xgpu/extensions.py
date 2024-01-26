@@ -60,6 +60,7 @@ class XDevice(xg.Device):
         return buffer
 
     def readBuffer(self, buffer: xg.Buffer, offset: int, size: int) -> bytes:
+        """Read a buffer from GPU->CPU; the buffer must have MapRead usage"""
         buffer.mapAsync(
             xg.MapMode.Read,
             offset=offset,
@@ -73,6 +74,23 @@ class XDevice(xg.Device):
         res = mapping.to_bytes()
         buffer.unmap()
         return res
+
+    def readBufferStaged(self, buffer: xg.Buffer, offset: int, size: int) -> bytes:
+        """Read a buffer from GPU->CPU, using a temporary staging buffer if
+        the buffer does not have MapRead usage.
+        """
+        if xg.BufferUsage.MapRead in buffer.getUsage():
+            # no need for staging buffer
+            return self.readBuffer(buffer, offset, size)
+        staging = self.createBuffer(
+            usage=xg.BufferUsage.CopyDst | xg.BufferUsage.MapRead,
+            size=size,
+            mappedAtCreation=False,
+        )
+        encoder = self.createCommandEncoder()
+        encoder.copyBufferToBuffer(buffer, offset, staging, 0, size)
+        self.getQueue().submit([encoder.finish()])
+        return self.readBuffer(staging, 0, size)
 
     def readRawTexture(
         self, tex: xg.Texture, bytesize: int, layout: xg.TextureDataLayout
