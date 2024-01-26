@@ -28,7 +28,7 @@ def get_adapter(
     power=xg.PowerPreference.HighPerformance,
     surface: Optional[xg.Surface] = None,
     timeout: float = 60.0,
-) -> tuple[XAdapter, xg.Instance]:
+) -> Tuple[XAdapter, xg.Instance]:
     """
     Get an adapter, blocking up to `timeout` seconds
     """
