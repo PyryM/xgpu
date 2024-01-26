@@ -29,14 +29,20 @@ class XAdapter(xg.Adapter):
 
 
 class XDevice(xg.Device):
-    def __init__(self, inner: xg.Device):
+    def __init__(self, inner: Union[xg.Device, "XDevice"]):
         super().__init__(inner._cdata)
-        self.limits = xg.SupportedLimits()
-        self.queue = super().getQueue()
+        if isinstance(inner, XDevice):
+            # TODO: wgpu-native 0.19.1.1
+            # Copy limits and queue from parent to avoid ref counting issue
+            self.limits = inner.limits
+            self.queue = inner.queue
+        else:
+            self.limits = xg.SupportedLimits()
+            self.queue = super().getQueue()
 
     def getQueue(self) -> xg.Queue:
-        # Workaround for reference counting issue with queues in
-        # wgpu-native 0.19.1.1
+        # TODO: wgpu-native 0.19.1.1
+        # Workaround for reference counting issue with queues
         return self.queue
 
     def createWGSLShaderModule(
