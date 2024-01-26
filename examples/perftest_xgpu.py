@@ -11,7 +11,7 @@ from example_utils import proj_perspective
 from numpy.typing import NDArray
 
 import xgpu as xg
-from xgpu.conveniences import get_adapter, get_device
+from xgpu.conveniences import get_adapter, get_device, get_instance
 from xgpu.extensions import XDevice, XSurface, bufferLayoutEntry
 
 
@@ -25,30 +25,30 @@ def set_transform(target: NDArray, rot, scale: float, pos: NDArray):
 
 SHADER_SOURCE = """
 struct GlobalUniforms {
-  @align(16) view_proj_mat: mat4x4<f32>
+  @align(16) view_proj_mat: mat4x4f
 }
 struct DrawUniforms {
-  @align(16) model_mat: mat4x4<f32>,
-  @align(16) color: vec4<f32>,
+  @align(16) model_mat: mat4x4f,
+  @align(16) color: vec4f,
 }
 @group(0) @binding(0) var<uniform> global_uniforms: GlobalUniforms;
 @group(1) @binding(0) var<uniform> draw_uniforms: DrawUniforms;
 struct VertexInput {
-    @location(0) pos: vec4<f32>,
+    @location(0) pos: vec4f,
 };
 struct VertexOutput {
-    @builtin(position) pos: vec4<f32>,
-    @location(0) color : vec4<f32>,
+    @builtin(position) pos: vec4f,
+    @location(0) color : vec4f,
 };
 @vertex
 fn vs_main(in: VertexInput) -> VertexOutput {
-    let world_pos = draw_uniforms.model_mat * vec4<f32>(in.pos.xyz, 1.0f);
+    let world_pos = draw_uniforms.model_mat * vec4f(in.pos.xyz, 1.0f);
     let clip_pos = global_uniforms.view_proj_mat * world_pos;
-    let color = draw_uniforms.color * clamp(in.pos, vec4<f32>(0.0f), vec4<f32>(1.0f));
+    let color = draw_uniforms.color * clamp(in.pos, vec4f(0.0f), vec4f(1.0f));
     return VertexOutput(clip_pos, color);
 }
 @fragment
-fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
+fn fs_main(in: VertexOutput) -> @location(0) vec4f {
     return in.color;
 }
 """
@@ -93,7 +93,9 @@ def main():
 
     window = glfw_window.GLFWWindow(WIDTH, HEIGHT, "woo")
 
-    instance = xg.createInstance()
+    # Enable shader debug if you want to have wgsl source available
+    # (e.g., in RenderDoc)
+    instance = get_instance(shader_debug=False)
     surface = XSurface(window.get_surface(instance))
     (adapter, _) = get_adapter(instance, xg.PowerPreference.HighPerformance, surface)
     device = XDevice(get_device(adapter))
@@ -129,7 +131,7 @@ def main():
 
     window.configure_surface(device, window_tex_format)
 
-    shader = device.createWGSLShaderModule(code=SHADER_SOURCE)
+    shader = device.createWGSLShaderModule(code=SHADER_SOURCE, label="colorcube.wgsl")
 
     REPLACE = xg.blendComponent(
         srcFactor=xg.BlendFactor.One,
@@ -177,7 +179,7 @@ def main():
             targets=[color_target],
         ),
     )
-    render_pipeline.assert_valid()
+    assert render_pipeline.isValid(), "Failed to create pipeline!"
 
     ROWS = 32
     COLS = 32

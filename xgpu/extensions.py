@@ -1,15 +1,31 @@
-from typing import Union
+from typing import Optional, Union
 
 from . import bindings as xg
 
 
 def _mapped_cb(status):
-    print("Mapped?", status.name)
     if status != xg.BufferMapAsyncStatus.Success:
         raise RuntimeError(f"Mapping error! {status}")
 
 
 mapped_cb = xg.BufferMapCallback(_mapped_cb)
+
+
+class XAdapter(xg.Adapter):
+    def __init__(self, inner: xg.Adapter):
+        super().__init__(inner._cdata)
+        self.properties = xg.AdapterProperties()
+        self.limits = xg.SupportedLimits()
+
+    def getLimits2(self) -> xg.Limits:
+        happy = self.getLimits(self.limits)
+        if not happy:
+            raise RuntimeError("Failed to get limits.")
+        return self.limits.limits
+
+    def getProperties2(self) -> xg.AdapterProperties:
+        self.getProperties(self.properties)
+        return self.properties
 
 
 class XDevice(xg.Device):
@@ -23,14 +39,17 @@ class XDevice(xg.Device):
         # wgpu-native 0.19.1.1
         return self.queue
 
-    def createWGSLShaderModule(self, code: str) -> xg.ShaderModule:
+    def createWGSLShaderModule(
+        self, code: str, label: Optional[str] = None
+    ) -> xg.ShaderModule:
         return self.createShaderModule(
             nextInChain=xg.ChainedStruct([xg.shaderModuleWGSLDescriptor(code=code)]),
+            label=label,
             hints=[],
         )
 
     def createBufferWithData(
-        self, data: bytes, usage: Union[xg.BufferUsage, xg.BufferUsageFlags]
+        self, data: bytes, usage: Union[xg.BufferUsage, xg.BufferUsageFlags, int]
     ) -> xg.Buffer:
         bsize = len(data)
         buffer = self.createBuffer(usage=usage, size=bsize, mappedAtCreation=True)
@@ -40,6 +59,7 @@ class XDevice(xg.Device):
         return buffer
 
     def readBuffer(self, buffer: xg.Buffer, offset: int, size: int) -> bytes:
+        """Read a buffer from GPU->CPU; the buffer must have MapRead usage"""
         buffer.mapAsync(
             xg.MapMode.Read,
             offset=offset,
@@ -47,11 +67,55 @@ class XDevice(xg.Device):
             callback=mapped_cb,
         )
         self.poll(wait=True, wrappedSubmissionIndex=None)
-        # assume we're now mapped? (seems dicey!)
+        # TODO: NYI: wgpuBufferGetMapState not implemented (wgpu-native 0.19.1.1)
+        # assert buffer.getMapState() == xg.BufferMapState.Mapped, "Buffer is not mapped!"
         mapping = buffer.getMappedRange(0, size)
         res = mapping.to_bytes()
         buffer.unmap()
         return res
+
+    def readBufferStaged(self, buffer: xg.Buffer, offset: int, size: int) -> bytes:
+        """Read a buffer from GPU->CPU, using a temporary staging buffer if
+        the buffer does not have MapRead usage.
+        """
+        if xg.BufferUsage.MapRead in buffer.getUsage():
+            # no need for staging buffer
+            return self.readBuffer(buffer, offset, size)
+        staging = self.createBuffer(
+            usage=xg.BufferUsage.CopyDst | xg.BufferUsage.MapRead,
+            size=size,
+            mappedAtCreation=False,
+        )
+        encoder = self.createCommandEncoder()
+        encoder.copyBufferToBuffer(buffer, offset, staging, 0, size)
+        self.getQueue().submit([encoder.finish()])
+        return self.readBuffer(staging, 0, size)
+
+    def readRawTexture(
+        self, tex: xg.Texture, bytesize: int, layout: xg.TextureDataLayout
+    ) -> bytes:
+        (w, h, d) = (tex.getWidth(), tex.getHeight(), tex.getDepthOrArrayLayers())
+        readbuff = self.createBuffer(
+            usage=xg.BufferUsage.CopyDst | xg.BufferUsage.MapRead,
+            size=bytesize,
+            mappedAtCreation=False,
+        )
+        encoder = self.createCommandEncoder()
+        encoder.copyTextureToBuffer(
+            source=xg.imageCopyTexture(
+                texture=tex,
+                mipLevel=0,
+                origin=xg.origin3D(x=0, y=0, z=0),
+                aspect=xg.TextureAspect.All,
+            ),
+            destination=xg.imageCopyBuffer(
+                layout=layout,
+                buffer=readbuff,
+            ),
+            copySize=xg.extent3D(width=w, height=h, depthOrArrayLayers=d),
+        )
+        self.getQueue().submit([encoder.finish()])
+        return self.readBuffer(readbuff, 0, bytesize)
 
     def readRGBATexture(self, tex: xg.Texture) -> bytes:
         (w, h) = (tex.getWidth(), tex.getHeight())
