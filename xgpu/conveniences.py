@@ -1,5 +1,5 @@
 import time
-from typing import Optional
+from typing import Optional, Tuple, List
 
 from . import bindings as xg
 from .extensions import XAdapter, XDevice
@@ -27,12 +27,18 @@ def get_adapter(
     instance: Optional[xg.Instance] = None,
     power=xg.PowerPreference.HighPerformance,
     surface: Optional[xg.Surface] = None,
+    timeout: float = 60.0,
 ) -> tuple[XAdapter, xg.Instance]:
-    adapter: list[Optional[xg.Adapter]] = [None]
+    """
+    Get an adapter, blocking up to `timeout` seconds
+    """
 
-    def adapterCB(status: xg.RequestAdapterStatus, gotten: xg.Adapter, msg: str):
+    # will be populated by a callback
+    stash: List[Optional[Tuple[xg.RequestAdapterStatus, xg.Adapter, str]]] = [None]
+
+    def adapterCB(status: xg.RequestAdapterStatus, adapter: xg.Adapter, msg: str):
         print("Got adapter with msg:", msg, ", status:", status.name)
-        adapter[0] = gotten
+        stash[0] = (status, adapter, msg)
 
     cb = xg.RequestAdapterCallback(adapterCB)
 
@@ -48,22 +54,40 @@ def get_adapter(
         cb,
     )
 
-    while adapter[0] is None:
+    deadline = time.time() + timeout
+    while stash[0] is None:
         time.sleep(0.1)
+        if time.time() > deadline:
+            raise TimeoutError(f"Timed out getting adapter after {timeout:0.2f}s!")
 
-    return (XAdapter(adapter[0]), instance)
+    # we have exited the loop without raising
+    status, adapter, msg = stash[0]
+
+    if status != xg.RequestAdapterStatus.Success:
+        raise RuntimeError(
+            f"Failed to get adapter, status=`{status.name}`, message:'{msg}'"
+        )
+
+    return XAdapter(adapter), instance
 
 
 def get_device(
     adapter: xg.Adapter,
     features: Optional[list[xg.FeatureName]] = None,
     limits: Optional[xg.RequiredLimits] = None,
+    timeout: float = 60,
 ) -> XDevice:
-    device: list[Optional[xg.Device]] = [None]
+    """
+    Get a device, blocking up to `timeout` seconds.
+    """
 
-    def deviceCB(status: xg.RequestDeviceStatus, gotten: xg.Device, msg: str):
+    # collect the device from a callback
+    stash: List[Optional[Tuple[xg.RequestDeviceStatus, xg.Device, str]]] = [None]
+
+    def deviceCB(status: xg.RequestDeviceStatus, device: xg.Device, msg: str):
         print("Got device with msg:", msg, ", status:", status.name)
-        device[0] = gotten
+
+        stash[0] = (status, device, msg)
 
     def deviceLostCB(reason: xg.DeviceLostReason, msg: str):
         print("Lost device!:", reason, msg)
@@ -90,7 +114,18 @@ def get_device(
         cb,
     )
 
-    while device[0] is None:
+    deadline = time.time() + timeout
+    while stash[0] is None:
         time.sleep(0.1)
+        if time.time() > deadline:
+            raise TimeoutError(f"Timed out getting device after {timeout:0.2f}s!")
 
-    return XDevice(device[0])
+    # we have exited the loop without raising
+    status, device, msg = stash[0]
+
+    if status != xg.RequestDeviceStatus.Success:
+        raise RuntimeError(
+            f"Failed to get device, status=`{status.name}`, message:'{msg}'"
+        )
+
+    return XDevice(device)
