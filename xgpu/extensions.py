@@ -4,7 +4,6 @@ from . import bindings as xg
 
 
 def _mapped_cb(status):
-    print("Mapped?", status.name)
     if status != xg.BufferMapAsyncStatus.Success:
         raise RuntimeError(f"Mapping error! {status}")
 
