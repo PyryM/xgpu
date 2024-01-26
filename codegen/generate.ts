@@ -1273,7 +1273,12 @@ ${indent(1, conlines.join("\n"))}
 // TODO/THOUGHTS:
 // * cleanup: list-of-lists indent flattening?
 
+// DEBUGGING:
+// * renderdoc API
+
 // ERGONOMICS:
+// * setVertexBuffer: does size have a default (e.g., WHOLE_BUFFER)
+// * generate constants for the two #defines
 // * callbacks could auto-cast?
 // * a single chainable could be passed as a chained struct?
 
