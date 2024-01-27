@@ -1,4 +1,4 @@
-""" RenderDoc for xgpu """
+""" Simple bindings to the RenderDoc in-application API """
 
 import sys
 from enum import IntEnum, auto
@@ -349,8 +349,8 @@ int RENDERDOC_GetAPI(RENDERDOC_Version version, RENDERDOC_API_1_6_0 **outAPIPoin
 """
 )
 
-# type as Any because otherwise typing does not know about cdeffed functions
-api_ptrs = None
+# type as Any because typing does not know about cdefs and will complain
+api_ptrs: Any = None
 try:
     ext = "dll" if sys.platform == "win32" else "so"
     lib: Any = ffi.dlopen(f"renderdoc.{ext}")
@@ -359,7 +359,9 @@ try:
     assert happy == 1, f"Renderdoc GetAPI failure: {happy}"
     api_ptrs = _api_ptrs_array[0]
 except:  # noqa: E722
-    print("Renderdoc not loaded or failed to get API")
+    print("RenderDoc not loaded or failed to get API")
+
+NOT_AVAILABLE = "Application has not been launched through RenderDoc."
 
 
 def is_available() -> bool:
@@ -367,15 +369,15 @@ def is_available() -> bool:
 
 
 def trigger_capture():
-    assert api_ptrs is not None, "Not running with renderdoc"
+    assert api_ptrs is not None, NOT_AVAILABLE
     api_ptrs.TriggerCapture()
 
 
 def start_frame_capture():
-    assert api_ptrs is not None, "Not running with renderdoc"
+    assert api_ptrs is not None, NOT_AVAILABLE
     api_ptrs.StartFrameCapture(ffi.NULL, ffi.NULL)
 
 
 def end_frame_capture():
-    assert api_ptrs is not None, "Not running with renderdoc"
+    assert api_ptrs is not None, NOT_AVAILABLE
     api_ptrs.EndFrameCapture(ffi.NULL, ffi.NULL)
