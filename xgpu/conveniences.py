@@ -1,5 +1,5 @@
 import time
-from typing import Optional, Tuple, List
+from typing import List, Optional, Tuple
 
 from . import bindings as xg
 from .extensions import XAdapter, XDevice
