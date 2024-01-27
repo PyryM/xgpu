@@ -11,7 +11,6 @@ import time
 from PIL import Image
 
 import xgpu as xg
-from xgpu.conveniences import get_adapter, get_device
 from xgpu.extensions import XDevice
 
 shader_source = """
@@ -50,10 +49,9 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4f {
 """
 
 
-def main(power_preference=xg.PowerPreference.HighPerformance):
+def main():
     t0 = time.time()
-    (adapter, _) = get_adapter(instance=None, power=power_preference)
-    device = XDevice(get_device(adapter))
+    _instance, _adapter, device, _surface = xg.helpers.startup()
     dt = time.time() - t0
     print(f"Took: {dt}")
     return _main(device)

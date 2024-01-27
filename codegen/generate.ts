@@ -1166,9 +1166,9 @@ class ListWrapper implements Emittable {
     const ltype = pyList(this.ctype.pyAnnotation(false, false));
     return `
 class ${listName(this.ctype.pyName)}:
-    def __init__(self, items: ${ltype}):
+    def __init__(self, items: ${ltype}, count: int = 0):
         self._stashed = items
-        self._count = len(items)
+        self._count = max(len(items), count)
         self._ptr = _ffi_new('${this.ctype.cName}[]', self._count)
         for idx, item in enumerate(items):
             self._ptr[idx] = ${this.ctype.unwrap("item", false)}`;
@@ -1274,13 +1274,15 @@ ${indent(1, conlines.join("\n"))}
 // * cleanup: list-of-lists indent flattening?
 
 // ERGONOMICS:
+// * builder pattern for bind group binders
+// * setVertexBuffer: does size have a default (e.g., WHOLE_BUFFER)
+// * generate constants for the two #defines
 // * callbacks could auto-cast?
 // * a single chainable could be passed as a chained struct?
 
 // * cleanup: merge all the types into just CType
 //   * have .isPointer, and .inner
 //   * have a .resolve() that can deal w/ forward references
-// * default arguments? maybe better to not have any defaults!
 
 // QUESTIONS:
 // * do we need to explicitly call `reference` on returned things?

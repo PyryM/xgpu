@@ -9,8 +9,6 @@ https://github.com/pygfx/wgpu-py/blob/main/examples/triangle.py
 import glfw_window
 
 import xgpu as xg
-from xgpu.conveniences import get_adapter, get_device
-from xgpu.extensions import XDevice, XSurface
 
 shader_source = """
 struct VertexInput {
@@ -54,10 +52,10 @@ def main():
 
     window = glfw_window.GLFWWindow(WIDTH, HEIGHT, "woo")
 
-    instance = xg.createInstance()
-    surface = XSurface(window.get_surface(instance))
-    (adapter, _) = get_adapter(instance, xg.PowerPreference.HighPerformance, surface)
-    device = XDevice(get_device(adapter))
+    _instance, adapter, device, surface = xg.helpers.startup(
+        surface_src=window.get_surface
+    )
+    assert surface is not None, "Failed to get surface"
 
     # Lets list some capabilities of this surface
     surf_caps = surface.getCapabilities(adapter)

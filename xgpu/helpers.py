@@ -1,8 +1,8 @@
 import time
-from typing import Optional, Tuple, List
+from typing import Callable, List, Optional, Tuple
 
 from . import bindings as xg
-from .extensions import XAdapter, XDevice
+from .extensions import XAdapter, XDevice, XSurface
 
 
 def maybe_chain(item: Optional[xg.Chainable] = None) -> Optional[xg.ChainedStruct]:
@@ -129,3 +129,16 @@ def get_device(
         )
 
     return XDevice(device)
+
+
+def startup(
+    debug=False, surface_src: Optional[Callable[[xg.Instance], xg.Surface]] = None
+) -> Tuple[xg.Instance, XAdapter, XDevice, Optional[XSurface]]:
+    """Simplify acquisition of core objects"""
+    instance = get_instance(shader_debug=debug, validation=False)
+    surface: Optional[XSurface] = None
+    if surface_src is not None:
+        surface = XSurface(surface_src(instance))
+    adapter, _ = get_adapter(instance, xg.PowerPreference.HighPerformance, surface)
+    device = get_device(adapter)
+    return instance, adapter, device, surface
