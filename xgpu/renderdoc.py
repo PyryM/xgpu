@@ -1,5 +1,6 @@
 """ RenderDoc for xgpu """
 
+import sys
 from enum import IntEnum, auto
 from typing import Any
 
@@ -7,17 +8,18 @@ from cffi import FFI
 
 ffi = FFI()
 
+
 class RDCaptureOption(IntEnum):
     AllowVSync = 0
     AllowFullscreen = 1
     APIValidation = 2
-    DebugDeviceMode = 2    # deprecated name of this enum
+    DebugDeviceMode = 2  # deprecated name of this enum
     CaptureCallstacks = 3
     CaptureCallstacksOnlyDraws = 4
     CaptureCallstacksOnlyActions = 4
     DelayForDebugger = 5
     VerifyBufferAccess = 6
-    VerifyMapWrites = 6  #VerifyBufferAccess
+    VerifyMapWrites = 6  # VerifyBufferAccess
     HookIntoChildren = 7
     RefAllResources = 8
     SaveAllInitials = 9
@@ -25,6 +27,7 @@ class RDCaptureOption(IntEnum):
     DebugOutputMute = 11
     AllowUnsupportedVendorExtensions = 12
     SoftMemoryLimit = 13
+
 
 class RDKey(IntEnum):
     # '0' - '9' matches ASCII values
@@ -103,24 +106,27 @@ class RDKey(IntEnum):
 
     Max = auto()
 
+
 class RDOverlayBits(IntEnum):
     Overlay_Enabled = 0x1
     Overlay_FrameRate = 0x2
     Overlay_FrameNumber = 0x4
     Overlay_CaptureList = 0x8
-    Overlay_Default = (0x1 | 0x2 | 0x4 | 0x8)
+    Overlay_Default = 0x1 | 0x2 | 0x4 | 0x8
     Overlay_All = 0xFFFFFFFF
     Overlay_None = 0
 
+
 def device_ptr_from_vk_instance(inst):
-    """  A helper macro for Vulkan, where the device handle cannot be used directly.
+    """A helper macro for Vulkan, where the device handle cannot be used directly.
     Passing the VkInstance to this function will return the RENDERDOC_DevicePointer to use.
 
     Specifically, the value needed is the dispatch table pointer, which sits as the first
     pointer-sized object in the memory pointed to by the VkInstance. Thus we cast to a void** and
     indirect once.
     """
-    return ffi.cast("void **", inst)[0] # (*((void **)(inst)))
+    return ffi.cast("void **", inst)[0]  # (*((void **)(inst)))
+
 
 API_VERSION_1_6_0 = 10600
 
@@ -147,7 +153,8 @@ API_VERSION_1_6_0 = 10600
 #  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 #  * THE SOFTWARE.
 #  ******************************************************************************/
-ffi.cdef("""
+ffi.cdef(
+    """
 typedef enum RENDERDOC_CaptureOption {
   eRENDERDOC_Option_AllowVSync = 0,
   eRENDERDOC_Option_AllowFullscreen = 1,
@@ -339,25 +346,35 @@ typedef RENDERDOC_API_1_6_0* RENDERDOC_API_PTR;
 // to dlsym to get the actual value, but with cffi just pretending it's a
 // normal export should work
 int RENDERDOC_GetAPI(RENDERDOC_Version version, RENDERDOC_API_1_6_0 **outAPIPointers);
-""")
+"""
+)
 
 # type as Any because otherwise typing does not know about cdeffed functions
 api_ptrs = None
 try:
-  lib: Any = ffi.dlopen("renderdoc.dll")
-  _api_ptrs_array = ffi.new("RENDERDOC_API_PTR[1]")
-  happy = lib.RENDERDOC_GetAPI(API_VERSION_1_6_0, _api_ptrs_array)
-  assert happy == 1, f"Renderdoc GetAPI failure: {happy}"
-  api_ptrs = _api_ptrs_array[0]
+    ext = "dll" if sys.platform == "win32" else "so"
+    lib: Any = ffi.dlopen(f"renderdoc.{ext}")
+    _api_ptrs_array = ffi.new("RENDERDOC_API_PTR[1]")
+    happy = lib.RENDERDOC_GetAPI(API_VERSION_1_6_0, _api_ptrs_array)
+    assert happy == 1, f"Renderdoc GetAPI failure: {happy}"
+    api_ptrs = _api_ptrs_array[0]
 except:  # noqa: E722
     print("Renderdoc not loaded or failed to get API")
+
 
 def is_available() -> bool:
     return api_ptrs is not None
 
+
+def trigger_capture():
+    assert api_ptrs is not None, "Not running with renderdoc"
+    api_ptrs.TriggerCapture()
+
+
 def start_frame_capture():
     assert api_ptrs is not None, "Not running with renderdoc"
     api_ptrs.StartFrameCapture(ffi.NULL, ffi.NULL)
+
 
 def end_frame_capture():
     assert api_ptrs is not None, "Not running with renderdoc"

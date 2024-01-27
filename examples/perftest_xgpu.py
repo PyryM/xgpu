@@ -11,6 +11,7 @@ from example_utils import proj_perspective
 from numpy.typing import NDArray
 
 import xgpu as xg
+import xgpu.renderdoc as renderdoc
 from xgpu.extensions import XDevice, bufferLayoutEntry
 
 
@@ -210,6 +211,9 @@ def main():
         cur_ft = time.perf_counter_ns()
         frame_times.append((cur_ft - last_frame_t) / 1e6)
         last_frame_t = cur_ft
+
+        if frame == 100 and renderdoc.is_available():
+            renderdoc.trigger_capture()
 
         # Update model matrices: this is surprisingly expensive in Python,
         # so we don't include this time in the performance measurements
