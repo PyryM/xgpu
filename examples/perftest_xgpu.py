@@ -11,8 +11,8 @@ from example_utils import proj_perspective
 from numpy.typing import NDArray
 
 import xgpu as xg
-from xgpu.conveniences import get_adapter, get_device, get_instance
-from xgpu.extensions import XDevice, XSurface, bufferLayoutEntry
+from xgpu.conveniences import simple_startup
+from xgpu.extensions import XDevice, bufferLayoutEntry
 
 
 def set_transform(target: NDArray, rot, scale: float, pos: NDArray):
@@ -93,12 +93,11 @@ def main():
 
     window = glfw_window.GLFWWindow(WIDTH, HEIGHT, "woo")
 
-    # Enable shader debug if you want to have wgsl source available
-    # (e.g., in RenderDoc)
-    instance = get_instance(shader_debug=False)
-    surface = XSurface(window.get_surface(instance))
-    (adapter, _) = get_adapter(instance, xg.PowerPreference.HighPerformance, surface)
-    device = XDevice(get_device(adapter))
+    # Enable shader debug if you want to have wgsl source available (e.g., in RenderDoc)
+    _, adapter, device, surface = simple_startup(
+        surface_src=window.get_surface, debug=False
+    )
+    assert surface is not None, "Failed to get surface!"
 
     uniform_align = device.getLimits2().minUniformBufferOffsetAlignment
     print("Alignment requirement:", uniform_align)

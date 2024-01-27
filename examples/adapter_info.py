@@ -20,7 +20,6 @@ def main():
                 print(f"{k} -> {getattr(limits, k)}")
 
     (adapter, instance) = xgutils.get_adapter()
-    assert adapter.isValid(), "Failed to get adapter"
     features = adapter.enumerateFeatures()
     print("========== ADAPTER ==========")
     print_props(adapter.getProperties2())
@@ -28,7 +27,6 @@ def main():
     print_limits(adapter.getLimits2())
 
     device = xgutils.get_device(adapter)
-    assert device.isValid(), "Failed to get device"
     print("========== DEVICE ==========")
     features = device.enumerateFeatures()
     print_features(features)
