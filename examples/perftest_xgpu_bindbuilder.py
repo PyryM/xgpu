@@ -1,8 +1,11 @@
 """
 Stress test doing a lot of draw calls the naive way (without instancing)
+Version which uses the BinderBuilder utility which is somewhat faster
+at creating bind groups than doing things the naive/explicit way.
 """
 
 import time
+from typing import Optional
 
 import glfw_window
 import numpy as np
@@ -11,8 +14,7 @@ from example_utils import proj_perspective
 from numpy.typing import NDArray
 
 import xgpu as xg
-import xgpu.renderdoc as renderdoc
-from xgpu.extensions import XDevice
+from xgpu.extensions import BinderBuilder, XDevice
 
 
 def set_transform(target: NDArray, rot, scale: float, pos: NDArray):
@@ -52,6 +54,25 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4f {
     return in.color;
 }
 """
+
+
+class UniformsBindgroup:
+    def __init__(self, device: xg.Device):
+        builder = BinderBuilder(device)
+        self.uniforms = builder.add_buffer(
+            binding=0,
+            visibility=xg.ShaderStage.Vertex | xg.ShaderStage.Fragment,
+            type=xg.BufferBindingType.Uniform,
+        )
+        self.binder = builder.complete()
+        self.layout = self.binder.layout
+
+    def bind(
+        self, buffer: xg.Buffer, offset: int = 0, size: Optional[int] = None
+    ) -> xg.BindGroup:
+        self.uniforms.set(buffer, offset, size)
+        return self.binder.create_bindgroup()
+
 
 GLOBALUNIFORMS_DTYPE = np.dtype(
     {
@@ -111,17 +132,9 @@ def main():
     )
 
     # same layout for both global and draw uniforms
-    bind_entry = xg.BindGroupLayoutEntry()
-    bind_entry.binding = 0
-    bind_entry.visibility = xg.ShaderStage.Vertex | xg.ShaderStage.Fragment
-    bind_entry.buffer = xg.bufferBindingLayout(
-        type=xg.BufferBindingType.Uniform,
-        hasDynamicOffset=False,
-        minBindingSize=0,
-    )
-    bind_layout = device.createBindGroupLayout(entries=[bind_entry])
+    bind_factory = UniformsBindgroup(device)
     pipeline_layout = device.createPipelineLayout(
-        bindGroupLayouts=[bind_layout, bind_layout]
+        bindGroupLayouts=[bind_factory.layout, bind_factory.layout]
     )
 
     window_tex_format = surface.getPreferredFormat(adapter)
@@ -212,9 +225,6 @@ def main():
         frame_times.append((cur_ft - last_frame_t) / 1e6)
         last_frame_t = cur_ft
 
-        if frame == 100 and renderdoc.is_available():
-            renderdoc.trigger_capture()
-
         # Update model matrices: this is surprisingly expensive in Python,
         # so we don't include this time in the performance measurements
         uidx = 0
@@ -260,34 +270,14 @@ def main():
         render_pass.setVertexBuffer(0, vbuff, 0, vbuff.getSize())
         render_pass.setIndexBuffer(ibuff, xg.IndexFormat.Uint16, 0, ibuff.getSize())
 
-        global_bg = device.createBindGroup(
-            layout=bind_layout,
-            entries=[
-                xg.bindGroupEntry(
-                    binding=0,
-                    buffer=global_ubuff,
-                    offset=0,
-                    size=global_ubuff.getSize(),
-                ),
-            ],
-        )
+        global_bg = bind_factory.bind(global_ubuff)
         render_pass.setBindGroup(0, global_bg, [])
 
         bgs = []
-        for drawidx in range(ROWS * COLS):
-            bgs.append(
-                device.createBindGroup(
-                    layout=bind_layout,
-                    entries=[
-                        xg.bindGroupEntry(
-                            binding=0,
-                            buffer=draw_ubuff,
-                            offset=drawidx * DRAWUNIFORMS_DTYPE.itemsize,
-                            size=DRAWUNIFORMS_DTYPE.itemsize,
-                        ),
-                    ],
-                )
-            )
+        doffset = DRAWUNIFORMS_DTYPE.itemsize
+        isize = DRAWUNIFORMS_DTYPE.itemsize
+        for idx in range(ROWS * COLS):
+            bgs.append(bind_factory.bind(draw_ubuff, idx * doffset, isize))
 
         for bg in bgs:
             render_pass.setBindGroup(1, bg, [])
@@ -316,9 +306,9 @@ def main():
             # write performance info
             print("Mean API time per frame:", np.mean(perf_times))
             print("Mean full time per frame:", np.mean(frame_times))
-            with open("full_frame_timings_xgpu.txt", "w") as dest:
+            with open("full_frame_timings_xgpu_bindbuilder.txt", "w") as dest:
                 dest.write("\n".join([str(t) for t in frame_times]))
-            with open("timings_xgpu.txt", "w") as dest:
+            with open("timings_xgpu_bindbuilder.txt", "w") as dest:
                 dest.write("\n".join([str(t) for t in perf_times]))
         frame += 1
     print("Window close requested.")
