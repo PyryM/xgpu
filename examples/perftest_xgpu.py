@@ -11,8 +11,8 @@ from example_utils import proj_perspective
 from numpy.typing import NDArray
 
 import xgpu as xg
-from xgpu.conveniences import simple_startup
 from xgpu.extensions import XDevice, bufferLayoutEntry
+from xgpu.helpers import simple_startup
 
 
 def set_transform(target: NDArray, rot, scale: float, pos: NDArray):

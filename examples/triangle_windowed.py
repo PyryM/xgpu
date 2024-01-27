@@ -9,7 +9,7 @@ https://github.com/pygfx/wgpu-py/blob/main/examples/triangle.py
 import glfw_window
 
 import xgpu as xg
-from xgpu.conveniences import simple_startup
+from xgpu.helpers import simple_startup
 
 shader_source = """
 struct VertexInput {

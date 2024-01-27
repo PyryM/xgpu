@@ -11,8 +11,8 @@ import time
 from PIL import Image
 
 import xgpu as xg
-from xgpu.conveniences import simple_startup
 from xgpu.extensions import XDevice
+from xgpu.helpers import simple_startup
 
 shader_source = """
 struct VertexInput {
