@@ -12,7 +12,6 @@ from PIL import Image
 
 import xgpu as xg
 from xgpu.extensions import XDevice
-from xgpu.helpers import simple_startup
 
 shader_source = """
 struct VertexInput {
@@ -52,7 +51,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4f {
 
 def main():
     t0 = time.time()
-    _instance, _adapter, device, _surface = simple_startup()
+    _instance, _adapter, device, _surface = xg.helpers.startup()
     dt = time.time() - t0
     print(f"Took: {dt}")
     return _main(device)

@@ -12,7 +12,6 @@ from numpy.typing import NDArray
 
 import xgpu as xg
 from xgpu.extensions import XDevice, bufferLayoutEntry
-from xgpu.helpers import simple_startup
 
 
 def set_transform(target: NDArray, rot, scale: float, pos: NDArray):
@@ -94,7 +93,7 @@ def main():
     window = glfw_window.GLFWWindow(WIDTH, HEIGHT, "woo")
 
     # Enable shader debug if you want to have wgsl source available (e.g., in RenderDoc)
-    _, adapter, device, surface = simple_startup(
+    _, adapter, device, surface = xg.helpers.startup(
         surface_src=window.get_surface, debug=False
     )
     assert surface is not None, "Failed to get surface!"

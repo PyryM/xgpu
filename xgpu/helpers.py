@@ -130,9 +130,11 @@ def get_device(
 
     return XDevice(device)
 
-def simple_startup(debug=False, surface_src: Optional[Callable[[xg.Instance], xg.Surface]] = None) -> Tuple[xg.Instance, XAdapter, XDevice, Optional[XSurface]]:
-    """ Simplify acquisition of core objects
-    """
+
+def startup(
+    debug=False, surface_src: Optional[Callable[[xg.Instance], xg.Surface]] = None
+) -> Tuple[xg.Instance, XAdapter, XDevice, Optional[XSurface]]:
+    """Simplify acquisition of core objects"""
     instance = get_instance(shader_debug=debug, validation=False)
     surface: Optional[XSurface] = None
     if surface_src is not None:
