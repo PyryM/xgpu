@@ -1,6 +1,7 @@
 import hashlib
 import shutil
 import zipfile
+import subprocess
 from platform import uname
 from typing import Optional
 from urllib.request import urlopen
@@ -63,7 +64,7 @@ class Lib:
 SYSLIBS = {
     "windows": [Lib("wgpu_native.dll"), Lib("wgpu_native.dll.lib", "wgpu_native.lib")],
     "linux": [Lib("libwgpu_native.so")],
-    "macos": [Lib("libwgpu_native.dylib")],
+    "macos": [],  # special handling!
 }
 
 ALIASES = {
@@ -87,15 +88,27 @@ SYSNAME = uname().system.lower()
 IS_WINDOWS = SYSNAME == "windows" or ("microsoft" in uname().release.lower())
 OS = fix_name("windows" if IS_WINDOWS else SYSNAME)
 ARCH = fix_name(uname().machine.lower())
-URL = f"{BASE_URL}v{VERSION}/wgpu-{OS}-{ARCH}-release.zip"
+
+
+def make_url(osname: str, arch: str) -> str:
+    return f"{BASE_URL}v{VERSION}/wgpu-{osname}-{arch}-release.zip"
+
+
+def unzip_to(url: str, dest: str):
+    print(f'Downloading release from: "{url}" -> "{dest}"')
+    download_file(url, "wgpu_native.zip")
+
+    with zipfile.ZipFile("wgpu_native.zip", "r") as zip_ref:
+        zip_ref.extractall(dest)
+
 
 UNZIP_PATH = "wgpu_native_unzipped"
-
-print(f'Downloading release from: "{URL}"')
-download_file(URL, "wgpu_native.zip")
-
-with zipfile.ZipFile("wgpu_native.zip", "r") as zip_ref:
-    zip_ref.extractall(UNZIP_PATH)
+if OS != "macos":
+    unzip_to(make_url(OS, ARCH), UNZIP_PATH)
+else:
+    # for macos fetch both arm and x64 versions
+    unzip_to(make_url("macos", "x86_64"), UNZIP_PATH)
+    unzip_to(make_url("macos", "aarch64"), f"{UNZIP_PATH}_ARM")
 
 LIBS = [
     (f"{UNZIP_PATH}/{lib.src}", f"xgpu/{lib.dest}")
@@ -111,6 +124,20 @@ COPIES = [
 for src, dest in COPIES:
     print(f"Copying {src} -> {dest}")
     shutil.copy2(src, dest)
+
+if OS == "macos":
+    # do some manual dylib wrangling
+    print("Merging dylibs...")
+    subprocess.run(
+        [
+            "lipo",
+            "-create",
+            f"{UNZIP_PATH}/libwgpu_native.dylib",
+            f"{UNZIP_PATH}_ARM/libwgpu_native.dylib",
+            "-output",
+            f"xgpu/libwgpu_native.dylib",
+        ]
+    )
 
 DOCS_URL = "https://raw.githubusercontent.com/gpuweb/gpuweb/main/spec/index.bs"
 download_file(DOCS_URL, "codegen/webgpu_spec.bs")
