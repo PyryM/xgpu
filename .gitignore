@@ -19,9 +19,6 @@
 /wgpu_native_unzipped
 *.zip
 
-# Random images
-*.png
-
 # My dump dir
 /ehhhhh
 

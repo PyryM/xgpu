@@ -98,9 +98,11 @@ def _main(device: XDevice):
         fragment=fragment,
     )
 
+    # Passing undefined for both works but I'm not sure if this
+    # is officially sanctioned
     color_view = color_tex.createView(
-        format=xg.TextureFormat.RGBA8Unorm,
-        dimension=xg.TextureViewDimension._2D,
+        format=xg.TextureFormat.Undefined,
+        dimension=xg.TextureViewDimension.Undefined,
         mipLevelCount=1,
         arrayLayerCount=1,
     )
