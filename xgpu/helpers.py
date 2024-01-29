@@ -12,9 +12,10 @@ def maybe_chain(item: Optional[xg.Chainable] = None) -> Optional[xg.ChainedStruc
 
 
 def get_instance(shader_debug=False, validation=False) -> xg.Instance:
-    extras = None
+    extras = xg.InstanceExtras()
+    extras.backends = xg.InstanceBackend.Primary
+
     if shader_debug or validation:
-        extras = xg.InstanceExtras()
         if shader_debug:
             extras.flags |= xg.InstanceFlag.Debug
         if validation:
