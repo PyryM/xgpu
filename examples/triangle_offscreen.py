@@ -48,6 +48,8 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4f {
 }
 """
 
+xg.helpers.enable_logging(xg.LogLevel.Info)
+
 
 def main():
     t0 = time.time()
