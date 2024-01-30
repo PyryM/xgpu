@@ -2,7 +2,7 @@ import argparse
 import subprocess
 from typing import Tuple
 
-TESTLIST = ["triangle"]
+TESTLIST = ["triangle", "cubes"]
 
 
 def runtest(name: str, snapshotdir: str, emit: bool, thresh: float) -> Tuple[bool, str]:

@@ -17,6 +17,36 @@ def default_view(tex: xg.Texture) -> xg.TextureView:
     )
 
 
+def proj_frustum(left, right, bottom, top, near, far):
+    """Produce a perspective projection matrix from
+    a frustrum
+    """
+    xs = 2.0 * near / (right - left)
+    ys = 2.0 * near / (top - bottom)
+    xz = (right + left) / (right - left)
+    yz = (top + bottom) / (top - bottom)
+    zs = -far / (far - near)
+    z0 = -far * near / (far - near)
+    return np.array(
+        [
+            [xs, 0.0, xz, 0.0],
+            [0.0, ys, yz, 0.0],
+            [0.0, 0.0, zs, z0],
+            [0.0, 0.0, -1.0, 0.0],
+        ]
+    )
+
+
+def proj_perspective(fov_y_radians, aspect_ratio, near, far):
+    """Produce a perspective projection matrix from a field of view and aspect ratio"""
+    vheight = 2.0 * near * np.tan(fov_y_radians * 0.5)
+    vwidth = vheight * aspect_ratio
+
+    return proj_frustum(
+        -vwidth / 2.0, vwidth / 2.0, -vheight / 2.0, vheight / 2.0, near, far
+    )
+
+
 def parse_args() -> Tuple[str, bool, float]:
     import argparse
 
@@ -99,6 +129,42 @@ class RenderHarness:
             format=depth_format,
             viewFormats=[depth_format],
         )
+
+    def create_cube_mesh(self) -> Tuple[xg.Buffer, xg.Buffer, xg.VertexBufferLayout]:
+        raw_verts = []
+        for z in [-1.0, 1.0]:
+            for y in [-1.0, 1.0]:
+                for x in [-1.0, 1.0]:
+                    raw_verts.extend([x, y, z, 1.0])
+
+        vdata = bytes(np.array(raw_verts, dtype=np.float32))
+        indexlist = """
+        0 1 3 3 2 0
+        1 5 7 7 3 1
+        4 6 7 7 5 4
+        2 6 4 4 0 2
+        0 4 5 5 1 0
+        3 7 6 6 2 3
+        """
+        raw_indices = [int(s) for s in indexlist.split()]
+        idata = bytes(np.array(raw_indices, dtype=np.uint16))
+
+        vbuff = self.device.createBufferWithData(vdata, xg.BufferUsage.Vertex)
+        ibuff = self.device.createBufferWithData(idata, xg.BufferUsage.Index)
+
+        layout = xg.vertexBufferLayout(
+            arrayStride=16,
+            stepMode=xg.VertexStepMode.Vertex,
+            attributes=[
+                xg.vertexAttribute(
+                    format=xg.VertexFormat.Float32x4,
+                    offset=0,
+                    shaderLocation=0,
+                ),
+            ],
+        )
+
+        return vbuff, ibuff, layout
 
     def create_pipeline(
         self,
