@@ -30,7 +30,7 @@ jobs:
       - name: Run Tests
         run: |
           sudo apt install -y libegl1-mesa libgl1-mesa-dri libxcb-xfixes0-dev mesa-vulkan-drivers
-          python -m pip install numpy pillow
+          python -m pip install numpy pillow trimesh
           python -m pip install .
           cd examples/tests && python run_tests.py
       - name: Build Wheels
