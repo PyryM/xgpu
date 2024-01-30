@@ -11,15 +11,16 @@ def maybe_chain(item: Optional[xg.Chainable] = None) -> Optional[xg.ChainedStruc
     return xg.ChainedStruct([item])
 
 
-# TODO: fix memory management for callbacks
-def _log_cb(level: xg.LogLevel, msg: str):
-    print(f"[{level.name}]: {msg}")
+def enable_logging(
+    level: xg.LogLevel, callback: Optional[Callable[[xg.LogLevel, str], None]] = None
+):
+    def _log_cb(level: xg.LogLevel, msg: str):
+        print(f"[{level.name}]: {msg}")
 
+    if callback is None:
+        callback = _log_cb
 
-log_cb = xg.LogCallback(_log_cb)
-
-
-def enable_logging(level: xg.LogLevel):
+    log_cb = xg.LogCallback(callback)
     print("Enabling logging?")
     xg.setLogCallback(log_cb)
     xg.setLogLevel(level)
@@ -90,13 +91,6 @@ def get_adapter(
     return XAdapter(adapter), instance
 
 
-def _deviceLostCB(reason: xg.DeviceLostReason, msg: str):
-    print("Lost device!:", reason, msg)
-
-
-dlcb = xg.DeviceLostCallback(_deviceLostCB)
-
-
 def get_device(
     adapter: xg.Adapter,
     features: Optional[List[xg.FeatureName]] = None,
@@ -115,7 +109,9 @@ def get_device(
 
         stash[0] = (status, device, msg)
 
-    cb = xg.RequestDeviceCallback(deviceCB)
+    def deviceLostCB(reason: xg.DeviceLostReason, msg: str):
+        print("Lost device!:", reason, msg)
+
     if features is None:
         print("Requesting all available features")
         features = adapter.enumerateFeatures()
@@ -131,9 +127,9 @@ def get_device(
             requiredFeatures=features,
             requiredLimits=limits,
             defaultQueue=xg.queueDescriptor(),
-            deviceLostCallback=dlcb,
+            deviceLostCallback=xg.DeviceLostCallback(deviceLostCB),
         ),
-        cb,
+        xg.RequestDeviceCallback(deviceCB),
     )
 
     deadline = time.time() + timeout
