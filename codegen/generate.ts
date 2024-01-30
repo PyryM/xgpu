@@ -1145,8 +1145,8 @@ def ${this.rawName()}(${rawArglist.join(", ")}):
 class ${this.func.pyName}:
     def __init__(self, callback: ${pytype}):
         self.index = ${mapName}.add(callback)
-        self._userdata = _ffi_new("int[]", 1)
-        self._userdata[0] = self.index
+        # Yes, we're just storing ints into pointers.
+        self._userdata = ffi.cast("void *", self.index)
         self._ptr = lib.${this.rawName()}
 
     def remove(self):
@@ -1424,7 +1424,7 @@ def _ffi_string(val) -> str:
         raise RuntimeError("IMPOSSIBLE")
 
 def _cast_userdata(ud: CData) -> int:
-    return ffi.cast("int *", ud)[0]
+    return ffi.cast("int", ud)
 
 class Chainable(ABC):
     @property
