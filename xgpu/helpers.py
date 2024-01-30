@@ -1,5 +1,5 @@
 import time
-from typing import Callable, List, Optional, Tuple
+from typing import Callable, List, Optional, Tuple, Union
 
 from . import bindings as xg
 from .extensions import XAdapter, XDevice, XSurface
@@ -11,15 +11,34 @@ def maybe_chain(item: Optional[xg.Chainable] = None) -> Optional[xg.ChainedStruc
     return xg.ChainedStruct([item])
 
 
-def get_instance(shader_debug=False, validation=False) -> xg.Instance:
+# TODO: fix memory management for callbacks
+def _log_cb(level: xg.LogLevel, msg: str):
+    print(f"[{level.name}]: {msg}")
+
+
+log_cb = xg.LogCallback(_log_cb)
+
+
+def enable_logging(level: xg.LogLevel):
+    print("Enabling logging?")
+    xg.setLogCallback(log_cb)
+    xg.setLogLevel(level)
+
+
+def get_instance(
+    shader_debug=False,
+    validation=False,
+    backends: Optional[Union[xg.InstanceBackend, xg.InstanceBackendFlags, int]] = None,
+) -> xg.Instance:
     extras = None
-    if shader_debug or validation:
+    if shader_debug or validation or (backends is not None):
         extras = xg.InstanceExtras()
         if shader_debug:
             extras.flags |= xg.InstanceFlag.Debug
         if validation:
             extras.flags |= xg.InstanceFlag.Validation
-        print("Instance flags:", extras.flags)
+        if backends is not None:
+            extras.backends = backends
     return xg.createInstance(nextInChain=maybe_chain(extras))
 
 
@@ -71,6 +90,13 @@ def get_adapter(
     return XAdapter(adapter), instance
 
 
+def _deviceLostCB(reason: xg.DeviceLostReason, msg: str):
+    print("Lost device!:", reason, msg)
+
+
+dlcb = xg.DeviceLostCallback(_deviceLostCB)
+
+
 def get_device(
     adapter: xg.Adapter,
     features: Optional[List[xg.FeatureName]] = None,
@@ -89,10 +115,6 @@ def get_device(
 
         stash[0] = (status, device, msg)
 
-    def deviceLostCB(reason: xg.DeviceLostReason, msg: str):
-        print("Lost device!:", reason, msg)
-
-    dlcb = xg.DeviceLostCallback(deviceLostCB)
     cb = xg.RequestDeviceCallback(deviceCB)
     if features is None:
         print("Requesting all available features")
