@@ -1074,9 +1074,22 @@ class ${this.pyName}:
             self._cdata = ffi.NULL
 
     def release(self):
+        """ Call the underlying wgpu release function;
+            works even on leaked objects """
         if self._cdata == ffi.NULL:
             return
-        ffi.release(self._cdata)
+        ffi.gc(self._cdata, None)
+        lib.${releaser.name}(self._cdata)
+        #ffi.release(self._cdata)
+        self._cdata = ffi.NULL
+
+    def leak(self):
+        """ Prevent the underlying wgpu object from being
+        released when this Python object is garbage collected """
+        ffi.gc(self._cdata, None)
+
+    def invalidate(self):
+        """ Set this to a null pointer """
         self._cdata = ffi.NULL
 
     def isValid(self):

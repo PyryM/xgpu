@@ -5,7 +5,7 @@ at creating bind groups than doing things the naive/explicit way.
 """
 
 import time
-from typing import Optional
+from typing import List, Optional
 
 import glfw_window
 import numpy as np
@@ -273,7 +273,7 @@ def main():
         global_bg = bind_factory.bind(global_ubuff)
         render_pass.setBindGroup(0, global_bg, [])
 
-        bgs = []
+        bgs: List[xg.BindGroup] = []
         doffset = DRAWUNIFORMS_DTYPE.itemsize
         isize = DRAWUNIFORMS_DTYPE.itemsize
         for idx in range(ROWS * COLS):

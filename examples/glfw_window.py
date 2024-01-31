@@ -9,12 +9,11 @@ import glfw
 import xgpu
 from xgpu import (
     ChainedStruct,
-    Device,
     Instance,
-    Surface,
     SurfaceDescriptor,
     surfaceDescriptor,
 )
+from xgpu.extensions import XDevice, XSurface
 
 
 def is_wayland():
@@ -82,7 +81,7 @@ class GLFWWindow:
         glfw.poll_events()
         return bool(not glfw.window_should_close(self.window))
 
-    def configure_surface(self, device: Device, format=xgpu.TextureFormat.BGRA8Unorm):
+    def configure_surface(self, device: XDevice, format=xgpu.TextureFormat.BGRA8Unorm):
         print("Configuring surface?")
         if self._surface is None:
             return
@@ -98,12 +97,12 @@ class GLFWWindow:
         )
         print("Configured surface?")
 
-    def get_surface(self, instance: Instance) -> Surface:
+    def get_surface(self, instance: Instance) -> XSurface:
         print("Getting surface?")
         if self._surface is not None:
             return self._surface
         desc = self.get_surface_descriptor()
-        self._surface = instance.createSurfaceFromDesc(desc)
+        self._surface = XSurface(instance.createSurfaceFromDesc(desc))
         print("Got surface.")
         return self._surface
 
