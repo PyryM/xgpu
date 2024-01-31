@@ -13,7 +13,9 @@ mapped_cb = xg.BufferMapCallback(_mapped_cb)
 
 class XAdapter(xg.Adapter):
     def __init__(self, inner: xg.Adapter):
+        """Wrap an Adapter into an XAdapter; invalidates the Adapter object"""
         super().__init__(inner._cdata)
+        inner.invalidate()
         self.properties = xg.AdapterProperties()
         self.limits = xg.SupportedLimits()
 
@@ -30,7 +32,9 @@ class XAdapter(xg.Adapter):
 
 class XDevice(xg.Device):
     def __init__(self, inner: Union[xg.Device, "XDevice"]):
+        """Wrap a Device into an XDevice; invalidates the Device object"""
         super().__init__(inner._cdata)
+        inner.invalidate()
         if isinstance(inner, XDevice):
             # TODO: wgpu-native 0.19.1.1
             # Copy limits and queue from parent to avoid ref counting issue
@@ -158,7 +162,9 @@ class XDevice(xg.Device):
 
 class XSurface(xg.Surface):
     def __init__(self, inner: xg.Surface):
+        """Wrap a Surface into an XSurface; invalidates the Surface object"""
         super().__init__(inner._cdata)
+        inner.invalidate()
         self.surf_tex = xg.SurfaceTexture()
 
     def getCurrentTexture2(self) -> xg.SurfaceTexture:
