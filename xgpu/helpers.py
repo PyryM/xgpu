@@ -82,6 +82,7 @@ def get_adapter(
 
     # we have exited the loop without raising
     status, adapter, msg = stash[0]
+    stash[0] = None  # avoid keeping around a GC reference!
 
     if status != xg.RequestAdapterStatus.Success:
         raise RuntimeError(
@@ -140,6 +141,7 @@ def get_device(
 
     # we have exited the loop without raising
     status, device, msg = stash[0]
+    stash[0] = None  # avoid keeping around a GC reference!
 
     if status != xg.RequestDeviceStatus.Success:
         raise RuntimeError(
