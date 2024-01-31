@@ -629,6 +629,9 @@ class ApiInfo {
 
     const args = func.args;
     let idx = isMemberFunc ? 1 : 0;
+
+    const lastNonNullable = args.findLastIndex((arg) => !arg.nullable);
+
     while (idx < args.length) {
       const arg = args[idx];
       const next = args[idx + 1];
@@ -672,10 +675,11 @@ class ApiInfo {
         arg.nullable &&
         (arg.explicitPointer || arg.ctype.kind === "opaque")
       ) {
+        const initializer = idx > lastNonNullable ? "=None" : "";
         pyArgs.push(
           `${arg.name}: ${pyOptional(
             arg.ctype.pyAnnotation(arg.explicitPointer, false)
-          )}`
+          )}${initializer}`
         );
         callArgs.push(`_ffi_unwrap_optional(${arg.name})`);
         //callArgs.push(arg.ctype.unwrap(arg.name, arg.explicitPointer));
@@ -823,6 +827,14 @@ class ValueField implements CStructField {
       return "";
     }
     let docdefault = docs.findDictDefault(this.parentClass, this.name);
+    if(docdefault === undefined && this.ctype instanceof CEnum) {
+      // Special case: 
+      // assume any enum with "Undefined" can take that as a default
+      if(this.ctype.values.find((v) => v.name === "Undefined")) {
+        console.log("Found default for", this.ctype.pyName);
+        docdefault = `Undefined`;
+      }
+    }
     if (docdefault === undefined) {
       return "";
     }
