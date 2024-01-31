@@ -11,6 +11,7 @@ from xgpu import (
     ChainedStruct,
     Instance,
     SurfaceDescriptor,
+    TextureView,
     surfaceDescriptor,
 )
 from xgpu.extensions import XDevice, XSurface
@@ -129,3 +130,25 @@ class GLFWWindow:
             raise RuntimeError("This OS not supported yet: consider installing Ubuntu")
 
         return surfaceDescriptor(nextInChain=ChainedStruct([inner]))
+
+    def begin_frame(self) -> TextureView:
+        assert self._surface is not None, "Cannot begin_frame: no surface created!"
+        self._cur_surf_tex = self._surface.getCurrentTexture2()
+        self._cur_surf_view = self._cur_surf_tex.texture.createView(
+            format=xgpu.TextureFormat.Undefined,
+            dimension=xgpu.TextureViewDimension._2D,
+            mipLevelCount=1,
+            arrayLayerCount=1,
+        )
+        return self._cur_surf_view
+
+    def end_frame(self, present=True):
+        assert self._surface is not None, "Cannot end_frame: no surface created!"
+        if present:
+            self._surface.present()
+        if self._cur_surf_view is not None:
+            self._cur_surf_view.release()
+            self._cur_surf_view = None
+        if self._cur_surf_tex is not None:
+            self._cur_surf_tex.texture.release()
+            self._cur_surf_tex = None

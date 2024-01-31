@@ -250,13 +250,7 @@ def main():
         queue.writeBuffer(global_ubuff, 0, global_ubuff_staging)
         queue.writeBuffer(draw_ubuff, 0, draw_ubuff_staging)
 
-        surf_tex = surface.getCurrentTexture2()
-        color_view = surf_tex.texture.createView(
-            format=xg.TextureFormat.Undefined,
-            dimension=xg.TextureViewDimension._2D,
-            mipLevelCount=1,
-            arrayLayerCount=1,
-        )
+        color_view = window.begin_frame()
 
         color_attachment = xg.renderPassColorAttachment(
             view=color_view,
@@ -289,15 +283,13 @@ def main():
         for bg in bgs:
             bg.release()
 
-        # We end timing here because if we time surface.present()
+        # We end timing here because if we time window.end_frame()
         # we'll just measure vsync timing
         dt = time.perf_counter_ns() - t0
-        surface.present()
+        window.end_frame(present=True)
 
-        color_view.release()
         command_encoder.release()
         render_pass.release()
-        surf_tex.texture.release()
 
         perf_times.append(dt / 1e6)  # convert to ms
         if frame < 1000 and frame % 100 == 0:
