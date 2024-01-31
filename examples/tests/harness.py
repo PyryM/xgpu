@@ -114,9 +114,6 @@ class RenderHarness:
         self.name = name
         self.width, self.height = resolution
         self.instance, self.adapter, self.device, _surf = xg.helpers.startup()
-        self.instance.leak() # leak to prevent segfault on exit?
-        self.adapter.leak()
-        self.device.leak()
         texsize = xg.extent3D(width=self.width, height=self.height, depthOrArrayLayers=1)
         self.color_tex = self.device.createTexture(
             usage=xg.TextureUsage.RenderAttachment | xg.TextureUsage.CopySrc,
