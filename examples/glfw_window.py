@@ -67,7 +67,8 @@ class GLFWWindow:
             glfw.init_hint(glfw.PLATFORM, glfw.PLATFORM_WAYLAND)
         print("GLFW init:", glfw.init())
         glfw.window_hint(glfw.CLIENT_API, glfw.NO_API)
-        glfw.window_hint(glfw.RESIZABLE, True)
+        # TODO: allow resizing after bother to deal with surface changes
+        glfw.window_hint(glfw.RESIZABLE, False)
         # see https://github.com/FlorianRhiem/pyGLFW/issues/42
         # Alternatively, from pyGLFW 1.10 one can set glfw.ERROR_REPORTING='warn'
         if is_wayland():
@@ -77,6 +78,26 @@ class GLFWWindow:
         print("window:", self.window_handle)
         print("display:", self.display_id)
         self._surface = None
+        glfw.set_key_callback(self.window, self.keyboard_callback)
+        glfw.set_cursor_pos_callback(self.window, self.mouse_callback)
+        glfw.set_window_size_callback(self.window, self.resize_callback)
+        glfw.set_char_callback(self.window, self.char_callback)
+        glfw.set_scroll_callback(self.window, self.scroll_callback)
+
+    def keyboard_callback(self, window, key, scancode, action, mods):
+        pass
+
+    def char_callback(self, window, char):
+        pass
+
+    def resize_callback(self, window, width, height):
+        pass
+
+    def mouse_callback(self, *args, **kwargs):
+        pass
+
+    def scroll_callback(self, window, x_offset, y_offset):
+        pass
 
     def poll(self) -> bool:
         glfw.poll_events()

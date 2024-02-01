@@ -1,7 +1,9 @@
 from typing import List, Tuple
 
+import glfw
 import imgui
 import numpy as np
+from glfw_window import GLFWWindow
 from numpy.typing import NDArray
 
 import xgpu as xg
@@ -17,6 +19,91 @@ def ortho_proj_imgui(px_width: float, px_height: float) -> NDArray:
         ],
         dtype=np.float32,
     )
+
+
+def compute_fb_scale(window_size, frame_buffer_size):
+    win_width, win_height = window_size
+    fb_width, fb_height = frame_buffer_size
+
+    if win_width > 0 and win_height > 0:
+        return fb_width / win_width, fb_height / win_height
+    else:
+        return 1.0, 1.0
+
+
+class ImguiWindow(GLFWWindow):
+    def __init__(self, w: int, h: int, title="xgpu"):
+        self.io = imgui.get_io()
+        self._gui_time = None
+        super().__init__(w, h, title)
+
+    def keyboard_callback(self, window, key, scancode, action, mods):
+        # perf: local for faster access
+        io = self.io
+
+        if action == glfw.PRESS:
+            io.keys_down[key] = True
+        elif action == glfw.RELEASE:
+            io.keys_down[key] = False
+
+        io.key_ctrl = (
+            io.keys_down[glfw.KEY_LEFT_CONTROL] or io.keys_down[glfw.KEY_RIGHT_CONTROL]
+        )
+
+        io.key_alt = io.keys_down[glfw.KEY_LEFT_ALT] or io.keys_down[glfw.KEY_RIGHT_ALT]
+
+        io.key_shift = (
+            io.keys_down[glfw.KEY_LEFT_SHIFT] or io.keys_down[glfw.KEY_RIGHT_SHIFT]
+        )
+
+        io.key_super = (
+            io.keys_down[glfw.KEY_LEFT_SUPER] or io.keys_down[glfw.KEY_RIGHT_SUPER]
+        )
+
+    def char_callback(self, window, char):
+        if 0 < char and char < 0x10000:
+            self.io.add_input_character(char)
+
+    def resize_callback(self, window, width, height):
+        # self.io.display_size = width, height
+        pass
+
+    def mouse_callback(self, *args, **kwargs):
+        pass
+
+    def scroll_callback(self, window, x_offset, y_offset):
+        self.io.mouse_wheel_horizontal = x_offset
+        self.io.mouse_wheel = y_offset
+
+    def process_inputs(self):
+        io = self.io
+
+        window_size = glfw.get_window_size(self.window)
+        fb_size = glfw.get_framebuffer_size(self.window)
+
+        io.display_size = window_size
+        io.display_fb_scale = compute_fb_scale(window_size, fb_size)
+        io.delta_time = 1.0 / 60
+
+        if glfw.get_window_attrib(self.window, glfw.FOCUSED):
+            io.mouse_pos = glfw.get_cursor_pos(self.window)
+        else:
+            io.mouse_pos = -1, -1
+
+        io.mouse_down[0] = glfw.get_mouse_button(self.window, 0)
+        io.mouse_down[1] = glfw.get_mouse_button(self.window, 1)
+        io.mouse_down[2] = glfw.get_mouse_button(self.window, 2)
+
+        current_time = glfw.get_time()
+
+        if self._gui_time is not None:
+            self.io.delta_time = current_time - self._gui_time
+        else:
+            self.io.delta_time = 1.0 / 60.0
+        if io.delta_time <= 0.0:
+            io.delta_time = 1.0 / 1000.0
+
+        self._gui_time = current_time
 
 
 class XGPUImguiRenderer:
@@ -57,7 +144,10 @@ class XGPUImguiRenderer:
     """
 
     def __init__(
-        self, device: xg.extensions.XDevice, imgui_io, tex_format=xg.TextureFormat.BGRA8Unorm
+        self,
+        device: xg.extensions.XDevice,
+        imgui_io,
+        tex_format=xg.TextureFormat.BGRA8Unorm,
     ):
         self._device = device
         self._window_tex_format = tex_format
@@ -237,6 +327,7 @@ class XGPUImguiRenderer:
         vtx_size = vtx_count * imgui.VERTEX_SIZE
 
         if self._vbuff is None or self._vbuff.getSize() < vtx_size:
+            print(f"Resizing vbuff -> {vtx_size}")
             self._vbuff = self._device.createBuffer(
                 label="vertexbuffer",
                 usage=xg.BufferUsage.Vertex | xg.BufferUsage.CopyDst,
@@ -244,6 +335,7 @@ class XGPUImguiRenderer:
             )
 
         if self._ibuff is None or self._ibuff.getSize() < idx_size:
+            print(f"Resizing ibuff -> {idx_size}")
             self._ibuff = self._device.createBuffer(
                 label="indexbuffer",
                 usage=xg.BufferUsage.Index | xg.BufferUsage.CopyDst,
@@ -254,19 +346,23 @@ class XGPUImguiRenderer:
         ipos = 0
         vpos = 0
         for cmd in command_lists:
-            vptr = xg.DataPtr(xg.ffi.cast("void *", cmd.vtx_buffer_data), vtx_size)
-            iptr = xg.DataPtr(xg.ffi.cast("void *", cmd.idx_buffer_data), idx_size)
+            nvrt = cmd.vtx_buffer_size
+            nidx = cmd.idx_buffer_size
+            vptr = xg.DataPtr(
+                xg.ffi.cast("void *", cmd.vtx_buffer_data), nvrt * imgui.VERTEX_SIZE
+            )
+            iptr = xg.DataPtr(
+                xg.ffi.cast("void *", cmd.idx_buffer_data), nidx * imgui.INDEX_SIZE
+            )
             self._device.queue.writeBuffer(
                 self._vbuff,
                 vpos * imgui.VERTEX_SIZE,
                 vptr,
             )
-            self._device.queue.writeBuffer(
-                self._ibuff, ipos * imgui.INDEX_SIZE, iptr
-            )
+            self._device.queue.writeBuffer(self._ibuff, ipos * imgui.INDEX_SIZE, iptr)
             offsets.append((ipos, vpos))
-            ipos += cmd.idx_buffer_size
-            vpos += cmd.vtx_buffer_size
+            ipos += nidx
+            vpos += nvrt
 
         return self._ibuff, self._vbuff, offsets
 
@@ -283,7 +379,9 @@ class XGPUImguiRenderer:
 
         draw_data.scale_clip_rects(*io.display_fb_scale)
 
-        ortho_projection = np.ascontiguousarray(ortho_proj_imgui(display_width, display_height).T)
+        ortho_projection = np.ascontiguousarray(
+            ortho_proj_imgui(display_width, display_height).T
+        )
         self._device.queue.writeBuffer(self._ubuff, 0, xg.DataPtr.wrap(ortho_projection))
         ibuff, vbuff, buffer_offsets = self._upload_geometry(draw_data.commands_lists)
 
@@ -305,12 +403,12 @@ class XGPUImguiRenderer:
         renderpass.setIndexBuffer(ibuff, ifmt, 0, ibuff.getSize())
 
         bgs = []
-        for commands in draw_data.commands_lists:
-            idx_buffer_offset = 0
+        for commands, offsets in zip(draw_data.commands_lists, buffer_offsets):
+            idx_buffer_offset = offsets[0]
+            vtx_buffer_offset = offsets[1]
 
-            # todo: allow to iterate over _CmdList
             last_tex_id = None
-            for command, offsets in zip(commands.commands, buffer_offsets):
+            for command in commands.commands:
                 if command.texture_id != last_tex_id:
                     _tex, view = self._texture_map[command.texture_id]
                     self._bind_uniforms.set(self._ubuff, 0)
@@ -321,16 +419,12 @@ class XGPUImguiRenderer:
                     renderpass.setBindGroup(0, bg, dynamicOffsets=[])
                     last_tex_id = command.texture_id
 
-                x, y, z, w = command.clip_rect
-                renderpass.setScissorRect(
-                    int(x), int(fb_height - w), int(z - x), int(w - y)
-                )
+                x, y, x1, y1 = command.clip_rect
+                renderpass.setScissorRect(int(x), int(y), int(x1 - x), int(y1 - y))
                 renderpass.drawIndexed(
-                    command.elem_count, 1, offsets[0] + idx_buffer_offset, offsets[1], 0
+                    command.elem_count, 1, idx_buffer_offset, vtx_buffer_offset, 0
                 )
-
-                idx_buffer_offset += command.elem_count * imgui.INDEX_SIZE
+                idx_buffer_offset += command.elem_count
 
         renderpass.end()
         self._device.queue.submit([encoder.finish()])
-
