@@ -109,39 +109,56 @@ class ImguiWindow(GLFWWindow):
 class XGPUImguiRenderer:
     """xgpu integration class."""
 
-    SHADER_SRC = """
-    struct Uniforms {
-        @align(16) proj_mtx: mat4x4f,
-    }
+    def get_shader_src(self, is_srgb: bool) -> str:
+        """Return a specialized variant of the shader targeting either
+        an srgb or non-srgb render target.
+        """
 
-    struct VertexInput {
-        @location(0) position: vec2f,
-        @location(1) uv: vec2f,
-        @location(2) color: vec4f,
-    }
+        if is_srgb:
+            # ImGui colors are already in srgb, so if the target is srgb
+            # we have to do this dance of converting to linear colors
+            # which the target will then convert back to srgb on store
+            retval = "vec4f(pow(outcolor.rgb, vec3f(2.2)), outcolor.a)"
+        else:
+            # The target is an undecorated target, which means that
+            # the returned color will be stored directly without gamma
+            # adjustment
+            retval = "outcolor"
 
-    struct VertexOutput {
-        @builtin(position) position: vec4f,
-        @location(0) uv: vec2f,
-        @location(1) color: vec4f,
-    }
+        return """
+        struct Uniforms {
+            @align(16) proj_mtx: mat4x4f,
+        }
 
-    @group(0) @binding(0) var<uniform> uniforms: Uniforms;
-    @group(0) @binding(1) var tex: texture_2d<f32>;
-    @group(0) @binding(2) var samp: sampler;
+        struct VertexInput {
+            @location(0) position: vec2f,
+            @location(1) uv: vec2f,
+            @location(2) color: vec4f,
+        }
 
-    @vertex
-    fn vs_main(input: VertexInput) -> VertexOutput {
-        let pos = uniforms.proj_mtx * vec4f(input.position, 0.0, 1.0);
-        return VertexOutput(pos, input.uv, input.color);
-    }
+        struct VertexOutput {
+            @builtin(position) position: vec4f,
+            @location(0) uv: vec2f,
+            @location(1) color: vec4f,
+        }
 
-    @fragment
-    fn fs_main(input: VertexOutput) -> @location(0) vec4f {
-        let texcolor = textureSample(tex, samp, input.uv.xy);
-        return input.color * texcolor;
-    }
-    """
+        @group(0) @binding(0) var<uniform> uniforms: Uniforms;
+        @group(0) @binding(1) var tex: texture_2d<f32>;
+        @group(0) @binding(2) var samp: sampler;
+
+        @vertex
+        fn vs_main(input: VertexInput) -> VertexOutput {
+            let pos = uniforms.proj_mtx * vec4f(input.position, 0.0, 1.0);
+            return VertexOutput(pos, input.uv, input.color);
+        }
+
+        @fragment
+        fn fs_main(input: VertexOutput) -> @location(0) vec4f {
+            let texcolor = textureSample(tex, samp, input.uv.xy);
+            let outcolor = input.color * texcolor;
+            return [[RETVAL]];
+        }
+        """.replace("[[RETVAL]]", retval)
 
     def __init__(
         self,
@@ -233,7 +250,9 @@ class XGPUImguiRenderer:
 
     def _create_device_objects(self):
         self._create_bind_layout()
-        self._shader = self._device.createWGSLShaderModule(code=self.SHADER_SRC)
+        is_srgb = "srgb" in self._window_tex_format.name.lower()
+        shadersrc = self.get_shader_src(is_srgb)
+        self._shader = self._device.createWGSLShaderModule(code=shadersrc)
 
         self._pipeline_layout = self._device.createPipelineLayout(
             bindGroupLayouts=[self._binder.layout]
