@@ -1,4 +1,4 @@
-from typing import List, Optional, Union
+from typing import Dict, List, Optional, Union
 
 from . import bindings as xg
 
@@ -334,3 +334,77 @@ class BinderBuilder:
 
     def complete(self) -> Binder:
         return Binder(self.device, self.entries)
+
+
+VERTEX_FORMAT_SIZES: Dict[xg.VertexFormat, int] = {
+    xg.VertexFormat.Uint8x2: 2,
+    xg.VertexFormat.Uint8x4: 4,
+    xg.VertexFormat.Sint8x2: 2,
+    xg.VertexFormat.Sint8x4: 4,
+    xg.VertexFormat.Unorm8x2: 2,
+    xg.VertexFormat.Unorm8x4: 4,
+    xg.VertexFormat.Snorm8x2: 2,
+    xg.VertexFormat.Snorm8x4: 4,
+    xg.VertexFormat.Uint16x2: 4,
+    xg.VertexFormat.Uint16x4: 8,
+    xg.VertexFormat.Sint16x2: 4,
+    xg.VertexFormat.Sint16x4: 8,
+    xg.VertexFormat.Unorm16x2: 4,
+    xg.VertexFormat.Unorm16x4: 8,
+    xg.VertexFormat.Snorm16x2: 4,
+    xg.VertexFormat.Snorm16x4: 8,
+    xg.VertexFormat.Float16x2: 4,
+    xg.VertexFormat.Float16x4: 8,
+    xg.VertexFormat.Float32: 4,
+    xg.VertexFormat.Float32x2: 8,
+    xg.VertexFormat.Float32x3: 12,
+    xg.VertexFormat.Float32x4: 16,
+    xg.VertexFormat.Uint32: 4,
+    xg.VertexFormat.Uint32x2: 8,
+    xg.VertexFormat.Uint32x3: 12,
+    xg.VertexFormat.Uint32x4: 16,
+    xg.VertexFormat.Sint32: 4,
+    xg.VertexFormat.Sint32x2: 8,
+    xg.VertexFormat.Sint32x3: 12,
+    xg.VertexFormat.Sint32x4: 16,
+}
+
+
+class VertexLayoutBuilder:
+    def __init__(
+        self, stride: int = 0, step_mode: xg.VertexStepMode = xg.VertexStepMode.Vertex
+    ):
+        self.attributes: List[xg.VertexAttribute] = []
+        self.stride = stride
+        self.offset = 0
+        self.shader_location = 0
+        self.step_mode = step_mode
+
+    def skip_location(self) -> None:
+        self.shader_location += 1
+
+    def add_attribute(self, format: xg.VertexFormat, size: Optional[int] = None) -> None:
+        format_size = VERTEX_FORMAT_SIZES.get(format)
+        if format_size is None:
+            raise ValueError(f"Could not infer size for format {format.name}")
+        if size is None:
+            size = format_size
+        else:
+            assert (
+                size >= format_size
+            ), f"Declared size {size} is smaller than size({format.name}): {format_size}"
+
+        self.attributes.append(
+            xg.vertexAttribute(
+                format=format,
+                offset=self.offset,
+                shaderLocation=self.shader_location,
+            )
+        )
+        self.offset += size
+        self.shader_location += 1
+
+    def build(self, device: xg.Device) -> xg.VertexBufferLayout:
+        return xg.vertexBufferLayout(
+            arrayStride=self.stride, stepMode=self.step_mode, attributes=self.attributes
+        )
