@@ -151,7 +151,7 @@ class GLFWWindow:
         elif sys.platform.startswith("darwin"):
             import ctypes
 
-            from rubicon.objc.api import ObjCClass, ObjCInstance
+            from rubicon.objc.api import ObjCClass, ObjCInstance  # type: ignore
 
             window = ctypes.c_void_p(self.window_handle)
 

@@ -38,7 +38,7 @@ def compute_fb_scale(window_size, frame_buffer_size):
 
 class ImguiWindow(GLFWWindow):
     def __init__(self, w: int, h: int, title="xgpu", font: Optional[str] = None):
-        self.io = imgui.get_io()
+        self.io = imgui.get_io()  # type: ignore
 
         self._add_font(font)
 
