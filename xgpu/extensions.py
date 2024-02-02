@@ -3,7 +3,7 @@ from typing import List, Optional, Union
 from . import bindings as xg
 
 
-def _mapped_cb(status):
+def _mapped_cb(status: xg.BufferMapAsyncStatus) -> None:
     if status != xg.BufferMapAsyncStatus.Success:
         raise RuntimeError(f"Mapping error! {status}")
 
@@ -187,8 +187,8 @@ class BufferBinding(BindRef):
         binding: int,
         visibility: Union[xg.ShaderStageFlags, int],
         type: xg.BufferBindingType,
-        dynoffset=False,
-        minsize=0,
+        dynoffset: bool = False,
+        minsize: int = 0,
     ):
         super().__init__(binding, visibility)
         self._layout.buffer = xg.bufferBindingLayout(
@@ -197,7 +197,7 @@ class BufferBinding(BindRef):
             minBindingSize=minsize,
         )
 
-    def set(self, buffer: xg.Buffer, offset: int = 0, size: Optional[int] = None):
+    def set(self, buffer: xg.Buffer, offset: int = 0, size: Optional[int] = None) -> None:
         self._ptr.buffer = buffer._cdata
         self._ptr.offset = offset
         if size is not None:
@@ -213,7 +213,7 @@ class TextureBinding(BindRef):
         visibility: Union[xg.ShaderStageFlags, int],
         sampletype: xg.TextureSampleType,
         viewdim: xg.TextureViewDimension,
-        multisampled=False,
+        multisampled: bool = False,
     ):
         super().__init__(binding, visibility)
         self._layout.texture = xg.textureBindingLayout(
@@ -222,7 +222,7 @@ class TextureBinding(BindRef):
             multisampled=multisampled,
         )
 
-    def set(self, textureView: xg.TextureView):
+    def set(self, textureView: xg.TextureView) -> None:
         self._ptr.textureView = textureView._cdata
 
 
@@ -233,7 +233,7 @@ class StorageTextureBinding(BindRef):
         visibility: Union[xg.ShaderStageFlags, int],
         format: xg.TextureFormat,
         viewdim: xg.TextureViewDimension,
-        access=xg.StorageTextureAccess.WriteOnly,
+        access: xg.StorageTextureAccess = xg.StorageTextureAccess.WriteOnly,
     ):
         super().__init__(binding, visibility)
         self._layout.storageTexture = xg.storageTextureBindingLayout(
@@ -242,7 +242,7 @@ class StorageTextureBinding(BindRef):
             access=access,
         )
 
-    def set(self, textureView: xg.TextureView):
+    def set(self, textureView: xg.TextureView) -> None:
         self._ptr.textureView = textureView._cdata
 
 
@@ -251,14 +251,14 @@ class SamplerBinding(BindRef):
         self,
         binding: int,
         visibility: Union[xg.ShaderStageFlags, int],
-        type=xg.SamplerBindingType.Filtering,
+        type: xg.SamplerBindingType = xg.SamplerBindingType.Filtering,
     ):
         super().__init__(binding, visibility)
         self._layout.sampler = xg.samplerBindingLayout(
             type=type,
         )
 
-    def set(self, sampler: xg.Sampler):
+    def set(self, sampler: xg.Sampler) -> None:
         self._ptr.sampler = sampler._cdata
 
 
@@ -291,8 +291,8 @@ class BinderBuilder:
         binding: int,
         visibility: Union[xg.ShaderStageFlags, int],
         type: xg.BufferBindingType,
-        dynoffset=False,
-        minsize=0,
+        dynoffset: bool = False,
+        minsize: int = 0,
     ) -> BufferBinding:
         entry = BufferBinding(binding, visibility, type, dynoffset, minsize)
         self.entries.append(entry)
@@ -304,7 +304,7 @@ class BinderBuilder:
         visibility: Union[xg.ShaderStageFlags, int],
         sampletype: xg.TextureSampleType,
         viewdim: xg.TextureViewDimension,
-        multisampled=False,
+        multisampled: bool = False,
     ) -> TextureBinding:
         entry = TextureBinding(binding, visibility, sampletype, viewdim, multisampled)
         self.entries.append(entry)
@@ -316,7 +316,7 @@ class BinderBuilder:
         visibility: Union[xg.ShaderStageFlags, int],
         format: xg.TextureFormat,
         viewdim: xg.TextureViewDimension,
-        access=xg.StorageTextureAccess.WriteOnly,
+        access: xg.StorageTextureAccess = xg.StorageTextureAccess.WriteOnly,
     ) -> StorageTextureBinding:
         entry = StorageTextureBinding(binding, visibility, format, viewdim, access)
         self.entries.append(entry)
@@ -326,7 +326,7 @@ class BinderBuilder:
         self,
         binding: int,
         visibility: Union[xg.ShaderStageFlags, int],
-        type=xg.SamplerBindingType.Filtering,
+        type: xg.SamplerBindingType = xg.SamplerBindingType.Filtering,
     ) -> SamplerBinding:
         entry = SamplerBinding(binding, visibility, type)
         self.entries.append(entry)
