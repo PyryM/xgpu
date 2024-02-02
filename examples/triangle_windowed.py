@@ -6,9 +6,8 @@ https://github.com/pygfx/wgpu-py/blob/main/examples/triangle.py
 
 """
 
-import glfw_window
-
 import xgpu as xg
+from xgpu.extensions.glfw_window import GLFWWindow
 
 shader_source = """
 struct VertexInput {
@@ -46,13 +45,13 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4f {
 """
 
 
-def main():
+def main() -> None:
     WIDTH = 1024
     HEIGHT = 1024
 
-    window = glfw_window.GLFWWindow(WIDTH, HEIGHT, "woo")
+    window = GLFWWindow(WIDTH, HEIGHT, "woo")
 
-    _instance, adapter, device, surface = xg.helpers.startup(
+    _instance, adapter, device, surface = xg.extensions.startup(
         surface_src=window.get_surface
     )
     assert surface is not None, "Failed to get surface"

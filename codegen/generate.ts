@@ -761,7 +761,7 @@ def ${this.name}(self) -> ${this.listType()}:
     return self._${this.name}
 
 @${this.name}.setter
-def ${this.name}(self, v: ${this.argType()}):
+def ${this.name}(self, v: ${this.argType()}) -> None:
     if isinstance(v, list):
         v2 = ${listName(this.ctype.pyName)}(v)
     else:
@@ -788,7 +788,7 @@ def ${this.name}(self) -> ${this.ctype.pyAnnotation(false, true)}:
     return self._${this.name}
 
 @${this.name}.setter
-def ${this.name}(self, v: ${this.ctype.pyAnnotation(false, false)}):
+def ${this.name}(self, v: ${this.ctype.pyAnnotation(false, false)}) -> None:
     self._${this.name} = v
     self._cdata.${this.name} = v._ptr
     self._cdata.${this.name.replaceAll("Callback", "Userdata")} = v._userdata
@@ -853,7 +853,7 @@ def ${this.name}(self) -> ${this.ctype.pyAnnotation(false, true)}:
     return ${this.ctype.wrap(`self._cdata.${this.name}`, false, "self")}
 
 @${this.name}.setter
-def ${this.name}(self, v: ${this.ctype.pyAnnotation(false, false)}):
+def ${this.name}(self, v: ${this.ctype.pyAnnotation(false, false)}) -> None:
     self._cdata.${this.name} = ${this.ctype.unwrap("v", false)}`;
   }
 }
@@ -927,7 +927,7 @@ def ${this.name}(self) -> ${this.argtype()}:
     return ${getter}
 
 @${this.name}.setter
-def ${this.name}(self, v: ${this.argtype()}):
+def ${this.name}(self, v: ${this.argtype()}) -> None:
 ${indent(1, this.setterBody())}`;
   }
 }
@@ -1065,7 +1065,7 @@ class COpaque implements CType {
 
     return `
 class ${this.pyName}:
-    def __init__(self, cdata: CData, add_ref = False):
+    def __init__(self, cdata: CData, add_ref: bool = False):
         if cdata != ffi.NULL:
             self._cdata = ffi.gc(cdata, lib.${releaser.name})
             if add_ref:
@@ -1073,7 +1073,7 @@ class ${this.pyName}:
         else:
             self._cdata = ffi.NULL
 
-    def release(self):
+    def release(self) -> None:
         """ Call the underlying wgpu release function;
             works even on leaked objects """
         if self._cdata == ffi.NULL:
@@ -1083,16 +1083,16 @@ class ${this.pyName}:
         #ffi.release(self._cdata)
         self._cdata = ffi.NULL
 
-    def leak(self):
+    def leak(self) -> None:
         """ Prevent the underlying wgpu object from being
         released when this Python object is garbage collected """
         ffi.gc(self._cdata, None)
 
-    def invalidate(self):
+    def invalidate(self) -> None:
         """ Set this to a null pointer """
         self._cdata = ffi.NULL
 
-    def isValid(self):
+    def isValid(self) -> None:
         return self._cdata != ffi.NULL
 
 ${funcdefs.join("\n")}
@@ -1149,7 +1149,7 @@ class CallbackWrapper implements Emittable {
 ${mapName} = CBMap()
 
 @ffi.def_extern()
-def ${this.rawName()}(${rawArglist.join(", ")}):
+def ${this.rawName()}(${rawArglist.join(", ")}): # noqa
     idx = _cast_userdata(userdata)
     cb = ${mapName}.get(idx)
     if cb is not None:
@@ -1162,7 +1162,7 @@ class ${this.func.pyName}:
         self._userdata = ffi.cast("void *", self.index)
         self._ptr = lib.${this.rawName()}
 
-    def remove(self):
+    def remove(self) -> None:
         ${mapName}.remove(self.index)
     `;
   }
@@ -1408,24 +1408,24 @@ def _ffi_init(typespec: str, initializer: ${pyOptional("Any")}) -> CData:
     else:
         return initializer
 
-def _ffi_deref(cdata):
+def _ffi_deref(cdata: CData) -> None:
     if ffi.typeof(cdata).kind == 'pointer':
         return cdata[0]
     else:
         return cdata
 
-def _ffi_unwrap_optional(val):
+def _ffi_unwrap_optional(val: ${pyOptional("Any")}) -> CData:
     if val is None:
         return ffi.NULL
     else:
         return val._cdata
 
-def _ffi_unwrap_str(val: ${pyOptional("str")}):
+def _ffi_unwrap_str(val: ${pyOptional("str")}) -> CData:
     if val is None:
         val = ""
     return ffi.new("char[]", val.encode("utf8"))
 
-def _ffi_string(val) -> str:
+def _ffi_string(val: CData) -> str:
     if val == ffi.NULL:
         return ""
     ret = ffi.string(val)
@@ -1466,20 +1466,20 @@ class CBMap:
         self.callbacks = {}
         self.index = 0
 
-    def add(self, cb) -> int:
+    def add(self, cb: Any) -> int:
         retidx = self.index
         self.index += 1
         self.callbacks[retidx] = cb
         return retidx
 
-    def get(self, idx):
+    def get(self, idx: int) -> Any:
         return self.callbacks.get(idx)
 
-    def remove(self, idx):
+    def remove(self, idx: int) -> None:
         if idx in self.callbacks:
             del self.callbacks[idx]
 
-def _ffi_void_cast(thing: Any):
+def _ffi_void_cast(thing: Any) -> CData:
     return ffi.cast("void *", thing)
 
 class VoidPtr:
@@ -1502,7 +1502,7 @@ class DataPtr:
         return DataPtr(ffi.new('char[]', size), size)
 
     @classmethod
-    def wrap(cls, buffer) -> "DataPtr":
+    def wrap(cls, buffer: Any) -> "DataPtr":
         cdata = ffi.from_buffer(buffer)
         return DataPtr(cdata, len(cdata))
 
@@ -1510,10 +1510,10 @@ class DataPtr:
         self._ptr = data
         self._size = size
 
-    def buffer_view(self):
+    def buffer_view(self) -> Any:
         return ffi.buffer(self._ptr, self._size)
 
-    def copy_bytes(self, src: bytes, count: ${pyOptional("int")} = None):
+    def copy_bytes(self, src: bytes, count: ${pyOptional("int")} = None) -> None:
         if count is None:
             count = len(src)
         ffi.memmove(self._ptr, src, count)

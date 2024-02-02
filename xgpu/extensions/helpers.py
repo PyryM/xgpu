@@ -1,8 +1,8 @@
 import time
 from typing import Callable, List, Optional, Tuple, Union
 
-from . import bindings as xg
-from .extensions import XAdapter, XDevice, XSurface
+from .. import bindings as xg
+from .wrappers import XAdapter, XDevice, XSurface
 
 
 def maybe_chain(item: Optional[xg.Chainable] = None) -> Optional[xg.ChainedStruct]:
@@ -13,8 +13,8 @@ def maybe_chain(item: Optional[xg.Chainable] = None) -> Optional[xg.ChainedStruc
 
 def enable_logging(
     level: xg.LogLevel, callback: Optional[Callable[[xg.LogLevel, str], None]] = None
-):
-    def _log_cb(level: xg.LogLevel, msg: str):
+) -> None:
+    def _log_cb(level: xg.LogLevel, msg: str) -> None:
         print(f"[{level.name}]: {msg}")
 
     if callback is None:
@@ -27,8 +27,8 @@ def enable_logging(
 
 
 def get_instance(
-    shader_debug=False,
-    validation=False,
+    shader_debug: bool = False,
+    validation: bool = False,
     backends: Optional[Union[xg.InstanceBackend, xg.InstanceBackendFlags, int]] = None,
 ) -> xg.Instance:
     extras = None
@@ -45,7 +45,7 @@ def get_instance(
 
 def get_adapter(
     instance: Optional[xg.Instance] = None,
-    power=xg.PowerPreference.HighPerformance,
+    power: xg.PowerPreference = xg.PowerPreference.HighPerformance,
     surface: Optional[xg.Surface] = None,
     timeout: float = 60.0,
 ) -> Tuple[XAdapter, xg.Instance]:
@@ -56,7 +56,7 @@ def get_adapter(
     # will be populated by a callback
     stash: List[Optional[Tuple[xg.RequestAdapterStatus, xg.Adapter, str]]] = [None]
 
-    def adapterCB(status: xg.RequestAdapterStatus, adapter: xg.Adapter, msg: str):
+    def adapterCB(status: xg.RequestAdapterStatus, adapter: xg.Adapter, msg: str) -> None:
         print("Got adapter with msg:", msg, ", status:", status.name)
         stash[0] = (status, adapter, msg)
 
@@ -105,12 +105,12 @@ def get_device(
     # collect the device from a callback
     stash: List[Optional[Tuple[xg.RequestDeviceStatus, xg.Device, str]]] = [None]
 
-    def deviceCB(status: xg.RequestDeviceStatus, device: xg.Device, msg: str):
+    def deviceCB(status: xg.RequestDeviceStatus, device: xg.Device, msg: str) -> None:
         print("Got device with msg:", msg, ", status:", status.name)
 
         stash[0] = (status, device, msg)
 
-    def deviceLostCB(reason: xg.DeviceLostReason, msg: str):
+    def deviceLostCB(reason: xg.DeviceLostReason, msg: str) -> None:
         print("Lost device!:", reason, msg)
 
     if features is None:
@@ -152,7 +152,7 @@ def get_device(
 
 
 def startup(
-    debug=False, surface_src: Optional[Callable[[xg.Instance], XSurface]] = None
+    debug: bool = False, surface_src: Optional[Callable[[xg.Instance], XSurface]] = None
 ) -> Tuple[xg.Instance, XAdapter, XDevice, Optional[XSurface]]:
     """Simplify acquisition of core objects"""
     instance = get_instance(shader_debug=debug, validation=False)

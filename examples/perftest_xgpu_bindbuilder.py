@@ -5,19 +5,21 @@ at creating bind groups than doing things the naive/explicit way.
 """
 
 import time
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
-import glfw_window
 import numpy as np
 import trimesh
 from example_utils import proj_perspective
 from numpy.typing import NDArray
 
 import xgpu as xg
-from xgpu.extensions import BinderBuilder, XDevice
+from xgpu.extensions import BinderBuilder, XDevice, auto_vertex_layout
+from xgpu.extensions.glfw_window import GLFWWindow
 
 
-def set_transform(target: NDArray, rot, scale: float, pos: NDArray):
+def set_transform(
+    target: NDArray, rot: Tuple[float, float, float], scale: float, pos: NDArray
+) -> None:
     # Note: webgpu expects column-major array order
     r = trimesh.transformations.euler_matrix(rot[0], rot[1], rot[2])
     target[0:3, 0:3] = r[0:3, 0:3].T * scale
@@ -84,7 +86,7 @@ GLOBALUNIFORMS_DTYPE = np.dtype(
 )
 
 
-def create_geometry_buffers(device: XDevice):
+def create_geometry_buffers(device: XDevice) -> Tuple[xg.Buffer, xg.Buffer]:
     raw_verts = []
     for z in [-1.0, 1.0]:
         for y in [-1.0, 1.0]:
@@ -108,14 +110,14 @@ def create_geometry_buffers(device: XDevice):
     return vbuff, ibuff
 
 
-def main():
+def main() -> None:
     WIDTH = 1024
     HEIGHT = 1024
 
-    window = glfw_window.GLFWWindow(WIDTH, HEIGHT, "woo")
+    window = GLFWWindow(WIDTH, HEIGHT, "woo")
 
     # Enable shader debug if you want to have wgsl source available (e.g., in RenderDoc)
-    _, adapter, device, surface = xg.helpers.startup(
+    _, adapter, device, surface = xg.extensions.startup(
         surface_src=window.get_surface, debug=False
     )
     assert surface is not None, "Failed to get surface!"
@@ -162,25 +164,19 @@ def main():
         writeMask=xg.ColorWriteMask.All,
     )
 
+    vertex_layout = auto_vertex_layout(
+        [
+            xg.VertexFormat.Float32x4  # Position
+        ]
+    )
+
     render_pipeline = device.createRenderPipeline(
         layout=pipeline_layout,
         vertex=xg.vertexState(
             module=shader,
             entryPoint="vs_main",
             constants=[],
-            buffers=[
-                xg.vertexBufferLayout(
-                    arrayStride=16,
-                    stepMode=xg.VertexStepMode.Vertex,
-                    attributes=[
-                        xg.vertexAttribute(
-                            format=xg.VertexFormat.Float32x4,
-                            offset=0,
-                            shaderLocation=0,
-                        ),
-                    ],
-                ),
-            ],
+            buffers=[vertex_layout],
         ),
         primitive=primitive,
         multisample=xg.multisampleState(),
@@ -236,7 +232,7 @@ def main():
                 r = 5.0 * ((x**2.0) + (y**2.0)) ** 0.5
                 set_transform(
                     cpu_draw_ubuff[uidx]["model_mat"],
-                    [frame * 0.02 + r, frame * 0.03 + r, frame * 0.04],
+                    (frame * 0.02 + r, frame * 0.03 + r, frame * 0.04),
                     0.7 / ROWS,
                     pos,
                 )
@@ -250,13 +246,7 @@ def main():
         queue.writeBuffer(global_ubuff, 0, global_ubuff_staging)
         queue.writeBuffer(draw_ubuff, 0, draw_ubuff_staging)
 
-        surf_tex = surface.getCurrentTexture2()
-        color_view = surf_tex.texture.createView(
-            format=xg.TextureFormat.Undefined,
-            dimension=xg.TextureViewDimension._2D,
-            mipLevelCount=1,
-            arrayLayerCount=1,
-        )
+        color_view = window.begin_frame()
 
         color_attachment = xg.renderPassColorAttachment(
             view=color_view,
@@ -289,15 +279,13 @@ def main():
         for bg in bgs:
             bg.release()
 
-        # We end timing here because if we time surface.present()
+        # We end timing here because if we time window.end_frame()
         # we'll just measure vsync timing
         dt = time.perf_counter_ns() - t0
-        surface.present()
+        window.end_frame(present=True)
 
-        color_view.release()
         command_encoder.release()
         render_pass.release()
-        surf_tex.texture.release()
 
         perf_times.append(dt / 1e6)  # convert to ms
         if frame < 1000 and frame % 100 == 0:

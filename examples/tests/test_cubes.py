@@ -1,5 +1,5 @@
 import os
-from typing import Optional
+from typing import Optional, Sequence
 
 import harness
 import numpy as np
@@ -10,7 +10,9 @@ import xgpu as xg
 from xgpu.extensions import BinderBuilder
 
 
-def set_transform(target: NDArray, rot, scale: float, pos: NDArray):
+def set_transform(
+    target: NDArray, rot: Sequence[float], scale: float, pos: NDArray
+) -> None:
     # Note: webgpu expects column-major array order
     r = trimesh.transformations.euler_matrix(rot[0], rot[1], rot[2])
     target[0:3, 0:3] = r[0:3, 0:3].T * scale
@@ -76,7 +78,7 @@ class UniformsBindgroup:
         return self.binder.create_bindgroup()
 
 
-def fill_cubes(buff: NDArray, rows: int, cols: int):
+def fill_cubes(buff: NDArray, rows: int, cols: int) -> None:
     uidx = 0
     frame = 120
     pos = np.array([0.0, 0.0, -2.0], dtype=np.float32)
@@ -95,7 +97,7 @@ def fill_cubes(buff: NDArray, rows: int, cols: int):
             uidx += 1
 
 
-def runtest():
+def runtest() -> None:
     app = harness.RenderHarness(os.path.basename(__file__))
 
     uniform_align = app.device.getLimits2().minUniformBufferOffsetAlignment

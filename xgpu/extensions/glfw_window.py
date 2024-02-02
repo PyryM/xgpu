@@ -1,5 +1,6 @@
+# ruff: noqa
 # Largely adapted from https://github.com/pygfx/wgpu-py/blob/main/wgpu/gui/glfw.py
-# wgpu-py: bsd-2 license
+# wgpu-py: BSD-2 license
 
 import os
 import sys
@@ -11,6 +12,7 @@ from xgpu import (
     ChainedStruct,
     Instance,
     SurfaceDescriptor,
+    TextureView,
     surfaceDescriptor,
 )
 from xgpu.extensions import XDevice, XSurface
@@ -66,7 +68,8 @@ class GLFWWindow:
             glfw.init_hint(glfw.PLATFORM, glfw.PLATFORM_WAYLAND)
         print("GLFW init:", glfw.init())
         glfw.window_hint(glfw.CLIENT_API, glfw.NO_API)
-        glfw.window_hint(glfw.RESIZABLE, True)
+        # TODO: allow resizing after bother to deal with surface changes
+        glfw.window_hint(glfw.RESIZABLE, False)
         # see https://github.com/FlorianRhiem/pyGLFW/issues/42
         # Alternatively, from pyGLFW 1.10 one can set glfw.ERROR_REPORTING='warn'
         if is_wayland():
@@ -76,6 +79,26 @@ class GLFWWindow:
         print("window:", self.window_handle)
         print("display:", self.display_id)
         self._surface = None
+        glfw.set_key_callback(self.window, self.keyboard_callback)
+        glfw.set_cursor_pos_callback(self.window, self.mouse_callback)
+        glfw.set_window_size_callback(self.window, self.resize_callback)
+        glfw.set_char_callback(self.window, self.char_callback)
+        glfw.set_scroll_callback(self.window, self.scroll_callback)
+
+    def keyboard_callback(self, window, key, scancode, action, mods):
+        pass
+
+    def char_callback(self, window, char):
+        pass
+
+    def resize_callback(self, window, width, height):
+        pass
+
+    def mouse_callback(self, *args, **kwargs):
+        pass
+
+    def scroll_callback(self, window, x_offset, y_offset):
+        pass
 
     def poll(self) -> bool:
         glfw.poll_events()
@@ -125,7 +148,50 @@ class GLFWWindow:
                     display=xgpu.VoidPtr.raw_cast(self.display_id),
                     window=self.window_handle,
                 )
+        elif sys.platform.startswith("darwin"):
+            import ctypes
+
+            from rubicon.objc.api import ObjCClass, ObjCInstance  # type: ignore
+
+            window = ctypes.c_void_p(self.window_handle)
+
+            cw = ObjCInstance(window)
+            cv = cw.contentView
+
+            if cv.layer and cv.layer.isKindOfClass(ObjCClass("CAMetalLayer")):
+                # No need to create a metal layer again
+                metal_layer = cv.layer
+            else:
+                metal_layer = ObjCClass("CAMetalLayer").layer()
+                cv.setLayer(metal_layer)
+                cv.setWantsLayer(True)
+
+            inner = xgpu.surfaceDescriptorFromMetalLayer(
+                layer=xgpu.VoidPtr.raw_cast(metal_layer.ptr.value)
+            )
         else:
-            raise RuntimeError("This OS not supported yet: consider installing Ubuntu")
+            raise RuntimeError("Unsupported windowing platform")
 
         return surfaceDescriptor(nextInChain=ChainedStruct([inner]))
+
+    def begin_frame(self) -> TextureView:
+        assert self._surface is not None, "Cannot begin_frame: no surface created!"
+        self._cur_surf_tex = self._surface.getCurrentTexture2()
+        self._cur_surf_view = self._cur_surf_tex.texture.createView(
+            format=xgpu.TextureFormat.Undefined,
+            dimension=xgpu.TextureViewDimension._2D,
+            mipLevelCount=1,
+            arrayLayerCount=1,
+        )
+        return self._cur_surf_view
+
+    def end_frame(self, present=True):
+        assert self._surface is not None, "Cannot end_frame: no surface created!"
+        if present:
+            self._surface.present()
+        if self._cur_surf_view is not None:
+            self._cur_surf_view.release()
+            self._cur_surf_view = None
+        if self._cur_surf_tex is not None:
+            self._cur_surf_tex.texture.release()
+            self._cur_surf_tex = None

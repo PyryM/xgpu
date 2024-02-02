@@ -48,23 +48,23 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4f {
 }
 """
 
-xg.helpers.enable_logging(xg.LogLevel.Info)
+xg.extensions.enable_logging(xg.LogLevel.Info)
 
 
-def main():
+def main() -> None:
     t0 = time.time()
-    _instance, _adapter, device, _surface = xg.helpers.startup()
+    _instance, _adapter, device, _surface = xg.extensions.startup()
     dt = time.time() - t0
     print(f"Took: {dt}")
     return _main(device)
 
 
-def write_image(filename: str, data: bytes, size: tuple[int, int]):
+def write_image(filename: str, data: bytes, size: tuple[int, int]) -> None:
     img = Image.frombytes("RGBA", size, data)
     img.save(filename)
 
 
-def _main(device: XDevice):
+def _main(device: XDevice) -> None:
     WIDTH = 1024
     HEIGHT = 1024
 

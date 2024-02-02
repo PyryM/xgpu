@@ -17,7 +17,9 @@ def default_view(tex: xg.Texture) -> xg.TextureView:
     )
 
 
-def proj_frustum(left, right, bottom, top, near, far):
+def proj_frustum(
+    left: float, right: float, bottom: float, top: float, near: float, far: float
+) -> NDArray:
     """Produce a perspective projection matrix from
     a frustrum
     """
@@ -37,7 +39,9 @@ def proj_frustum(left, right, bottom, top, near, far):
     )
 
 
-def proj_perspective(fov_y_radians, aspect_ratio, near, far):
+def proj_perspective(
+    fov_y_radians: float, aspect_ratio: float, near: float, far: float
+) -> NDArray:
     """Produce a perspective projection matrix from a field of view and aspect ratio"""
     vheight = 2.0 * near * np.tan(fov_y_radians * 0.5)
     vwidth = vheight * aspect_ratio
@@ -65,7 +69,7 @@ def parse_args() -> Tuple[str, bool, float]:
     return args.snapshots, args.emit, args.threshold
 
 
-def write_image(filename: str, data: NDArray):
+def write_image(filename: str, data: NDArray) -> None:
     img = Image.fromarray(data, mode="RGBA")
     img.save(filename)
 
@@ -75,14 +79,14 @@ def read_image(filename: str) -> NDArray:
     return np.array(img)
 
 
-def compare_images(a: NDArray, b: NDArray, thresh=6.0) -> float:
+def compare_images(a: NDArray, b: NDArray, thresh: float = 6.0) -> float:
     diff = np.sum(np.abs(a.astype(np.float64) - b.astype(np.float64)), axis=2)
     total_diff = np.sum(diff > thresh)
     total_pixels = a.shape[0] * a.shape[1]
     return total_diff / total_pixels
 
 
-def handle_test_output(test_name: str, output: NDArray):
+def handle_test_output(test_name: str, output: NDArray) -> None:
     snapshot_dir, emit, thresh = parse_args()
     snapshot_filename = os.path.join(snapshot_dir, f"{test_name}.png")
     if emit:
@@ -108,12 +112,12 @@ class RenderHarness:
         self,
         name: str,
         resolution: Tuple[int, int] = (512, 512),
-        color_format=xg.TextureFormat.RGBA8Unorm,
-        depth_format=xg.TextureFormat.Depth24Plus,
+        color_format: xg.TextureFormat = xg.TextureFormat.RGBA8Unorm,
+        depth_format: xg.TextureFormat = xg.TextureFormat.Depth24Plus,
     ):
         self.name = name
         self.width, self.height = resolution
-        self.instance, self.adapter, self.device, _surf = xg.helpers.startup()
+        self.instance, self.adapter, self.device, _surf = xg.extensions.startup()
         texsize = xg.extent3D(width=self.width, height=self.height, depthOrArrayLayers=1)
         self.color_tex = self.device.createTexture(
             usage=xg.TextureUsage.RenderAttachment | xg.TextureUsage.CopySrc,
@@ -171,7 +175,7 @@ class RenderHarness:
         shader_src: str,
         bind_layouts: Optional[List[xg.BindGroupLayout]] = None,
         vertex_layouts: Optional[List[xg.VertexBufferLayout]] = None,
-    ):
+    ) -> None:
         device = self.device
         shader = device.createWGSLShaderModule(code=shader_src)
         if bind_layouts is None:
@@ -243,7 +247,7 @@ class RenderHarness:
         self.renderpass.setPipeline(self.pipeline)
         return self.renderpass
 
-    def finish(self):
+    def finish(self) -> None:
         self.renderpass.end()
         self.device.getQueue().submit([self.encoder.finish()])
         texbytes = self.device.readRGBATexture(self.color_tex)

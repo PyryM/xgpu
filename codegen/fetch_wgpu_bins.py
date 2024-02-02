@@ -1,7 +1,8 @@
 import hashlib
+import os
 import shutil
-import zipfile
 import subprocess
+import zipfile
 from platform import uname
 from typing import Optional
 from urllib.request import urlopen
@@ -103,6 +104,11 @@ def unzip_to(url: str, dest: str):
 
 
 UNZIP_PATH = "wgpu_native_unzipped"
+INCLUDE_PATH = "xgpu/include"
+
+# make sure the include path exists
+os.makedirs(INCLUDE_PATH, exist_ok=True)
+
 if OS != "macos":
     unzip_to(make_url(OS, ARCH), UNZIP_PATH)
 else:
@@ -116,8 +122,8 @@ LIBS = [
 ]
 
 COPIES = [
-    (f"{UNZIP_PATH}/webgpu.h", "xgpu/include/webgpu.h"),
-    (f"{UNZIP_PATH}/wgpu.h", "xgpu/include/wgpu.h"),
+    (f"{UNZIP_PATH}/webgpu.h", f"{INCLUDE_PATH}/webgpu.h"),
+    (f"{UNZIP_PATH}/wgpu.h", f"{INCLUDE_PATH}/wgpu.h"),
     *LIBS,
 ]
 
@@ -135,7 +141,7 @@ if OS == "macos":
             f"{UNZIP_PATH}/libwgpu_native.dylib",
             f"{UNZIP_PATH}_ARM/libwgpu_native.dylib",
             "-output",
-            f"xgpu/libwgpu_native.dylib",
+            "xgpu/libwgpu_native.dylib",
         ]
     )
 

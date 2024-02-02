@@ -117,7 +117,7 @@ class RDOverlayBits(IntEnum):
     Overlay_None = 0
 
 
-def device_ptr_from_vk_instance(inst):
+def device_ptr_from_vk_instance(inst: Any) -> None:
     """A helper macro for Vulkan, where the device handle cannot be used directly.
     Passing the VkInstance to this function will return the RENDERDOC_DevicePointer to use.
 
@@ -368,16 +368,16 @@ def is_available() -> bool:
     return api_ptrs is not None
 
 
-def trigger_capture():
+def trigger_capture() -> None:
     assert api_ptrs is not None, NOT_AVAILABLE
     api_ptrs.TriggerCapture()
 
 
-def start_frame_capture():
+def start_frame_capture() -> None:
     assert api_ptrs is not None, NOT_AVAILABLE
     api_ptrs.StartFrameCapture(ffi.NULL, ffi.NULL)
 
 
-def end_frame_capture():
+def end_frame_capture() -> None:
     assert api_ptrs is not None, NOT_AVAILABLE
     api_ptrs.EndFrameCapture(ffi.NULL, ffi.NULL)
