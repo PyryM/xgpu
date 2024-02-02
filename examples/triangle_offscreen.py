@@ -48,12 +48,12 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4f {
 }
 """
 
-xg.helpers.enable_logging(xg.LogLevel.Info)
+xg.extensions.enable_logging(xg.LogLevel.Info)
 
 
 def main() -> None:
     t0 = time.time()
-    _instance, _adapter, device, _surface = xg.helpers.startup()
+    _instance, _adapter, device, _surface = xg.extensions.startup()
     dt = time.time() - t0
     print(f"Took: {dt}")
     return _main(device)

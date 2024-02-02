@@ -1,7 +1,7 @@
 import hashlib
 import shutil
-import zipfile
 import subprocess
+import zipfile
 from platform import uname
 from typing import Optional
 from urllib.request import urlopen
@@ -135,7 +135,7 @@ if OS == "macos":
             f"{UNZIP_PATH}/libwgpu_native.dylib",
             f"{UNZIP_PATH}_ARM/libwgpu_native.dylib",
             "-output",
-            f"xgpu/libwgpu_native.dylib",
+            "xgpu/libwgpu_native.dylib",
         ]
     )
 

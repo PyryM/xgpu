@@ -7,7 +7,6 @@ at creating bind groups than doing things the naive/explicit way.
 import time
 from typing import List, Optional, Tuple
 
-import glfw_window
 import numpy as np
 import trimesh
 from example_utils import proj_perspective
@@ -15,6 +14,7 @@ from numpy.typing import NDArray
 
 import xgpu as xg
 from xgpu.extensions import BinderBuilder, XDevice, auto_vertex_layout
+from xgpu.extensions.glfw_window import GLFWWindow
 
 
 def set_transform(
@@ -114,10 +114,10 @@ def main() -> None:
     WIDTH = 1024
     HEIGHT = 1024
 
-    window = glfw_window.GLFWWindow(WIDTH, HEIGHT, "woo")
+    window = GLFWWindow(WIDTH, HEIGHT, "woo")
 
     # Enable shader debug if you want to have wgsl source available (e.g., in RenderDoc)
-    _, adapter, device, surface = xg.helpers.startup(
+    _, adapter, device, surface = xg.extensions.startup(
         surface_src=window.get_surface, debug=False
     )
     assert surface is not None, "Failed to get surface!"

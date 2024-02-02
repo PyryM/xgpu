@@ -97,7 +97,7 @@ def main() -> None:
     window = glfw_window.GLFWWindow(WIDTH, HEIGHT, "woo")
 
     # Enable shader debug if you want to have wgsl source available (e.g., in RenderDoc)
-    _, adapter, device, surface = xg.helpers.startup(
+    _, adapter, device, surface = xg.extensions.startup(
         surface_src=window.get_surface, debug=False
     )
     assert surface is not None, "Failed to get surface!"

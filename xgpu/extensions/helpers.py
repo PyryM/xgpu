@@ -1,8 +1,8 @@
 import time
 from typing import Callable, List, Optional, Tuple, Union
 
-from . import bindings as xg
-from .extensions import XAdapter, XDevice, XSurface
+from .. import bindings as xg
+from .wrappers import XAdapter, XDevice, XSurface
 
 
 def maybe_chain(item: Optional[xg.Chainable] = None) -> Optional[xg.ChainedStruct]:

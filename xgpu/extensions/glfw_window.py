@@ -1,5 +1,6 @@
+# ruff: noqa
 # Largely adapted from https://github.com/pygfx/wgpu-py/blob/main/wgpu/gui/glfw.py
-# wgpu-py: bsd-2 license
+# wgpu-py: BSD-2 license
 
 import os
 import sys

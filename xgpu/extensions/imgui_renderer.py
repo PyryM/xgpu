@@ -1,13 +1,17 @@
-from typing import List, Tuple
+# ruff: noqa
+import os
+from typing import List, Optional, Tuple
 
 import glfw
 import imgui
 import numpy as np
-from glfw_window import GLFWWindow
 from numpy.typing import NDArray
 
-import xgpu as xg
-from xgpu.extensions import auto_vertex_layout
+from .. import bindings as xg
+from .glfw_window import GLFWWindow
+from .wrappers import BinderBuilder, XDevice, auto_vertex_layout
+
+_assets = os.path.abspath(os.path.join(os.path.dirname(__file__), "assets"))
 
 
 def ortho_proj_imgui(px_width: float, px_height: float) -> NDArray:
@@ -33,10 +37,32 @@ def compute_fb_scale(window_size, frame_buffer_size):
 
 
 class ImguiWindow(GLFWWindow):
-    def __init__(self, w: int, h: int, title="xgpu"):
+    def __init__(self, w: int, h: int, title="xgpu", font: Optional[str] = None):
         self.io = imgui.get_io()
+
+        self._add_font(font)
+
         self._gui_time = None
         super().__init__(w, h, title)
+
+    def _add_font(self, path: Optional[str] = None) -> None:
+        """
+        Add the fonts in the `xgpu.extensions.assets.fonts` directory.
+        """
+        if path is None:
+            return
+
+        self.io.fonts.clear()
+        self.io.font_global_scale = 1
+
+        if not path.lower().endswith(".ttf"):
+            raise ValueError(f"Font must be truetype: {path}")
+        abspath = os.path.abspath(path)
+        self.io.fonts.add_font_from_file_ttf(
+            filename=abspath,
+            size_pixels=25.0,
+            glyph_ranges=self.io.fonts.get_glyph_ranges_latin(),
+        )
 
     def keyboard_callback(self, window, key, scancode, action, mods):
         # perf: local for faster access
@@ -163,7 +189,7 @@ class XGPUImguiRenderer:
 
     def __init__(
         self,
-        device: xg.extensions.XDevice,
+        device: XDevice,
         imgui_io,
         tex_format=xg.TextureFormat.BGRA8Unorm,
     ):
@@ -234,7 +260,7 @@ class XGPUImguiRenderer:
         # @group(0) @binding(0) var<uniform> uniforms: Uniforms;
         # @group(0) @binding(1) var tex: texture_2d<f32>;
         # @group(0) @binding(2) var samp: sampler;
-        bb = xg.extensions.BinderBuilder(self._device)
+        bb = BinderBuilder(self._device)
         self._bind_uniforms = bb.add_buffer(
             binding=0,
             visibility=xg.ShaderStage.Vertex,

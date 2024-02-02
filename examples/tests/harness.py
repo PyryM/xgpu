@@ -113,7 +113,7 @@ class RenderHarness:
     ):
         self.name = name
         self.width, self.height = resolution
-        self.instance, self.adapter, self.device, _surf = xg.helpers.startup()
+        self.instance, self.adapter, self.device, _surf = xg.extensions.startup()
         texsize = xg.extent3D(width=self.width, height=self.height, depthOrArrayLayers=1)
         self.color_tex = self.device.createTexture(
             usage=xg.TextureUsage.RenderAttachment | xg.TextureUsage.CopySrc,

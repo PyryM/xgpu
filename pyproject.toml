@@ -15,18 +15,29 @@ file = "LICENSE"
 [project.urls]
 Homepage = "https://github.com/pyrym/xgpu"
 
+[project.optional-dependencies]
+
+# includes windowing libraries
+gui = [
+    "glfw", "imgui"
+    ]
+
 [tool.setuptools]
 include-package-data = true
 packages = [
    "xgpu",
+   "xgpu.extensions",
 ]
 [tool.setuptools.package-data]
 xgpu = [
     "*.so",
     "*.dll",
     "*.pyd",
-    "*.dylib"
+    "*.dylib",
+    "extensions/assets/*"
 ]
+
+
 
 [tool.ruff]
 target-version = "py37"

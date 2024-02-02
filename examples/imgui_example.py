@@ -3,9 +3,9 @@ Imgui integration?
 """
 
 import imgui
-from imgui_renderer import ImguiWindow, XGPUImguiRenderer
 
 import xgpu as xg
+from xgpu.extensions.imgui_renderer import ImguiWindow, XGPUImguiRenderer
 
 
 class IgWindow:
@@ -68,14 +68,14 @@ def main():
     WIDTH = 1024
     HEIGHT = 1024
 
-    # xg.helpers.enable_logging(xg.LogLevel.Trace)
+    # xg.extensions.enable_logging(xg.LogLevel.Trace)
     imgui.create_context()
     print("VERTEX SIZE:", imgui.VERTEX_SIZE)
 
-    window = ImguiWindow(WIDTH, HEIGHT, "IMGUI")
+    window = ImguiWindow(WIDTH, HEIGHT, "IMGUI", font="assets/IBMPlexSans-Regular.ttf")
 
     # Enable shader debug if you want to have wgsl source available (e.g., in RenderDoc)
-    _, adapter, device, surface = xg.helpers.startup(
+    _, adapter, device, surface = xg.extensions.startup(
         surface_src=window.get_surface, debug=False
     )
     assert surface is not None, "Failed to get surface!"

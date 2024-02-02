@@ -1,6 +1,6 @@
 from typing import Dict, Iterable, List, Optional, Union
 
-from . import bindings as xg
+from .. import bindings as xg
 
 
 def _mapped_cb(status: xg.BufferMapAsyncStatus) -> None:
