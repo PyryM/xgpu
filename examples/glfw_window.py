@@ -147,8 +147,28 @@ class GLFWWindow:
                     display=xgpu.VoidPtr.raw_cast(self.display_id),
                     window=self.window_handle,
                 )
+        elif sys.platform.startswith("darwin"):
+            from rubicon.objc.api import ObjCInstance, ObjCClass
+            import ctypes
+            window = ctypes.c_void_p(self.window_handle)
+
+            cw = ObjCInstance(window)
+            cv = cw.contentView
+
+            if cv.layer and cv.layer.isKindOfClass(ObjCClass("CAMetalLayer")):
+                # No need to create a metal layer again
+                metal_layer = cv.layer
+            else:
+                metal_layer = ObjCClass("CAMetalLayer").layer()
+                cv.setLayer(metal_layer)
+                cv.setWantsLayer(True)
+
+            inner = xgpu.surfaceDescriptorFromMetalLayer(
+                layer=xgpu.VoidPtr.raw_cast(metal_layer.ptr.value)
+            )
         else:
-            raise RuntimeError("This OS not supported yet: consider installing Ubuntu")
+            raise RuntimeError("Unsupported windowing platform")
+
 
         return surfaceDescriptor(nextInChain=ChainedStruct([inner]))
 

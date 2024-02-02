@@ -81,8 +81,8 @@ class ImguiWindow(GLFWWindow):
         window_size = glfw.get_window_size(self.window)
         fb_size = glfw.get_framebuffer_size(self.window)
 
-        io.display_size = window_size
-        io.display_fb_scale = compute_fb_scale(window_size, fb_size)
+        io.display_size = (self.width, self.height) # window_size
+        io.display_fb_scale = (1.0, 1.0) #compute_fb_scale(window_size, fb_size)
         io.delta_time = 1.0 / 60
 
         if glfw.get_window_attrib(self.window, glfw.FOCUSED):
