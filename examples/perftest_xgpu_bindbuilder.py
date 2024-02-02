@@ -14,7 +14,7 @@ from example_utils import proj_perspective
 from numpy.typing import NDArray
 
 import xgpu as xg
-from xgpu.extensions import BinderBuilder, XDevice
+from xgpu.extensions import BinderBuilder, XDevice, auto_vertex_layout
 
 
 def set_transform(
@@ -164,25 +164,19 @@ def main() -> None:
         writeMask=xg.ColorWriteMask.All,
     )
 
+    vertex_layout = auto_vertex_layout(
+        [
+            xg.VertexFormat.Float32x4  # Position
+        ]
+    )
+
     render_pipeline = device.createRenderPipeline(
         layout=pipeline_layout,
         vertex=xg.vertexState(
             module=shader,
             entryPoint="vs_main",
             constants=[],
-            buffers=[
-                xg.vertexBufferLayout(
-                    arrayStride=16,
-                    stepMode=xg.VertexStepMode.Vertex,
-                    attributes=[
-                        xg.vertexAttribute(
-                            format=xg.VertexFormat.Float32x4,
-                            offset=0,
-                            shaderLocation=0,
-                        ),
-                    ],
-                ),
-            ],
+            buffers=[vertex_layout],
         ),
         primitive=primitive,
         multisample=xg.multisampleState(),

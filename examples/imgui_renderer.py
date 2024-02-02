@@ -7,6 +7,7 @@ from glfw_window import GLFWWindow
 from numpy.typing import NDArray
 
 import xgpu as xg
+from xgpu.extensions import auto_vertex_layout
 
 
 def ortho_proj_imgui(px_width: float, px_height: float) -> NDArray:
@@ -293,35 +294,21 @@ class XGPUImguiRenderer:
             writeMask=xg.ColorWriteMask.All,
         )
 
+        vertex_layout = auto_vertex_layout(
+            [
+                xg.VertexFormat.Float32x2,  # Position
+                xg.VertexFormat.Float32x2,  # UV
+                xg.VertexFormat.Unorm8x4,  # Color
+            ]
+        )
+
         self._pipeline = self._device.createRenderPipeline(
             layout=self._pipeline_layout,
             vertex=xg.vertexState(
                 module=self._shader,
                 entryPoint="vs_main",
                 constants=[],
-                buffers=[
-                    xg.vertexBufferLayout(
-                        arrayStride=imgui.VERTEX_SIZE,
-                        stepMode=xg.VertexStepMode.Vertex,
-                        attributes=[
-                            xg.vertexAttribute(
-                                format=xg.VertexFormat.Float32x2,
-                                offset=0,
-                                shaderLocation=0,
-                            ),
-                            xg.vertexAttribute(
-                                format=xg.VertexFormat.Float32x2,
-                                offset=8,
-                                shaderLocation=1,
-                            ),
-                            xg.vertexAttribute(
-                                format=xg.VertexFormat.Unorm8x4,
-                                offset=16,
-                                shaderLocation=2,
-                            ),
-                        ],
-                    ),
-                ],
+                buffers=[vertex_layout],
             ),
             primitive=primitive,
             multisample=xg.multisampleState(),

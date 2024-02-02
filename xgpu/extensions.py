@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Union
+from typing import Dict, Iterable, List, Optional, Union
 
 from . import bindings as xg
 
@@ -9,6 +9,13 @@ def _mapped_cb(status: xg.BufferMapAsyncStatus) -> None:
 
 
 mapped_cb = xg.BufferMapCallback(_mapped_cb)
+
+
+def round_up_to(v: int, align: int) -> int:
+    m = v % align
+    if m != 0:
+        v += align - m
+    return v
 
 
 class XAdapter(xg.Adapter):
@@ -372,7 +379,9 @@ VERTEX_FORMAT_SIZES: Dict[xg.VertexFormat, int] = {
 
 class VertexLayoutBuilder:
     def __init__(
-        self, stride: int = 0, step_mode: xg.VertexStepMode = xg.VertexStepMode.Vertex
+        self,
+        stride: Optional[int] = None,
+        step_mode: xg.VertexStepMode = xg.VertexStepMode.Vertex,
     ):
         self.attributes: List[xg.VertexAttribute] = []
         self.stride = stride
@@ -381,9 +390,19 @@ class VertexLayoutBuilder:
         self.step_mode = step_mode
 
     def skip_location(self) -> None:
+        """Skip a shader location"""
         self.shader_location += 1
 
+    def add_padding(self, pad: int) -> None:
+        """Add padding"""
+        self.offset += pad
+
+    def align_to(self, align: int) -> None:
+        """Add padding so that the next attribute is aligned to a specific byte alignment"""
+        self.offset = round_up_to(self.offset, align)
+
     def add_attribute(self, format: xg.VertexFormat, size: Optional[int] = None) -> None:
+        """Add an attribute; if size is not provided it will be inferred from the format"""
         format_size = VERTEX_FORMAT_SIZES.get(format)
         if format_size is None:
             raise ValueError(f"Could not infer size for format {format.name}")
@@ -404,7 +423,25 @@ class VertexLayoutBuilder:
         self.offset += size
         self.shader_location += 1
 
-    def build(self, device: xg.Device) -> xg.VertexBufferLayout:
+    def build(self) -> xg.VertexBufferLayout:
+        """Produce a vertex buffer layout"""
+        if self.stride is not None:
+            stride = self.stride
+            assert (
+                stride >= self.offset
+            ), f"Declared stride {stride} is smaller than vertex size {self.offset}"
+        else:
+            stride = self.offset
         return xg.vertexBufferLayout(
-            arrayStride=self.stride, stepMode=self.step_mode, attributes=self.attributes
+            arrayStride=stride, stepMode=self.step_mode, attributes=self.attributes
         )
+
+
+def auto_vertex_layout(
+    attribs: Iterable[xg.VertexFormat],
+    step_mode: xg.VertexStepMode = xg.VertexStepMode.Vertex,
+) -> xg.VertexBufferLayout:
+    builder = VertexLayoutBuilder()
+    for attrib in attribs:
+        builder.add_attribute(attrib)
+    return builder.build()
