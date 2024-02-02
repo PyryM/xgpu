@@ -12,7 +12,8 @@ from numpy.typing import NDArray
 
 import xgpu as xg
 import xgpu.renderdoc as renderdoc
-from xgpu.extensions import XDevice, glfw_window
+from xgpu.extensions import XDevice
+from xgpu.extensions.glfw_window import GLFWWindow
 
 
 def set_transform(
@@ -93,7 +94,7 @@ def main() -> None:
     WIDTH = 1024
     HEIGHT = 1024
 
-    window = glfw_window.GLFWWindow(WIDTH, HEIGHT, "woo")
+    window = GLFWWindow(WIDTH, HEIGHT, "woo")
 
     # Enable shader debug if you want to have wgsl source available (e.g., in RenderDoc)
     _, adapter, device, surface = xg.extensions.startup(
