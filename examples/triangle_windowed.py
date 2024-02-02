@@ -46,7 +46,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4f {
 """
 
 
-def main():
+def main() -> None:
     WIDTH = 1024
     HEIGHT = 1024
 

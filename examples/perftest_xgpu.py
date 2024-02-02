@@ -3,6 +3,7 @@ Stress test doing a lot of draw calls the naive way (without instancing)
 """
 
 import time
+from typing import Tuple
 
 import glfw_window
 import numpy as np
@@ -15,7 +16,9 @@ import xgpu.renderdoc as renderdoc
 from xgpu.extensions import XDevice
 
 
-def set_transform(target: NDArray, rot, scale: float, pos: NDArray):
+def set_transform(
+    target: NDArray, rot: Tuple[float, float, float], scale: float, pos: NDArray
+) -> None:
     # Note: webgpu expects column-major array order
     r = trimesh.transformations.euler_matrix(rot[0], rot[1], rot[2])
     target[0:3, 0:3] = r[0:3, 0:3].T * scale
@@ -63,7 +66,7 @@ GLOBALUNIFORMS_DTYPE = np.dtype(
 )
 
 
-def create_geometry_buffers(device: XDevice):
+def create_geometry_buffers(device: XDevice) -> Tuple[xg.Buffer, xg.Buffer]:
     raw_verts = []
     for z in [-1.0, 1.0]:
         for y in [-1.0, 1.0]:
@@ -87,7 +90,7 @@ def create_geometry_buffers(device: XDevice):
     return vbuff, ibuff
 
 
-def main():
+def main() -> None:
     WIDTH = 1024
     HEIGHT = 1024
 
@@ -226,7 +229,7 @@ def main():
                 r = 5.0 * ((x**2.0) + (y**2.0)) ** 0.5
                 set_transform(
                     cpu_draw_ubuff[uidx]["model_mat"],
-                    [frame * 0.02 + r, frame * 0.03 + r, frame * 0.04],
+                    (frame * 0.02 + r, frame * 0.03 + r, frame * 0.04),
                     0.7 / ROWS,
                     pos,
                 )

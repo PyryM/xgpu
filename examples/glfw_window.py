@@ -150,6 +150,7 @@ class GLFWWindow:
         elif sys.platform.startswith("darwin"):
             from rubicon.objc.api import ObjCInstance, ObjCClass
             import ctypes
+
             window = ctypes.c_void_p(self.window_handle)
 
             cw = ObjCInstance(window)
@@ -168,7 +169,6 @@ class GLFWWindow:
             )
         else:
             raise RuntimeError("Unsupported windowing platform")
-
 
         return surfaceDescriptor(nextInChain=ChainedStruct([inner]))
 

@@ -1,7 +1,10 @@
 import numpy as np
+from numpy.typing import NDArray
 
 
-def proj_frustum(left, right, bottom, top, near, far):
+def proj_frustum(
+    left: float, right: float, bottom: float, top: float, near: float, far: float
+) -> NDArray:
     """Produce a perspective projection matrix from
     a frustrum
     """
@@ -21,7 +24,9 @@ def proj_frustum(left, right, bottom, top, near, far):
     )
 
 
-def proj_perspective(fov_y_radians, aspect_ratio, near, far):
+def proj_perspective(
+    fov_y_radians: float, aspect_ratio: float, near: float, far: float
+) -> NDArray:
     """Produce a perspective projection matrix from a field of view and aspect ratio"""
     vheight = 2.0 * near * np.tan(fov_y_radians * 0.5)
     vwidth = vheight * aspect_ratio
