@@ -38,7 +38,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4f {
 """
 
 
-def runtest():
+def runtest() -> None:
     app = harness.RenderHarness(os.path.basename(__file__))
     app.create_pipeline(shader_src=SHADER)
     renderpass = app.begin()
