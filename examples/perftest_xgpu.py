@@ -5,7 +5,6 @@ Stress test doing a lot of draw calls the naive way (without instancing)
 import time
 from typing import Tuple
 
-import glfw_window
 import numpy as np
 import trimesh
 from example_utils import proj_perspective
@@ -13,7 +12,7 @@ from numpy.typing import NDArray
 
 import xgpu as xg
 import xgpu.renderdoc as renderdoc
-from xgpu.extensions import XDevice
+from xgpu.extensions import XDevice, glfw_window
 
 
 def set_transform(
