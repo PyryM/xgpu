@@ -105,11 +105,14 @@ class ImguiWindow(GLFWWindow):
     def process_inputs(self):
         io = self.io
 
-        window_size = glfw.get_window_size(self.window)
-        fb_size = glfw.get_framebuffer_size(self.window)
+        window_size = (self.width, self.height)  # glfw.get_window_size(self.window)
+        fb_size = (
+            self.phys_width,
+            self.phys_height,
+        )  # glfw.get_framebuffer_size(self.window)
 
         io.display_size = (self.width, self.height)  # window_size
-        io.display_fb_scale = (1.0, 1.0)  # compute_fb_scale(window_size, fb_size)
+        io.display_fb_scale = compute_fb_scale(window_size, fb_size)
         io.delta_time = 1.0 / 60
 
         if glfw.get_window_attrib(self.window, glfw.FOCUSED):

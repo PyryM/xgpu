@@ -75,6 +75,10 @@ class GLFWWindow:
         if is_wayland():
             glfw.window_hint(glfw.FOCUSED, False)  # prevent Wayland focus error
         self.window = glfw.create_window(w, h, title, None, None)
+        self.phys_width, self.phys_height = glfw.get_framebuffer_size(self.window)
+        print("FB size:", self.phys_width, self.phys_height)
+        cscale = glfw.get_window_content_scale(self.window)
+        print("Content scale:", cscale[0], cscale[1])
         (self.window_handle, self.display_id) = get_handles(self.window)
         print("window:", self.window_handle)
         print("display:", self.display_id)
@@ -114,8 +118,8 @@ class GLFWWindow:
             viewFormats=[format],
             format=format,
             alphaMode=xgpu.CompositeAlphaMode.Auto,
-            width=self.width,
-            height=self.height,
+            width=self.phys_width,
+            height=self.phys_height,
             presentMode=xgpu.PresentMode.Fifo,
         )
         print("Configured surface?")
