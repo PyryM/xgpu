@@ -4,7 +4,7 @@ from typing import List
 
 def main():
     import xgpu
-    import xgpu.helpers as xgutils
+    import xgpu.extensions.helpers as xgutils
 
     def print_props(props: xgpu.AdapterProperties):
         print(f"{props.name} [{props.backendType.name}], {props.driverDescription}")
