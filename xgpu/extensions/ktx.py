@@ -1,12 +1,12 @@
 import math
 import struct
 from enum import IntEnum
-from typing import List, Optional, Tuple, Union
+from typing import List, Tuple
 
 from .. import bindings as xg
 from ..textureformats import format_layout_info
+from .texloader import TextureData
 from .vkformats import VK_FORMAT_TO_XG
-from .wrappers import XDevice
 
 # HEADER FORMAT:
 # Byte[12] identifier
@@ -50,7 +50,7 @@ def block_count(pixel_size: int, mip: int, block_size: int) -> int:
     return max(1, math.ceil(mip_pixel_size(pixel_size, mip) / block_size))
 
 
-class KTXFile:
+class KTXTextureData(TextureData):
     def __init__(self, data: bytes):
         self.data = data
         fields = struct.unpack(HEADER_FORMAT, data[0:HEADER_SIZE])
@@ -160,7 +160,7 @@ class KTXFile:
             return data
         raise NotImplementedError()
 
-    def get_raw_level(self, idx: int) -> bytes:
+    def get_level_data(self, idx: int) -> bytes:
         if not (idx >= 0 and idx < len(self.level_index)):
             raise ValueError(f"index OoB: {idx}/{len(self.level_index)}")
         (offset, length, uncompressed_length) = self.level_index[idx]
@@ -176,44 +176,3 @@ class KTXFile:
             width=max(1, px), height=max(1, py), depthOrArrayLayers=layercount
         )
         return layout, extent
-
-
-class KTXLoader:
-    def __init__(self, device: XDevice):
-        self.device = device
-
-    def load_from_mem(
-        self,
-        ktx_data: bytes,
-        usage: Union[xg.TextureUsageFlags, xg.TextureUsage, int],
-        label: Optional[str] = None,
-    ) -> xg.Texture:
-        flags = usage | xg.TextureUsage.CopyDst  # must have copy dest
-        ktxfile = KTXFile(ktx_data)
-        tex = self.device.createTexture(
-            label=label,
-            usage=flags,
-            dimension=ktxfile.dimension,
-            size=ktxfile.extent3D,
-            format=ktxfile.format,
-            mipLevelCount=ktxfile.level_count,
-            sampleCount=1,
-            viewFormats=[ktxfile.format],
-        )
-        q = self.device.getQueue()
-        for mip_idx in range(ktxfile.level_count):
-            mip_data = ktxfile.get_raw_level(mip_idx)
-            mip_layout, mip_extent = ktxfile.get_level_info(mip_idx)
-            texdest = xg.imageCopyTexture(
-                texture=tex,
-                mipLevel=mip_idx,
-                origin=xg.origin3D(x=0, y=0, z=0),
-                aspect=xg.TextureAspect.All,
-            )
-            q.writeTexture(
-                destination=texdest,
-                data=xg.DataPtr.wrap(mip_data),
-                dataLayout=mip_layout,
-                writeSize=mip_extent,
-            )
-        return tex
