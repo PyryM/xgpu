@@ -23,21 +23,25 @@ class TextureData:
         self,
         device: XDevice,
         usage: Union[xg.TextureUsageFlags, xg.TextureUsage, int],
+        mip_count: Optional[int] = None,
         label: Optional[str] = None,
     ) -> xg.Texture:
         flags = usage | xg.TextureUsage.CopyDst  # must have copy dest
+        if mip_count is None:
+            mip_count = self.level_count
+        mip_count = max(1, min(mip_count, self.level_count))
         tex = device.createTexture(
             label=label,
             usage=flags,
             dimension=self.dimension,
             size=self.extent3D,
             format=self.format,
-            mipLevelCount=self.level_count,
+            mipLevelCount=mip_count,
             sampleCount=1,
             viewFormats=[self.format],
         )
         q = device.getQueue()
-        for mip_idx in range(self.level_count):
+        for mip_idx in range(mip_count):
             mip_data = self.get_level_data(mip_idx)
             mip_layout, mip_extent = self.get_level_info(mip_idx)
             texdest = xg.imageCopyTexture(

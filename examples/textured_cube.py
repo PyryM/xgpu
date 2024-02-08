@@ -2,7 +2,8 @@
 Textured cube
 """
 
-from typing import List, Tuple
+import math
+from typing import Tuple
 
 import numpy as np
 import trimesh
@@ -13,6 +14,7 @@ import xgpu as xg
 from xgpu.extensions import BinderBuilder, XDevice, auto_vertex_layout
 from xgpu.extensions.glfw_window import GLFWWindow
 from xgpu.extensions.ktx import KTXTextureData
+
 
 def set_transform(
     target: NDArray, rot: Tuple[float, float, float], scale: float, pos: NDArray
@@ -26,11 +28,11 @@ def set_transform(
 
 SHADER_SOURCE = """
 struct Uniforms {
-  @align(16) view_proj_mat: mat4x4f
+  @align(16) view_proj_mat: mat4x4f,
   @align(16) model_mat: mat4x4f,
   @align(16) color: vec4f,
 }
-@group(0) @binding(0) var<uniform> uniforms: GlobalUniforms;
+@group(0) @binding(0) var<uniform> uniforms: Uniforms;
 @group(0) @binding(1) var tex: texture_2d<f32>;
 @group(0) @binding(2) var samp: sampler;
 
@@ -46,7 +48,7 @@ struct VertexOutput {
 fn vs_main(in: VertexInput) -> VertexOutput {
     let world_pos = uniforms.model_mat * vec4f(in.pos.xyz, 1.0f);
     let clip_pos = uniforms.view_proj_mat * world_pos;
-    let color = uniforms.color * clamp(in.pos, vec4f(0.0f), vec4f(1.0f));
+    let color = uniforms.color; // * clamp(in.pos, vec4f(0.0f), vec4f(1.0f));
     let uv = (in.pos.xy + vec2f(1.0)) * 0.5;
     return VertexOutput(clip_pos, color, uv);
 }
@@ -56,6 +58,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4f {
     return in.color * texcolor;
 }
 """
+
 
 class Bindgroup:
     def __init__(self, device: xg.Device):
@@ -69,21 +72,19 @@ class Bindgroup:
             binding=1,
             visibility=xg.ShaderStage.Fragment,
             sampletype=xg.TextureSampleType.Float,
-            viewdim=xg.TextureViewDimension._2D
+            viewdim=xg.TextureViewDimension._2D,
         )
         self.samp = builder.add_sampler(binding=2, visibility=xg.ShaderStage.Fragment)
         self.sampler = device.createSampler(
             minFilter=xg.FilterMode.Linear,
             magFilter=xg.FilterMode.Linear,
             mipmapFilter=xg.MipmapFilterMode.Linear,
-            compare=xg.CompareFunction.Undefined
+            compare=xg.CompareFunction.Undefined,
         )
         self.binder = builder.complete()
         self.layout = self.binder.layout
 
-    def bind(
-        self, buffer: xg.Buffer, tex: xg.TextureView
-    ) -> xg.BindGroup:
+    def bind(self, buffer: xg.Buffer, tex: xg.TextureView) -> xg.BindGroup:
         self.uniforms.set(buffer)
         self.tex.set(tex)
         self.samp.set(self.sampler)
@@ -126,17 +127,16 @@ def main() -> None:
     )
     assert surface is not None, "Failed to get surface!"
 
-    with open("assets/test.ktx", "rb") as src:
+    with open("assets/stone_window_bc.ktx2", "rb") as src:
         texdata = KTXTextureData(src.read())
-        the_tex = texdata.create_texture(
-            device,
-            xg.TextureUsage.TextureBinding
-        )
+        print(texdata.format.name)
+        print(texdata.level_count)
+        the_tex = texdata.create_texture(device, xg.TextureUsage.TextureBinding)
     the_tex_view = the_tex.createView(
         format=xg.TextureFormat.Undefined,
         dimension=xg.TextureViewDimension.Undefined,
         mipLevelCount=the_tex.getMipLevelCount(),
-        arrayLayerCount=1
+        arrayLayerCount=1,
     )
 
     uniform_align = device.getLimits2().minUniformBufferOffsetAlignment
@@ -144,16 +144,18 @@ def main() -> None:
     UNIFORMS_DTYPE = np.dtype(
         {
             "names": ["viewproj_mat", "model_mat", "color"],
-            "formats": [np.dtype((np.float32, (4, 4))), np.dtype((np.float32, (4, 4))), np.dtype((np.float32, 4))],
-            "offsets": [0, 64],
-            "itemsize": max(uniform_align, 128),
+            "formats": [
+                np.dtype((np.float32, (4, 4))),
+                np.dtype((np.float32, (4, 4))),
+                np.dtype((np.float32, 4)),
+            ],
+            "offsets": [0, 64, 128],
+            "itemsize": max(uniform_align, 256),
         }
     )
 
     bind_factory = Bindgroup(device)
-    pipeline_layout = device.createPipelineLayout(
-        bindGroupLayouts=[bind_factory.layout]
-    )
+    pipeline_layout = device.createPipelineLayout(bindGroupLayouts=[bind_factory.layout])
 
     window_tex_format = surface.getPreferredFormat(adapter)
     # xg.TextureFormat.BGRA8Unorm
@@ -214,7 +216,7 @@ def main() -> None:
     cpu_draw_ubuff = np.zeros((), dtype=UNIFORMS_DTYPE)
     draw_ubuff_staging = xg.DataPtr.wrap(cpu_draw_ubuff)
 
-    cpu_draw_ubuff["view_proj_mat"] = proj_perspective(np.pi / 3.0, 1.0, 0.1, 10.0).T
+    cpu_draw_ubuff["viewproj_mat"] = proj_perspective(np.pi / 3.0, 1.0, 0.1, 20.0).T
 
     frame = 0
 
@@ -222,10 +224,10 @@ def main() -> None:
         # Update model matrices: this is surprisingly expensive in Python,
         # so we don't include this time in the performance measurements
         uidx = 0
-        pos = np.array([0.0, 0.0, -2.0], dtype=np.float32)
+        pos = np.array([0.0, 0.0, math.sin(frame / 120.0) * 5.0 - 7.0], dtype=np.float32)
         set_transform(
             cpu_draw_ubuff["model_mat"],
-            (frame * 0.02, frame * 0.03, frame * 0.04),
+            (math.sin(frame * 0.03) * 0.5, math.sin(frame * 0.04) * 0.5, frame * 0.02),
             0.7,
             pos,
         )

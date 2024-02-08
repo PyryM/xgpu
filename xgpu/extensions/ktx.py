@@ -28,10 +28,10 @@ from .vkformats import VK_FORMAT_TO_XG
 # UInt64 sgdByteOffset
 # UInt64 sgdByteLength
 
-HEADER_FORMAT = "12s" + ("<I" * 9) + ("<I" * 4) + ("<Q" * 2)
+HEADER_FORMAT = "<12s" + ("I" * 9) + ("I" * 4) + ("Q" * 2)
 HEADER_SIZE = struct.calcsize(HEADER_FORMAT)
 
-LEVEL_INDEX_FORMAT = "<Q<Q<Q"
+LEVEL_INDEX_FORMAT = "<QQQ"
 LEVEL_INDEX_FORMAT_SIZE = struct.calcsize(LEVEL_INDEX_FORMAT)
 
 
@@ -94,9 +94,7 @@ class KTXTextureData(TextureData):
                 LEVEL_INDEX_FORMAT, data[startpos:endpos]
             )
             level_index.append((offset, length, ulength))
-        # KTX files store levels from smallest mip to base,
-        # which is annoying so just reverse the list
-        self.level_index: List[Tuple[int, int, int]] = list(reversed(level_index))
+        self.level_index: List[Tuple[int, int, int]] = level_index
 
     def pixel_extent(self, mip: int) -> Tuple[int, int, int]:
         sx = mip_pixel_size(self.width, mip)
