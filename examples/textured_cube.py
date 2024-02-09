@@ -3,7 +3,7 @@ Textured cube
 """
 
 import math
-from typing import Tuple
+from typing import List, Tuple
 
 import numpy as np
 import trimesh
@@ -13,7 +13,9 @@ from numpy.typing import NDArray
 import xgpu as xg
 from xgpu.extensions import BinderBuilder, XDevice, auto_vertex_layout
 from xgpu.extensions.glfw_window import GLFWWindow
-from xgpu.extensions.ktx import KTXTextureData
+from xgpu.extensions.ktx import open_ktx
+from xgpu.extensions.standardimage import open_image
+from xgpu.extensions.texloader import TextureData
 
 
 def set_transform(
@@ -69,7 +71,7 @@ def get_source(is_srgb: bool) -> str:
 
 
 class Bindgroup:
-    def __init__(self, device: xg.Device):
+    def __init__(self, device: xg.Device, itemsize: int):
         builder = BinderBuilder(device)
         self.uniforms = builder.add_buffer(
             binding=0,
@@ -91,9 +93,10 @@ class Bindgroup:
         )
         self.binder = builder.complete()
         self.layout = self.binder.layout
+        self.itemsize = itemsize
 
-    def bind(self, buffer: xg.Buffer, tex: xg.TextureView) -> xg.BindGroup:
-        self.uniforms.set(buffer)
+    def bind(self, buffer: xg.Buffer, idx: int, tex: xg.TextureView) -> xg.BindGroup:
+        self.uniforms.set(buffer, offset=idx * self.itemsize, size=self.itemsize)
         self.tex.set(tex)
         self.samp.set(self.sampler)
         return self.binder.create_bindgroup()
@@ -108,13 +111,13 @@ def create_geometry_buffers(device: XDevice) -> Tuple[xg.Buffer, xg.Buffer]:
             for u in [-1.0, 1.0]:
                 for v in [-1.0, 1.0]:
                     vert = np.roll([u, v, z], axis)
-                    texu = u*0.5 + 0.5
-                    texv = v*0.5 + 0.5
+                    texu = u * 0.5 + 0.5
+                    texv = v * 0.5 + 0.5
                     raw_verts.extend([vert[0], vert[1], vert[2], 1.0, texu, texv])
             if z > 0:
-                raw_indices.extend([i0, i0+1, i0+3, i0+3, i0+2, i0])
+                raw_indices.extend([i0, i0 + 1, i0 + 3, i0 + 3, i0 + 2, i0])
             else:
-                raw_indices.extend([i0, i0+3, i0+1, i0+3, i0, i0+2])
+                raw_indices.extend([i0, i0 + 3, i0 + 1, i0 + 3, i0, i0 + 2])
             i0 += 4
 
     vdata = bytes(np.array(raw_verts, dtype=np.float32))
@@ -126,8 +129,8 @@ def create_geometry_buffers(device: XDevice) -> Tuple[xg.Buffer, xg.Buffer]:
 
 
 def main() -> None:
-    WIDTH = 1024
-    HEIGHT = 1024
+    WIDTH = 768
+    HEIGHT = 768
 
     window = GLFWWindow(WIDTH, HEIGHT, "woo")
 
@@ -137,17 +140,23 @@ def main() -> None:
     )
     assert surface is not None, "Failed to get surface!"
 
-    with open("assets/stone_window_256.ktx2", "rb") as src:
-        texdata = KTXTextureData(src.read())
-        print(texdata.format.name)
-        print(texdata.level_count)
-        the_tex = texdata.create_texture(device, xg.TextureUsage.TextureBinding)
-    the_tex_view = the_tex.createView(
-        format=xg.TextureFormat.Undefined,
-        dimension=xg.TextureViewDimension.Undefined,
-        mipLevelCount=the_tex.getMipLevelCount(),
-        arrayLayerCount=1,
-    )
+    texdatas: List[TextureData] = [
+        open_ktx("assets/stone_window_256.ktx2"),
+        open_image("assets/stone_window.jpg"),
+    ]
+
+    textures = [
+        data.create_texture(device, xg.TextureUsage.TextureBinding) for data in texdatas
+    ]
+    texviews = [
+        tex.createView(
+            format=xg.TextureFormat.Undefined,
+            dimension=xg.TextureViewDimension.Undefined,
+            mipLevelCount=tex.getMipLevelCount(),
+            arrayLayerCount=1,
+        )
+        for tex in textures
+    ]
 
     uniform_align = device.getLimits2().minUniformBufferOffsetAlignment
     print("Alignment requirement:", uniform_align)
@@ -164,7 +173,7 @@ def main() -> None:
         }
     )
 
-    bind_factory = Bindgroup(device)
+    bind_factory = Bindgroup(device, UNIFORMS_DTYPE.itemsize)
     pipeline_layout = device.createPipelineLayout(bindGroupLayouts=[bind_factory.layout])
 
     window_tex_format = surface.getPreferredFormat(adapter)
@@ -220,30 +229,43 @@ def main() -> None:
 
     vbuff, ibuff = create_geometry_buffers(device)
 
+    CUBECOUNT = len(texviews)
+
     draw_ubuff = device.createBuffer(
         usage=xg.BufferUsage.Uniform | xg.BufferUsage.CopyDst,
-        size=UNIFORMS_DTYPE.itemsize,
+        size=UNIFORMS_DTYPE.itemsize * CUBECOUNT,
     )
-    cpu_draw_ubuff = np.zeros((), dtype=UNIFORMS_DTYPE)
+    cpu_draw_ubuff = np.zeros(CUBECOUNT, dtype=UNIFORMS_DTYPE)
     draw_ubuff_staging = xg.DataPtr.wrap(cpu_draw_ubuff)
 
-    cpu_draw_ubuff["viewproj_mat"] = proj_perspective(np.pi / 3.0, 1.0, 0.1, 20.0).T
+    projmat = proj_perspective(np.pi / 3.0, 1.0, 0.1, 20.0).T
+    for idx in range(CUBECOUNT):
+        cpu_draw_ubuff[idx]["viewproj_mat"] = projmat
+        cpu_draw_ubuff[idx]["color"] = (1.0, 1.0, 1.0, 1.0)
 
     frame = 0
 
+    # we can save a bit of time by premaking all bindgroups
+    bgs = [
+        bind_factory.bind(draw_ubuff, idx, texview)
+        for idx, texview in enumerate(texviews)
+    ]
+
     while window.poll():
-        # Update model matrices: this is surprisingly expensive in Python,
-        # so we don't include this time in the performance measurements
-        uidx = 0
-        pos = np.array([0.0, 0.0, math.sin(frame / 120.0) * 5.0 - 7.0], dtype=np.float32)
-        set_transform(
-            cpu_draw_ubuff["model_mat"],
-            (math.sin(frame * 0.03) * 0.5, math.sin(frame * 0.04) * 0.5, frame * 0.02),
-            0.7,
-            pos,
-        )
-        cpu_draw_ubuff["color"] = (1.0, 1.0, 1.0, 1.0)
-        uidx += 1
+        for uidx, xpos in enumerate(np.linspace(-1.0, 1.0, CUBECOUNT)):
+            pos = np.array(
+                [xpos, 0.0, math.sin(frame / 120.0) * 5.0 - 7.0], dtype=np.float32
+            )
+            set_transform(
+                cpu_draw_ubuff[uidx]["model_mat"],
+                (
+                    math.sin(frame * 0.03) * 0.5,
+                    math.sin(frame * 0.04) * 0.5,
+                    frame * 0.02,
+                ),
+                0.9 / CUBECOUNT,
+                pos,
+            )
 
         command_encoder = device.createCommandEncoder()
         queue = device.getQueue()
@@ -263,14 +285,13 @@ def main() -> None:
         render_pass.setVertexBuffer(0, vbuff, 0, vbuff.getSize())
         render_pass.setIndexBuffer(ibuff, xg.IndexFormat.Uint16, 0, ibuff.getSize())
 
-        bg = bind_factory.bind(draw_ubuff, the_tex_view)
-        render_pass.setBindGroup(0, bg, [])
-        render_pass.drawIndexed(36, 1, 0, 0, 0)
+        for bg in bgs:
+            render_pass.setBindGroup(0, bg, [])
+            render_pass.drawIndexed(36, 1, 0, 0, 0)
+
         render_pass.end()
 
         queue.submit([command_encoder.finish()])
-
-        bg.release()
 
         window.end_frame(present=True)
 

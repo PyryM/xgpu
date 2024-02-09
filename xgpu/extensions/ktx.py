@@ -174,3 +174,8 @@ class KTXTextureData(TextureData):
             width=max(1, px), height=max(1, py), depthOrArrayLayers=layercount
         )
         return layout, extent
+
+
+def open_ktx(fn: str) -> KTXTextureData:
+    with open(fn, "rb") as src:
+        return KTXTextureData(src.read())
