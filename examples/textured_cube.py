@@ -26,39 +26,46 @@ def set_transform(
     target[3, 3] = 1.0
 
 
-SHADER_SOURCE = """
-struct Uniforms {
-  @align(16) view_proj_mat: mat4x4f,
-  @align(16) model_mat: mat4x4f,
-  @align(16) color: vec4f,
-}
-@group(0) @binding(0) var<uniform> uniforms: Uniforms;
-@group(0) @binding(1) var tex: texture_2d<f32>;
-@group(0) @binding(2) var samp: sampler;
+def get_source(is_srgb: bool) -> str:
+    if is_srgb:
+        outcolor = "let outcolor = pow(texcolor.rgb, vec3f(2.2));"
+    else:
+        outcolor = "let outcolor = texcolor.rgb;"
 
-struct VertexInput {
-    @location(0) pos: vec4f,
-    @location(1) uv: vec2f,
-};
-struct VertexOutput {
-    @builtin(position) pos: vec4f,
-    @location(0) color : vec4f,
-    @location(1) uv : vec2f,
-};
-@vertex
-fn vs_main(in: VertexInput) -> VertexOutput {
-    let world_pos = uniforms.model_mat * vec4f(in.pos.xyz, 1.0f);
-    let clip_pos = uniforms.view_proj_mat * world_pos;
-    let color = uniforms.color; // * clamp(in.pos, vec4f(0.0f), vec4f(1.0f));
-    let uv = in.uv;
-    return VertexOutput(clip_pos, color, uv);
-}
-@fragment
-fn fs_main(in: VertexOutput) -> @location(0) vec4f {
-    let texcolor = textureSample(tex, samp, in.uv);
-    return in.color * texcolor;
-}
-"""
+    return """
+    struct Uniforms {
+    @align(16) view_proj_mat: mat4x4f,
+    @align(16) model_mat: mat4x4f,
+    @align(16) color: vec4f,
+    }
+    @group(0) @binding(0) var<uniform> uniforms: Uniforms;
+    @group(0) @binding(1) var tex: texture_2d<f32>;
+    @group(0) @binding(2) var samp: sampler;
+
+    struct VertexInput {
+        @location(0) pos: vec4f,
+        @location(1) uv: vec2f,
+    };
+    struct VertexOutput {
+        @builtin(position) pos: vec4f,
+        @location(0) color : vec4f,
+        @location(1) uv : vec2f,
+    };
+    @vertex
+    fn vs_main(in: VertexInput) -> VertexOutput {
+        let world_pos = uniforms.model_mat * vec4f(in.pos.xyz, 1.0f);
+        let clip_pos = uniforms.view_proj_mat * world_pos;
+        let color = uniforms.color;
+        let uv = in.uv;
+        return VertexOutput(clip_pos, color, uv);
+    }
+    @fragment
+    fn fs_main(in: VertexOutput) -> @location(0) vec4f {
+        let texcolor = textureSample(tex, samp, in.uv);
+        <OUTCOLOR>
+        return vec4(in.color.rgb * outcolor, 1.0);
+    }
+    """.replace("<OUTCOLOR>", outcolor)
 
 
 class Bindgroup:
@@ -161,12 +168,12 @@ def main() -> None:
     pipeline_layout = device.createPipelineLayout(bindGroupLayouts=[bind_factory.layout])
 
     window_tex_format = surface.getPreferredFormat(adapter)
-    # xg.TextureFormat.BGRA8Unorm
     print("Window tex format:", window_tex_format.name)
 
     window.configure_surface(device, window_tex_format)
 
-    shader = device.createWGSLShaderModule(code=SHADER_SOURCE, label="colorcube.wgsl")
+    shader_src = get_source("srgb" in window_tex_format.name.lower())
+    shader = device.createWGSLShaderModule(code=shader_src, label="colorcube.wgsl")
 
     REPLACE = xg.blendComponent(
         srcFactor=xg.BlendFactor.One,
