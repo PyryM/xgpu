@@ -130,7 +130,7 @@ def main() -> None:
     )
     assert surface is not None, "Failed to get surface!"
 
-    with open("assets/stone_window_bc.ktx2", "rb") as src:
+    with open("assets/stone_window_256.ktx2", "rb") as src:
         texdata = KTXTextureData(src.read())
         print(texdata.format.name)
         print(texdata.level_count)
