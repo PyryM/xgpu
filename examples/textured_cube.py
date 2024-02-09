@@ -38,6 +38,7 @@ struct Uniforms {
 
 struct VertexInput {
     @location(0) pos: vec4f,
+    @location(1) uv: vec2f,
 };
 struct VertexOutput {
     @builtin(position) pos: vec4f,
@@ -49,7 +50,7 @@ fn vs_main(in: VertexInput) -> VertexOutput {
     let world_pos = uniforms.model_mat * vec4f(in.pos.xyz, 1.0f);
     let clip_pos = uniforms.view_proj_mat * world_pos;
     let color = uniforms.color; // * clamp(in.pos, vec4f(0.0f), vec4f(1.0f));
-    let uv = (in.pos.xy + vec2f(1.0)) * 0.5;
+    let uv = in.uv;
     return VertexOutput(clip_pos, color, uv);
 }
 @fragment
@@ -93,21 +94,23 @@ class Bindgroup:
 
 def create_geometry_buffers(device: XDevice) -> Tuple[xg.Buffer, xg.Buffer]:
     raw_verts = []
-    for z in [-1.0, 1.0]:
-        for y in [-1.0, 1.0]:
-            for x in [-1.0, 1.0]:
-                raw_verts.extend([x, y, z, 1.0])
+    raw_indices = []
+    i0 = 0
+    for axis in range(3):
+        for z in [-1.0, 1.0]:
+            for u in [-1.0, 1.0]:
+                for v in [-1.0, 1.0]:
+                    vert = np.roll([u, v, z], axis)
+                    texu = u*0.5 + 0.5
+                    texv = v*0.5 + 0.5
+                    raw_verts.extend([vert[0], vert[1], vert[2], 1.0, texu, texv])
+            if z > 0:
+                raw_indices.extend([i0, i0+1, i0+3, i0+3, i0+2, i0])
+            else:
+                raw_indices.extend([i0, i0+3, i0+1, i0+3, i0, i0+2])
+            i0 += 4
 
     vdata = bytes(np.array(raw_verts, dtype=np.float32))
-    indexlist = """
-    0 1 3 3 2 0
-    1 5 7 7 3 1
-    4 6 7 7 5 4
-    2 6 4 4 0 2
-    0 4 5 5 1 0
-    3 7 6 6 2 3
-    """
-    raw_indices = [int(s) for s in indexlist.split()]
     idata = bytes(np.array(raw_indices, dtype=np.uint16))
 
     vbuff = device.createBufferWithData(vdata, xg.BufferUsage.Vertex)
@@ -184,7 +187,8 @@ def main() -> None:
 
     vertex_layout = auto_vertex_layout(
         [
-            xg.VertexFormat.Float32x4  # Position
+            xg.VertexFormat.Float32x4,  # Position
+            xg.VertexFormat.Float32x2,  # UV
         ]
     )
 
@@ -254,7 +258,7 @@ def main() -> None:
 
         bg = bind_factory.bind(draw_ubuff, the_tex_view)
         render_pass.setBindGroup(0, bg, [])
-        render_pass.drawIndexed(12 * 3, 1, 0, 0, 0)
+        render_pass.drawIndexed(36, 1, 0, 0, 0)
         render_pass.end()
 
         queue.submit([command_encoder.finish()])
