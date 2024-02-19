@@ -22,6 +22,49 @@ from xgpu.extensions.standardimage import open_image
 from xgpu.extensions.texloader import TextureData
 
 
+def mesh_to_struct(mesh: trimesh.Trimesh) -> Tuple[NDArray, NDArray]:
+    """
+    Convert a trimesh to expected vertex format
+    """
+
+    VFMT_DTYPE = np.dtype(
+        {
+            "names": ["position", "color", "normal", "texcoord"],
+            "formats": [
+                np.dtype((np.float32, 3)),
+                np.dtype((np.float32, 3)),
+                np.dtype((np.float32, 3)),
+                np.dtype((np.float32, 2)),
+            ],
+            "offsets": [0, 12, 24, 36],
+            "itemsize": 44,
+        }
+    )
+
+    # todo : cheaper smoooth shading
+    vertices = mesh.vertices #mesh.vertices[mesh.faces.ravel()]
+    faces = mesh.faces # np.arange(len(vertices)).reshape((-1, 3))
+    normals = mesh.vertex_normals
+    #np.tile(mesh.face_normals, (1, 3)).reshape((-1, 3))
+
+    count = len(vertices)
+    #colors = np.full((count, 3), [0.9, 0.9, 0.9])
+
+    vertex_data = np.zeros(count, dtype=VFMT_DTYPE)
+    vertex_data["position"] = vertices[:, 0:3]
+    vertex_data["normal"] = normals[:, 0:3]
+    #vertex_data["color"] = colors[:, 0:3]
+
+    face_data = faces.astype(np.uint32).flatten()
+
+    return vertex_data, face_data
+
+
+def load_mesh_simple(fn: str) -> Tuple[NDArray, NDArray]:
+    mesh: trimesh.Trimesh = trimesh.load_mesh(fn)
+    return mesh_to_struct(mesh)
+
+
 def set_transform(
     target_pos: NDArray, target_norm: NDArray, rot: Tuple[float, float, float], scale: float, pos: NDArray
 ) -> None:
@@ -92,7 +135,9 @@ def get_source(is_srgb: bool) -> str:
             // smooth shaded
             normal = normalize(input.view_normal);
         }
-        let samppos = (normal.xy + vec2f(1.0)) * 0.5;
+        let ns = normal.xy * 0.99;
+        var samppos: vec2f = (ns + vec2f(1.0)) * 0.5;
+        samppos.y = 1.0 - samppos.y;
         var outcolor: vec3f = textureSample(matcap, samp, samppos).rgb;
         if tex_params.x > 0.0 {
             let diffusecolor = textureSample(diffuse, samp, input.texcoord).rgb;
@@ -102,7 +147,7 @@ def get_source(is_srgb: bool) -> str:
             outcolor *= input.color.rgb;
         }
 
-        return vec4f(outcolor.rgb, 1.0);
+        return vec4f(pow(outcolor.rgb, vec3f(2.2)), 1.0);
     }
     """
 
@@ -168,35 +213,17 @@ class ModelBindgroup:
         return self.binder.create_bindgroup()
 
 
-def create_geometry_buffers(device: XDevice) -> Tuple[xg.Buffer, xg.Buffer]:
-    raw_verts = []
-    raw_indices = []
-    i0 = 0
-    for axis in range(3):
-        for z in [-1.0, 1.0]:
-            for u in [-1.0, 1.0]:
-                for v in [-1.0, 1.0]:
-                    vert = np.roll([u, v, z], axis)
-                    texu = u * 0.5 + 0.5
-                    texv = v * 0.5 + 0.5
-                    raw_verts.extend([
-                        vert[0], vert[1], vert[2], # position
-                        1.0, 1.0, 1.0,             # color
-                        1.0, 1.0, 1.0,             # normal
-                        texu, texv                 # texcoord
-                    ])
-            if z > 0:
-                raw_indices.extend([i0, i0 + 1, i0 + 3, i0 + 3, i0 + 2, i0])
-            else:
-                raw_indices.extend([i0, i0 + 3, i0 + 1, i0 + 3, i0, i0 + 2])
-            i0 += 4
+def load_geometry_buffers(device: XDevice, fn: str) -> Tuple[xg.Buffer, xg.Buffer, int, int]:
+    raw_verts, raw_indices = load_mesh_simple(fn)
 
-    vdata = bytes(np.array(raw_verts, dtype=np.float32))
-    idata = bytes(np.array(raw_indices, dtype=np.uint16))
+    vdata = bytes(raw_verts)
+    idata = bytes(raw_indices)
+    vcount = len(raw_verts)
+    icount = len(raw_indices)
 
     vbuff = device.createBufferWithData(vdata, xg.BufferUsage.Vertex)
     ibuff = device.createBufferWithData(idata, xg.BufferUsage.Index)
-    return vbuff, ibuff
+    return vbuff, ibuff, vcount, icount
 
 
 def main() -> None:
@@ -212,7 +239,7 @@ def main() -> None:
     assert surface is not None, "Failed to get surface!"
 
     texdatas: List[TextureData] = [
-        open_image("assets/matcap_0.png"),
+        open_image("assets/matcap_5.png"),
         open_image("assets/stone_window.jpg"),
     ]
 
@@ -271,7 +298,7 @@ def main() -> None:
     primitive = xg.primitiveState(
         topology=xg.PrimitiveTopology.TriangleList,
         stripIndexFormat=xg.IndexFormat.Undefined,
-        frontFace=xg.FrontFace.CW,
+        frontFace=xg.FrontFace.CCW,
         cullMode=xg.CullMode.Back,
     )
     color_target = xg.colorTargetState(
@@ -315,7 +342,8 @@ def main() -> None:
     )
     assert render_pipeline.isValid(), "Failed to create pipeline!"
 
-    vbuff, ibuff = create_geometry_buffers(device)
+    vbuff, ibuff, vcount, icount = load_geometry_buffers(device, "assets/bunny.ply")
+    #vbuff, ibuff, vcount, icount = load_geometry_buffers(device, "assets/fuze.obj")
 
     CUBECOUNT = 1
 
@@ -339,7 +367,7 @@ def main() -> None:
     cpu_view_ubuff["proj_mat"] = projmat.T
 
     for idx in range(CUBECOUNT):
-        cpu_model_ubuff[idx]["tex_params"] = (0.0, 0.0, 1.0, 0.0)
+        cpu_model_ubuff[idx]["tex_params"] = (0.0, 0.0, 0.0, 0.0)
 
     frame = 0
 
@@ -349,18 +377,19 @@ def main() -> None:
 
     while window.poll():
         for uidx in range(CUBECOUNT):
+            zpos = math.sin(frame / 120.0) * 5.0 - 7.0
             pos = np.array(
-                [0.0, 0.0, math.sin(frame / 120.0) * 5.0 - 7.0], dtype=np.float32
+                [0.0, -1.5, -3.0], dtype=np.float32
             )
             set_transform(
                 cpu_model_ubuff[uidx]["model_mat"],
                 cpu_model_ubuff[uidx]["normal_mat"],
                 (
-                    math.sin(frame * 0.03) * 0.5,
-                    math.sin(frame * 0.04) * 0.5,
-                    frame * 0.02,
+                    0.0, #-math.pi/2.0, #math.sin(frame * 0.03) * 0.5,
+                    frame * 0.02, #math.pi/2.0 + frame * 0.02,  #+ math.sin(frame * 0.04) * 0.5,
+                    0.0, #frame * 0.02,
                 ),
-                0.9 / CUBECOUNT,
+                10.0,
                 pos,
             )
 
@@ -389,12 +418,12 @@ def main() -> None:
 
         render_pass.setPipeline(render_pipeline)
         render_pass.setVertexBuffer(0, vbuff, 0, vbuff.getSize())
-        render_pass.setIndexBuffer(ibuff, xg.IndexFormat.Uint16, 0, ibuff.getSize())
+        render_pass.setIndexBuffer(ibuff, xg.IndexFormat.Uint32, 0, ibuff.getSize())
         render_pass.setBindGroup(0, global_bg, [])
 
         for bg in bgs:
             render_pass.setBindGroup(1, bg, [])
-            render_pass.drawIndexed(36, 1, 0, 0, 0)
+            render_pass.drawIndexed(icount, 1, 0, 0, 0)
 
         render_pass.end()
 
