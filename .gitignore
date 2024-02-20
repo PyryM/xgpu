@@ -23,7 +23,6 @@
 /ehhhhh
 
 # Emitted C artifacts
-*.obj
 *.o
 *.c
 *.pyd

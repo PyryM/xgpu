@@ -42,18 +42,18 @@ def mesh_to_struct(mesh: trimesh.Trimesh) -> Tuple[NDArray, NDArray]:
     )
 
     # todo : cheaper smoooth shading
-    vertices = mesh.vertices #mesh.vertices[mesh.faces.ravel()]
-    faces = mesh.faces # np.arange(len(vertices)).reshape((-1, 3))
+    vertices = mesh.vertices  # mesh.vertices[mesh.faces.ravel()]
+    faces = mesh.faces  # np.arange(len(vertices)).reshape((-1, 3))
     normals = mesh.vertex_normals
-    #np.tile(mesh.face_normals, (1, 3)).reshape((-1, 3))
+    # np.tile(mesh.face_normals, (1, 3)).reshape((-1, 3))
 
     count = len(vertices)
-    #colors = np.full((count, 3), [0.9, 0.9, 0.9])
+    # colors = np.full((count, 3), [0.9, 0.9, 0.9])
 
     vertex_data = np.zeros(count, dtype=VFMT_DTYPE)
     vertex_data["position"] = vertices[:, 0:3]
     vertex_data["normal"] = normals[:, 0:3]
-    #vertex_data["color"] = colors[:, 0:3]
+    # vertex_data["color"] = colors[:, 0:3]
 
     face_data = faces.astype(np.uint32).flatten()
 
@@ -66,7 +66,11 @@ def load_mesh_simple(fn: str) -> Tuple[NDArray, NDArray]:
 
 
 def set_transform(
-    target_pos: NDArray, target_norm: NDArray, rot: Tuple[float, float, float], scale: float, pos: NDArray
+    target_pos: NDArray,
+    target_norm: NDArray,
+    rot: Tuple[float, float, float],
+    scale: float,
+    pos: NDArray,
 ) -> None:
     r = trimesh.transformations.euler_matrix(rot[0], rot[1], rot[2])[0:3, 0:3] * scale
 
@@ -78,6 +82,7 @@ def set_transform(
     target_pos[3, 0:3] = pos
     target_pos[3, 3] = 1.0
     target_norm[0:3, 0:3] = norm_r.T
+
 
 def get_source(is_srgb: bool) -> str:
     return """
@@ -167,6 +172,7 @@ class ViewBindgroup:
         self.uniforms.set(uniforms)
         return self.binder.create_bindgroup()
 
+
 class ModelBindgroup:
     def __init__(self, device: XDevice, itemsize: int):
         builder = BinderBuilder(device)
@@ -187,10 +193,7 @@ class ModelBindgroup:
             sampletype=xg.TextureSampleType.Float,
             viewdim=xg.TextureViewDimension._2D,
         )
-        self.samp = builder.add_sampler(
-            binding=3,
-            visibility=xg.ShaderStage.Fragment
-        )
+        self.samp = builder.add_sampler(binding=3, visibility=xg.ShaderStage.Fragment)
         self.sampler = device.createSampler(
             minFilter=xg.FilterMode.Linear,
             magFilter=xg.FilterMode.Linear,
@@ -201,7 +204,13 @@ class ModelBindgroup:
         self.layout = self.binder.layout
         self.itemsize = itemsize
 
-    def bind(self, uniforms: xg.Buffer, idx: int, matcaptex: xg.TextureView, diffusetex: Optional[xg.TextureView] = None) -> xg.BindGroup:
+    def bind(
+        self,
+        uniforms: xg.Buffer,
+        idx: int,
+        matcaptex: xg.TextureView,
+        diffusetex: Optional[xg.TextureView] = None,
+    ) -> xg.BindGroup:
         self.uniforms.set(uniforms, offset=idx * self.itemsize, size=self.itemsize)
         self.matcap_tex.set(matcaptex)
         if diffusetex is not None:
@@ -213,7 +222,9 @@ class ModelBindgroup:
         return self.binder.create_bindgroup()
 
 
-def load_geometry_buffers(device: XDevice, fn: str) -> Tuple[xg.Buffer, xg.Buffer, int, int]:
+def load_geometry_buffers(
+    device: XDevice, fn: str
+) -> Tuple[xg.Buffer, xg.Buffer, int, int]:
     raw_verts, raw_indices = load_mesh_simple(fn)
 
     vdata = bytes(raw_verts)
@@ -239,7 +250,7 @@ def main() -> None:
     assert surface is not None, "Failed to get surface!"
 
     texdatas: List[TextureData] = [
-        open_image("assets/matcap_5.png"),
+        open_image("assets/matcap_shiny.png"),
         open_image("assets/stone_window.jpg"),
     ]
 
@@ -337,15 +348,14 @@ def main() -> None:
             depthWriteEnabled=True,
             depthCompare=xg.CompareFunction.Less,
             stencilFront=xg.stencilFaceState(),
-            stencilBack=xg.stencilFaceState()
-        )
+            stencilBack=xg.stencilFaceState(),
+        ),
     )
     assert render_pipeline.isValid(), "Failed to create pipeline!"
 
-    vbuff, ibuff, vcount, icount = load_geometry_buffers(device, "assets/bunny.ply")
-    #vbuff, ibuff, vcount, icount = load_geometry_buffers(device, "assets/fuze.obj")
+    vbuff, ibuff, vcount, icount = load_geometry_buffers(device, "assets/cat.obj")
 
-    CUBECOUNT = 1
+    CUBECOUNT = 2
 
     view_ubuff = device.createBuffer(
         usage=xg.BufferUsage.Uniform | xg.BufferUsage.CopyDst,
@@ -367,29 +377,26 @@ def main() -> None:
     cpu_view_ubuff["proj_mat"] = projmat.T
 
     for idx in range(CUBECOUNT):
-        cpu_model_ubuff[idx]["tex_params"] = (0.0, 0.0, 0.0, 0.0)
+        cpu_model_ubuff[idx]["tex_params"] = (0.0, 0.0, idx % 2, 0.0)
 
     frame = 0
 
     # we can save a bit of time by premaking all bindgroups
     global_bg = view_bind_factory.bind(view_ubuff)
-    bgs = [model_bind_factory.bind(model_ubuff, 0, texviews[0], texviews[1])]
+    bgs = [
+        model_bind_factory.bind(model_ubuff, idx, texviews[0], texviews[1])
+        for idx in range(CUBECOUNT)
+    ]
 
     while window.poll():
-        for uidx in range(CUBECOUNT):
-            zpos = math.sin(frame / 120.0) * 5.0 - 7.0
-            pos = np.array(
-                [0.0, -1.5, -3.0], dtype=np.float32
-            )
+        for uidx, xpos in enumerate(np.linspace(-0.5, 0.5, CUBECOUNT, endpoint=True)):
+            pos = np.array([xpos, 0.0, -2.0], dtype=np.float32)
+            rotspeed = -0.02 * ((uidx % 2) * 2.0 - 1.0)
             set_transform(
                 cpu_model_ubuff[uidx]["model_mat"],
                 cpu_model_ubuff[uidx]["normal_mat"],
-                (
-                    0.0, #-math.pi/2.0, #math.sin(frame * 0.03) * 0.5,
-                    frame * 0.02, #math.pi/2.0 + frame * 0.02,  #+ math.sin(frame * 0.04) * 0.5,
-                    0.0, #frame * 0.02,
-                ),
-                10.0,
+                (0.0, frame * rotspeed, 0.0),
+                1.0,
                 pos,
             )
 
@@ -412,9 +419,11 @@ def main() -> None:
             depthStoreOp=xg.StoreOp.Store,
             depthClearValue=1.0,
             stencilLoadOp=xg.LoadOp.Undefined,
-            stencilStoreOp=xg.StoreOp.Undefined
+            stencilStoreOp=xg.StoreOp.Undefined,
         )
-        render_pass = command_encoder.beginRenderPass(colorAttachments=[color_attachment], depthStencilAttachment=depth_attachment)
+        render_pass = command_encoder.beginRenderPass(
+            colorAttachments=[color_attachment], depthStencilAttachment=depth_attachment
+        )
 
         render_pass.setPipeline(render_pipeline)
         render_pass.setVertexBuffer(0, vbuff, 0, vbuff.getSize())
