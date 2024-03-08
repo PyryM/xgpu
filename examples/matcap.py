@@ -1,68 +1,23 @@
 """
-Textured cube
+Example of using material capture
 """
 
-import math
 from typing import List, Optional, Tuple
 
 import numpy as np
-import trimesh
 from example_utils import proj_perspective
 from numpy.typing import NDArray
+from trimesh_helpers import euler_matrix, load_mesh_simple
 
 import xgpu as xg
 from xgpu.extensions import (
     BinderBuilder,
     XDevice,
-    auto_vertex_layout,
     create_default_view,
 )
 from xgpu.extensions.glfw_window import GLFWWindow
 from xgpu.extensions.standardimage import open_image
 from xgpu.extensions.texloader import TextureData
-
-
-def mesh_to_struct(mesh: trimesh.Trimesh) -> Tuple[NDArray, NDArray]:
-    """
-    Convert a trimesh to expected vertex format
-    """
-
-    VFMT_DTYPE = np.dtype(
-        {
-            "names": ["position", "color", "normal", "texcoord"],
-            "formats": [
-                np.dtype((np.float32, 3)),
-                np.dtype((np.float32, 3)),
-                np.dtype((np.float32, 3)),
-                np.dtype((np.float32, 2)),
-            ],
-            "offsets": [0, 12, 24, 36],
-            "itemsize": 44,
-        }
-    )
-
-    # todo : cheaper smoooth shading
-    vertices = mesh.vertices  # mesh.vertices[mesh.faces.ravel()]
-    faces = mesh.faces  # np.arange(len(vertices)).reshape((-1, 3))
-    normals = mesh.vertex_normals
-    # np.tile(mesh.face_normals, (1, 3)).reshape((-1, 3))
-
-    count = len(vertices)
-    # colors = np.full((count, 3), [0.9, 0.9, 0.9])
-
-    vertex_data = np.zeros(count, dtype=VFMT_DTYPE)
-    vertex_data["position"] = vertices[:, 0:3]
-    vertex_data["normal"] = normals[:, 0:3]
-    # vertex_data["color"] = colors[:, 0:3]
-
-    face_data = faces.astype(np.uint32).flatten()
-
-    return vertex_data, face_data
-
-
-def load_mesh_simple(fn: str) -> Tuple[NDArray, NDArray]:
-    mesh: trimesh.Trimesh = trimesh.load_mesh(fn)
-    return mesh_to_struct(mesh)
 
 
 def set_transform(
@@ -72,7 +27,7 @@ def set_transform(
     scale: float,
     pos: NDArray,
 ) -> None:
-    r = trimesh.transformations.euler_matrix(rot[0], rot[1], rot[2])[0:3, 0:3] * scale
+    r = euler_matrix(*rot) * scale
 
     # Matrix to transform normals is modelmatrix.inv.transpose
     # (differs from model matrix under non-uniform scaling)
@@ -224,8 +179,8 @@ class ModelBindgroup:
 
 def load_geometry_buffers(
     device: XDevice, fn: str
-) -> Tuple[xg.Buffer, xg.Buffer, int, int]:
-    raw_verts, raw_indices = load_mesh_simple(fn)
+) -> Tuple[xg.VertexBufferLayout, xg.Buffer, xg.Buffer, int, int]:
+    raw_verts, raw_indices, vlayout = load_mesh_simple(fn)
 
     vdata = bytes(raw_verts)
     idata = bytes(raw_indices)
@@ -234,7 +189,7 @@ def load_geometry_buffers(
 
     vbuff = device.createBufferWithData(vdata, xg.BufferUsage.Vertex)
     ibuff = device.createBufferWithData(idata, xg.BufferUsage.Index)
-    return vbuff, ibuff, vcount, icount
+    return vlayout, vbuff, ibuff, vcount, icount
 
 
 def main() -> None:
@@ -250,7 +205,7 @@ def main() -> None:
     assert surface is not None, "Failed to get surface!"
 
     texdatas: List[TextureData] = [
-        open_image("assets/matcap_shiny.png"),
+        open_image("assets/matcap_metal.jpg"),
         open_image("assets/stone_window.jpg"),
     ]
 
@@ -318,14 +273,7 @@ def main() -> None:
         writeMask=xg.ColorWriteMask.All,
     )
 
-    vertex_layout = auto_vertex_layout(
-        [
-            xg.VertexFormat.Float32x3,  # position
-            xg.VertexFormat.Float32x3,  # color
-            xg.VertexFormat.Float32x3,  # normal
-            xg.VertexFormat.Float32x2,  # texcoord
-        ]
-    )
+    vertex_layout, vbuff, ibuff, vcount, icount = load_geometry_buffers(device, "assets/cat.obj")
 
     render_pipeline = device.createRenderPipeline(
         layout=pipeline_layout,
@@ -352,8 +300,6 @@ def main() -> None:
         ),
     )
     assert render_pipeline.isValid(), "Failed to create pipeline!"
-
-    vbuff, ibuff, vcount, icount = load_geometry_buffers(device, "assets/cat.obj")
 
     CUBECOUNT = 2
 

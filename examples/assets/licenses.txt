@@ -1,0 +1,15 @@
+cat.obj:
+https://www.myminifactory.com/object/3d-print-gayer-anderson-cat-at-the-british-museum-london-4010
+Creative Commons BY-NC-SA
+
+stone_window.jpg / stone_window_256.ktx2:
+xgpu original
+CC0
+
+IBMPlexSans-Regular.ttf:
+https://github.com/IBM/plex
+SIL Open Font License 1.1
+
+matcap_metal.jpg:
+https://bensimonds.com/2010/07/30/matcap-generator/
+Creative Commons Attribution 3.0 Unported License
