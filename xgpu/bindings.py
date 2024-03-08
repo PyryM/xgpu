@@ -328,6 +328,8 @@ class FeatureName(IntEnum):
     TextureBindingArray = 0x00030006
     SampledTextureAndStorageBufferArrayNonUniformIndexing = 0x00030007
     PipelineStatisticsQuery = 0x00030008
+    StorageResourceBindingArray = 0x00030009
+    PartiallyBoundBindingArray = 0x0003000A
 
 
 class FilterMode(IntEnum):
