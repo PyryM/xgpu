@@ -8385,13 +8385,18 @@ class BindGroupEntryExtras(Chainable):
         self._cdata.chain.sType = SType.BindGroupEntryExtras
 
     @property
-    def buffers(self) -> "Buffer":
-        return Buffer(self._cdata.buffers, add_ref=True)
+    def buffers(self) -> "BufferList":
+        return self._buffers
 
     @buffers.setter
-    def buffers(self, v: "Buffer") -> None:
-        self._buffers = v
-        self._cdata.buffers = v._cdata
+    def buffers(self, v: Union["BufferList", List["Buffer"]]) -> None:
+        if isinstance(v, list):
+            v2 = BufferList(v)
+        else:
+            v2 = v
+        self._buffers = v2
+        self._cdata.bufferCount = v2._count
+        self._cdata.buffers = v2._ptr
 
     @property
     def samplers(self) -> "SamplerList":
@@ -8404,7 +8409,7 @@ class BindGroupEntryExtras(Chainable):
         else:
             v2 = v
         self._samplers = v2
-        self._cdata.bufferCount = v2._count
+        self._cdata.samplerCount = v2._count
         self._cdata.samplers = v2._ptr
 
     @property
@@ -8418,16 +8423,8 @@ class BindGroupEntryExtras(Chainable):
         else:
             v2 = v
         self._textureViews = v2
-        self._cdata.samplerCount = v2._count
+        self._cdata.textureViewCount = v2._count
         self._cdata.textureViews = v2._ptr
-
-    @property
-    def textureViewCount(self) -> int:
-        return self._cdata.textureViewCount
-
-    @textureViewCount.setter
-    def textureViewCount(self, v: int) -> None:
-        self._cdata.textureViewCount = v
 
     @property
     def _chain(self) -> Any:
@@ -8436,16 +8433,14 @@ class BindGroupEntryExtras(Chainable):
 
 def bindGroupEntryExtras(
     *,
-    buffers: "Buffer",
+    buffers: Union["BufferList", List["Buffer"]],
     samplers: Union["SamplerList", List["Sampler"]],
     textureViews: Union["TextureViewList", List["TextureView"]],
-    textureViewCount: int,
 ) -> BindGroupEntryExtras:
     ret = BindGroupEntryExtras(cdata=None, parent=None)
     ret.buffers = buffers
     ret.samplers = samplers
     ret.textureViews = textureViews
-    ret.textureViewCount = textureViewCount
     return ret
 
 
@@ -8481,21 +8476,20 @@ class QuerySetDescriptorExtras(Chainable):
         self._cdata.chain.sType = SType.QuerySetDescriptorExtras
 
     @property
-    def pipelineStatistics(self) -> "PipelineStatisticName":
+    def pipelineStatistics(self) -> "PipelineStatisticNameList":
         return self._pipelineStatistics
 
     @pipelineStatistics.setter
-    def pipelineStatistics(self, v: "PipelineStatisticName") -> None:
-        self._pipelineStatistics = v
-        self._cdata.pipelineStatistics = int(v)
-
-    @property
-    def pipelineStatisticCount(self) -> int:
-        return self._cdata.pipelineStatisticCount
-
-    @pipelineStatisticCount.setter
-    def pipelineStatisticCount(self, v: int) -> None:
-        self._cdata.pipelineStatisticCount = v
+    def pipelineStatistics(
+        self, v: Union["PipelineStatisticNameList", List["PipelineStatisticName"]]
+    ) -> None:
+        if isinstance(v, list):
+            v2 = PipelineStatisticNameList(v)
+        else:
+            v2 = v
+        self._pipelineStatistics = v2
+        self._cdata.pipelineStatisticCount = v2._count
+        self._cdata.pipelineStatistics = v2._ptr
 
     @property
     def _chain(self) -> Any:
@@ -8503,11 +8497,11 @@ class QuerySetDescriptorExtras(Chainable):
 
 
 def querySetDescriptorExtras(
-    *, pipelineStatistics: "PipelineStatisticName", pipelineStatisticCount: int
+    *,
+    pipelineStatistics: Union["PipelineStatisticNameList", List["PipelineStatisticName"]],
 ) -> QuerySetDescriptorExtras:
     ret = QuerySetDescriptorExtras(cdata=None, parent=None)
     ret.pipelineStatistics = pipelineStatistics
-    ret.pipelineStatisticCount = pipelineStatisticCount
     return ret
 
 
@@ -8974,6 +8968,15 @@ class PushConstantRangeList:
             self._ptr[idx] = _ffi_deref(item._cdata)
 
 
+class BufferList:
+    def __init__(self, items: List["Buffer"], count: int = 0):
+        self._stashed = items
+        self._count = max(len(items), count)
+        self._ptr = _ffi_new("WGPUBuffer[]", self._count)
+        for idx, item in enumerate(items):
+            self._ptr[idx] = item._cdata
+
+
 class SamplerList:
     def __init__(self, items: List["Sampler"], count: int = 0):
         self._stashed = items
@@ -8990,6 +8993,15 @@ class TextureViewList:
         self._ptr = _ffi_new("WGPUTextureView[]", self._count)
         for idx, item in enumerate(items):
             self._ptr[idx] = item._cdata
+
+
+class PipelineStatisticNameList:
+    def __init__(self, items: List["PipelineStatisticName"], count: int = 0):
+        self._stashed = items
+        self._count = max(len(items), count)
+        self._ptr = _ffi_new("WGPUPipelineStatisticName[]", self._count)
+        for idx, item in enumerate(items):
+            self._ptr[idx] = int(item)
 
 
 class IntList:

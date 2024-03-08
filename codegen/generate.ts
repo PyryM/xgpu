@@ -314,6 +314,47 @@ interface Emittable {
   emitCDef?(api: ApiInfo): string;
 }
 
+interface FieldPair {
+  name: string; 
+  type: Refinfo;
+}
+
+function isPluralOf(query: string, thing: string): boolean {
+  if(query === thing + "s") {
+    return true
+  }
+  if(thing.endsWith("y") && query === `${thing.slice(0, thing.length-1)}ies`) {
+    return true
+  }
+  return false
+}
+
+function areListField(f0: FieldPair, f1: FieldPair): [FieldPair, FieldPair] | undefined {
+  const isCount = (f: FieldPair) => f.name.endsWith("Count") && f.type.inner === "size_t";
+
+  if(isCount(f0)) {
+    // already in (count, field) order
+  } else if(isCount(f1)) {
+    // idiosyncratic (field, count) order
+    [f1, f0] = [f0, f1];
+  } else {
+    return undefined
+  }
+  
+  const m = f0.name.match(/^(.*)Count$/);
+  if(!m) {
+    return undefined
+  }
+  const [_wholeMatch, prefix] = m;
+
+  // double check that second field is correctly named
+  if(!isPluralOf(f1.name, prefix)) {
+    return undefined
+  }
+
+  return [f0, f1]
+}
+
 class ApiInfo {
   types: Map<string, CType> = new Map();
   wrappers: Map<string, Emittable> = new Map();
@@ -470,14 +511,13 @@ class ApiInfo {
     while (fieldPos < rawFields.length) {
       const { name, type } = rawFields[fieldPos];
       if (
-        name.endsWith("Count") &&
-        type.inner === "size_t" &&
-        fieldPos + 1 < rawFields.length
+        fieldPos + 1 < rawFields.length &&
+        areListField(rawFields[fieldPos], rawFields[fieldPos+1])
       ) {
-        const { name: arrName, type: arrType } = rawFields[fieldPos + 1];
-        const innerCType = this.getType(arrType);
+        const [countField, listField] = areListField(rawFields[fieldPos], rawFields[fieldPos+1])!;
+        const innerCType = this.getType(listField.type);
         this.getListWrapper(innerCType);
-        fields.push(new ArrayField(arrName, name, innerCType));
+        fields.push(new ArrayField(listField.name, countField.name, innerCType));
         fieldPos += 2;
       } else if (
         name.endsWith("Callback") &&
