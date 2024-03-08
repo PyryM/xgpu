@@ -6,10 +6,25 @@ from .wrappers import XDevice
 
 
 class TextureData:
-    format: xg.TextureFormat
-    extent3D: xg.Extent3D
-    dimension: xg.TextureDimension
-    level_count: int
+    @property
+    @abstractmethod
+    def format(self) -> xg.TextureFormat:
+        ...
+
+    @property
+    @abstractmethod
+    def level_count(self) -> int:
+        ...
+
+    @property
+    @abstractmethod
+    def extent3D(self) -> xg.Extent3D:
+        ...
+
+    @property
+    @abstractmethod
+    def dimension(self) -> xg.TextureDimension:
+        ...
 
     @abstractmethod
     def get_level_data(self, mip: int) -> bytes:

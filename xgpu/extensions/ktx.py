@@ -69,14 +69,14 @@ class KTXTextureData(TextureData):
         (block_footprint, block_size) = info
         self.block_footprint = block_footprint
         self.block_size = block_size
-        self.format: xg.TextureFormat = xgformat
+        self._format: xg.TextureFormat = xgformat
         self.type_size: int = fields[2]
         self.width: int = fields[3]
         self.height: int = fields[4]
         self.depth: int = fields[5]
         self.layer_count: int = fields[6]
         self.face_count: int = fields[7]
-        self.level_count: int = max(1, fields[8])
+        self._level_count: int = max(1, fields[8])
         self.compress: KTXCompression = KTXCompression(fields[9])
         if self.compress > 0 and self.compress != KTXCompression.ZStandard:
             raise ValueError(f"Unsupported compression: {self.compress.name}")
@@ -87,7 +87,7 @@ class KTXTextureData(TextureData):
         self.sgd_offset: int = fields[14]
         self.sgd_length: int = fields[15]
         level_index: List[Tuple[int, int, int]] = []
-        for idx in range(self.level_count):
+        for idx in range(self._level_count):
             startpos = HEADER_SIZE + idx * LEVEL_INDEX_FORMAT_SIZE
             endpos = startpos + LEVEL_INDEX_FORMAT_SIZE
             (offset, length, ulength) = struct.unpack(
@@ -109,6 +109,14 @@ class KTXTextureData(TextureData):
         sy = block_count(self.height, mip, by)
         sz = block_count(self.depth, mip, bz)
         return sx, sy, sz, sx * bx, sy * by, sz * bz
+
+    @property
+    def format(self) -> xg.TextureFormat:
+        return self._format
+
+    @property
+    def level_count(self) -> int:
+        return self._level_count
 
     @property
     def dimension(self) -> xg.TextureDimension:
@@ -158,10 +166,10 @@ class KTXTextureData(TextureData):
             return data
         raise NotImplementedError()
 
-    def get_level_data(self, idx: int) -> bytes:
-        if not (idx >= 0 and idx < len(self.level_index)):
-            raise ValueError(f"index OoB: {idx}/{len(self.level_index)}")
-        (offset, length, uncompressed_length) = self.level_index[idx]
+    def get_level_data(self, mip: int) -> bytes:
+        if not (mip >= 0 and mip < len(self.level_index)):
+            raise ValueError(f"index OoB: {mip}/{len(self.level_index)}")
+        (offset, length, uncompressed_length) = self.level_index[mip]
         return self._decompress(self.data[offset : offset + length])
 
     def get_level_info(self, mip: int) -> Tuple[xg.TextureDataLayout, xg.Extent3D]:
