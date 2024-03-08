@@ -162,3 +162,12 @@ def startup(
     adapter, _ = get_adapter(instance, xg.PowerPreference.HighPerformance, surface)
     device = get_device(adapter)
     return instance, adapter, device, surface
+
+
+def create_default_view(tex: xg.Texture) -> xg.TextureView:
+    return tex.createView(
+        format=xg.TextureFormat.Undefined,
+        dimension=xg.TextureViewDimension.Undefined,
+        mipLevelCount=tex.getMipLevelCount(),
+        arrayLayerCount=tex.getDepthOrArrayLayers(),
+    )

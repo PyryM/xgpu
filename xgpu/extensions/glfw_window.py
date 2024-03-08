@@ -83,6 +83,7 @@ class GLFWWindow:
         print("window:", self.window_handle)
         print("display:", self.display_id)
         self._surface = None
+        self.depth_buffer = None
         glfw.set_key_callback(self.window, self.keyboard_callback)
         glfw.set_cursor_pos_callback(self.window, self.mouse_callback)
         glfw.set_window_size_callback(self.window, self.resize_callback)
@@ -108,7 +109,12 @@ class GLFWWindow:
         glfw.poll_events()
         return bool(not glfw.window_should_close(self.window))
 
-    def configure_surface(self, device: XDevice, format=xgpu.TextureFormat.BGRA8Unorm):
+    def configure_surface(
+        self,
+        device: XDevice,
+        format=xgpu.TextureFormat.BGRA8Unorm,
+        depth_format=xgpu.TextureFormat.Depth24Plus,
+    ):
         print("Configuring surface?")
         if self._surface is None:
             return
@@ -122,7 +128,21 @@ class GLFWWindow:
             height=self.phys_height,
             presentMode=xgpu.PresentMode.Fifo,
         )
+        self.depth_buffer = device.createTexture(
+            usage=xgpu.TextureUsage.RenderAttachment,
+            size=xgpu.extent3D(
+                width=self.phys_width, height=self.phys_height, depthOrArrayLayers=1
+            ),
+            format=depth_format,
+            viewFormats=[depth_format],
+        )
         print("Configured surface?")
+
+    def get_depth_buffer(self) -> xgpu.Texture:
+        assert (
+            self.depth_buffer is not None
+        ), "No depth buffer created! Configure surface first!"
+        return self.depth_buffer
 
     def get_surface(self, instance: Instance) -> XSurface:
         print("Getting surface?")
