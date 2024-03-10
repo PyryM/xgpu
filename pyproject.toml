@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "xgpu"
-version = "0.8.1"
+version = "0.8.2"
 readme = "README.md"
 requires-python = ">=3.7"
 dependencies = ["cffi"]
@@ -79,5 +79,4 @@ skip = ["*-win32", "*-manylinux_i686", "*musl*"]
 test-command = 'python -c "import xgpu"'
 
 [tool.cibuildwheel.macos]
-archs = ["universal2"]
 skip = ["cp36-*", "cp37-*", "pp*"]
