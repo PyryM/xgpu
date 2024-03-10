@@ -35,7 +35,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest, macos-14]
     steps:
       - uses: actions/checkout@v4
       - name: Download binaries
@@ -47,7 +47,7 @@ jobs:
           path: xgpu/
       - name: Build Wheels
         run: |
-          python -m pip install cibuildwheel==2.16.2
+          python -m pip install cibuildwheel==2.16.5
           python -m cibuildwheel --output-dir wheelhouse
       - uses: actions/upload-artifact@v3
         with:
