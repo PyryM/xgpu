@@ -55,7 +55,7 @@ def download_file(url: str, local_path: str) -> None:
 
 
 class Lib:
-    def __init__(self, src, dest=None):
+    def __init__(self, src: str, dest: Optional[str]=None):
         self.src = src
         self.dest = dest
         if self.dest is None:
@@ -78,12 +78,12 @@ ALIASES = {
 }
 
 
-def fix_name(name):
+def fix_name(name: str) -> str:
     return ALIASES.get(name, name)
 
 
 BASE_URL = "https://github.com/gfx-rs/wgpu-native/releases/download/"
-VERSION = "0.19.3.1"
+VERSION = "0.19.4.1"
 
 SYSNAME = uname().system.lower()
 IS_WINDOWS = SYSNAME == "windows" or ("microsoft" in uname().release.lower())
@@ -95,7 +95,7 @@ def make_url(osname: str, arch: str) -> str:
     return f"{BASE_URL}v{VERSION}/wgpu-{osname}-{arch}-release.zip"
 
 
-def unzip_to(url: str, dest: str):
+def unzip_to(url: str, dest: str) -> None:
     print(f'Downloading release from: "{url}" -> "{dest}"')
     download_file(url, "wgpu_native.zip")
 
