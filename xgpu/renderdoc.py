@@ -1,4 +1,4 @@
-""" Simple bindings to the RenderDoc in-application API """
+"""Simple bindings to the RenderDoc in-application API"""
 
 import sys
 from enum import IntEnum, auto

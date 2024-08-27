@@ -14,6 +14,7 @@ from xgpu.extensions import (
     BinderBuilder,
     XDevice,
     create_default_view,
+    get_preferred_format,
 )
 from xgpu.extensions.glfw_window import GLFWWindow
 from xgpu.extensions.standardimage import open_image
@@ -246,7 +247,7 @@ def main() -> None:
         bindGroupLayouts=[view_bind_factory.layout, model_bind_factory.layout]
     )
 
-    window_tex_format = surface.getPreferredFormat(adapter)
+    window_tex_format = get_preferred_format(adapter, surface) #xg.TextureFormat.BGRA8Unorm
     print("Window tex format:", window_tex_format.name)
 
     window.configure_surface(device, window_tex_format)
@@ -355,6 +356,7 @@ def main() -> None:
 
         color_attachment = xg.renderPassColorAttachment(
             view=color_view,
+            depthSlice=0,
             loadOp=xg.LoadOp.Clear,
             storeOp=xg.StoreOp.Store,
             clearValue=xg.color(r=0.5, g=0.5, b=0.5, a=1.0),

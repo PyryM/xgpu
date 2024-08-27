@@ -60,7 +60,7 @@ def get_adapter(
         print("Got adapter with msg:", msg, ", status:", status.name)
         stash[0] = (status, adapter, msg)
 
-    cb = xg.RequestAdapterCallback(adapterCB)
+    cb = xg.InstanceRequestAdapterCallback(adapterCB)
 
     if instance is None:
         instance = get_instance()
@@ -92,6 +92,21 @@ def get_adapter(
     return XAdapter(adapter), instance
 
 
+def get_preferred_format(
+    adapter: xg.Adapter, surface: xg.Surface, prefer_srgb: bool = True
+) -> xg.TextureFormat:
+    """
+    Pick a texture format compatible with a surface.
+    """
+    caps = surface.getCapabilities(adapter=adapter)
+    assert len(caps.formats) > 0, "Surface has zero supported formats!"
+    if prefer_srgb:
+        for fmt in caps.formats:
+            if fmt.name.endswith("Srgb"):
+                return fmt
+    return caps.formats[0]
+
+
 def get_device(
     adapter: xg.Adapter,
     features: Optional[List[xg.FeatureName]] = None,
@@ -113,6 +128,9 @@ def get_device(
     def deviceLostCB(reason: xg.DeviceLostReason, msg: str) -> None:
         print("Lost device!:", reason, msg)
 
+    def errorCB(reason: xg.ErrorType, msg: str) -> None:
+        print("Uncaptured error!:", reason, msg)
+
     if features is None:
         print("Requesting all available features")
         features = adapter.enumerateFeatures()
@@ -129,8 +147,11 @@ def get_device(
             requiredLimits=limits,
             defaultQueue=xg.queueDescriptor(),
             deviceLostCallback=xg.DeviceLostCallback(deviceLostCB),
+            uncapturedErrorCallbackInfo=xg.uncapturedErrorCallbackInfo(
+                callback=xg.ErrorCallback(errorCB)
+            ),
         ),
-        xg.RequestDeviceCallback(deviceCB),
+        xg.AdapterRequestDeviceCallback(deviceCB),
     )
 
     deadline = time.time() + timeout

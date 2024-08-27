@@ -65,8 +65,7 @@ def _cast_userdata(ud: CData) -> int:
 class Chainable(ABC):
     @property
     @abstractmethod
-    def _chain(self) -> Any:
-        ...
+    def _chain(self) -> Any: ...
 
 
 class ChainedStruct:
@@ -288,8 +287,8 @@ class CullMode(IntEnum):
 
 
 class DeviceLostReason(IntEnum):
-    Undefined = 0x00000000
-    Destroyed = 0x00000001
+    Unknown = 0x00000001
+    Destroyed = 0x00000002
 
 
 class ErrorFilter(IntEnum):
@@ -330,6 +329,19 @@ class FeatureName(IntEnum):
     PipelineStatisticsQuery = 0x00030008
     StorageResourceBindingArray = 0x00030009
     PartiallyBoundBindingArray = 0x0003000A
+    TextureFormat16bitNorm = 0x0003000B
+    TextureCompressionAstcHdr = 0x0003000C
+    MappablePrimaryBuffers = 0x0003000E
+    BufferBindingArray = 0x0003000F
+    UniformBufferAndStorageTextureArrayNonUniformIndexing = 0x00030010
+    VertexAttribute64bit = 0x00030019
+    TextureFormatNv12 = 0x0003001A
+    RayTracingAccelerationStructure = 0x0003001B
+    RayQuery = 0x0003001C
+    ShaderF64 = 0x0003001D
+    ShaderI16 = 0x0003001E
+    ShaderPrimitiveIndex = 0x0003001F
+    ShaderEarlyDepthTest = 0x00030020
 
 
 class FilterMode(IntEnum):
@@ -640,6 +652,14 @@ class VertexStepMode(IntEnum):
     VertexBufferNotUsed = 0x00000002
 
 
+class WGSLFeatureName(IntEnum):
+    Undefined = 0x00000000
+    ReadonlyAndReadwriteStorageTextures = 0x00000001
+    Packed4x8IntegerDotProduct = 0x00000002
+    UnrestrictedPointerParameters = 0x00000003
+    PointerCompositeAccess = 0x00000004
+
+
 class BufferUsage(IntEnum):
     _None = 0x00000000
     MapRead = 0x00000001
@@ -757,6 +777,16 @@ class PipelineStatisticName(IntEnum):
 
 class NativeQueryType(IntEnum):
     PipelineStatistics = 0x00030000
+
+
+class NativeTextureFormat(IntEnum):
+    R16Unorm = 0x00030001
+    R16Snorm = 0x00030002
+    Rg16Unorm = 0x00030003
+    Rg16Snorm = 0x00030004
+    Rgba16Unorm = 0x00030005
+    Rgba16Snorm = 0x00030006
+    NV12 = 0x00030007
 
 
 class BufferUsageFlags:
@@ -1022,17 +1052,19 @@ class Adapter:
         lib.wgpuAdapterEnumerateFeatures(self._cdata, feature_list)
         return [FeatureName(feature_list[idx]) for idx in range(feature_count)]
 
+    def getInfo(self, info: "AdapterInfo") -> None:
+        return lib.wgpuAdapterGetInfo(self._cdata, info._cdata)
+
     def getLimits(self, limits: "SupportedLimits") -> bool:
         return lib.wgpuAdapterGetLimits(self._cdata, limits._cdata)
-
-    def getProperties(self, properties: "AdapterProperties") -> None:
-        return lib.wgpuAdapterGetProperties(self._cdata, properties._cdata)
 
     def hasFeature(self, feature: "FeatureName") -> bool:
         return lib.wgpuAdapterHasFeature(self._cdata, int(feature))
 
     def requestDevice(
-        self, descriptor: Optional["DeviceDescriptor"], callback: "RequestDeviceCallback"
+        self,
+        descriptor: Optional["DeviceDescriptor"],
+        callback: "AdapterRequestDeviceCallback",
     ) -> None:
         return lib.wgpuAdapterRequestDevice(
             self._cdata,
@@ -1184,7 +1216,7 @@ class Buffer:
         mode: Union["MapModeFlags", "MapMode", int],
         offset: int,
         size: int,
-        callback: "BufferMapCallback",
+        callback: "BufferMapAsyncCallback",
     ) -> None:
         return lib.wgpuBufferMapAsync(
             self._cdata, int(mode), offset, size, callback._ptr, callback._userdata
@@ -1488,7 +1520,9 @@ class ComputePassEncoder:
         )
 
     def end(self) -> None:
-        return lib.wgpuComputePassEncoderEnd(self._cdata)
+        ret = lib.wgpuComputePassEncoderEnd(self._cdata)
+        self.release()
+        return ret
 
     def insertDebugMarker(self, markerLabel: str) -> None:
         return lib.wgpuComputePassEncoderInsertDebugMarker(
@@ -1732,7 +1766,7 @@ class Device:
     def createComputePipelineAsync(
         self,
         descriptor: "ComputePipelineDescriptor",
-        callback: "CreateComputePipelineAsyncCallback",
+        callback: "DeviceCreateComputePipelineAsyncCallback",
     ) -> None:
         return lib.wgpuDeviceCreateComputePipelineAsync(
             self._cdata, descriptor._cdata, callback._ptr, callback._userdata
@@ -1845,7 +1879,7 @@ class Device:
     def createRenderPipelineAsync(
         self,
         descriptor: "RenderPipelineDescriptor",
-        callback: "CreateRenderPipelineAsyncCallback",
+        callback: "DeviceCreateRenderPipelineAsyncCallback",
     ) -> None:
         return lib.wgpuDeviceCreateRenderPipelineAsync(
             self._cdata, descriptor._cdata, callback._ptr, callback._userdata
@@ -1973,11 +2007,6 @@ class Device:
     def setLabel(self, label: str) -> None:
         return lib.wgpuDeviceSetLabel(self._cdata, _ffi_unwrap_str(label))
 
-    def setUncapturedErrorCallback(self, callback: "ErrorCallback") -> None:
-        return lib.wgpuDeviceSetUncapturedErrorCallback(
-            self._cdata, callback._ptr, callback._userdata
-        )
-
     def _reference(self) -> None:
         return lib.wgpuDeviceReference(self._cdata)
 
@@ -2038,13 +2067,16 @@ class Instance:
             surfaceDescriptor(nextInChain=nextInChain, label=label)
         )
 
+    def hasWGSLLanguageFeature(self, feature: "WGSLFeatureName") -> bool:
+        return lib.wgpuInstanceHasWGSLLanguageFeature(self._cdata, int(feature))
+
     def processEvents(self) -> None:
         return lib.wgpuInstanceProcessEvents(self._cdata)
 
     def requestAdapter(
         self,
         options: Optional["RequestAdapterOptions"],
-        callback: "RequestAdapterCallback",
+        callback: "InstanceRequestAdapterCallback",
     ) -> None:
         return lib.wgpuInstanceRequestAdapter(
             self._cdata, _ffi_unwrap_optional(options), callback._ptr, callback._userdata
@@ -2189,7 +2221,7 @@ class Queue:
     def isValid(self) -> None:
         return self._cdata != ffi.NULL
 
-    def onSubmittedWorkDone(self, callback: "QueueWorkDoneCallback") -> None:
+    def onSubmittedWorkDone(self, callback: "QueueOnSubmittedWorkDoneCallback") -> None:
         return lib.wgpuQueueOnSubmittedWorkDone(
             self._cdata, callback._ptr, callback._userdata
         )
@@ -2488,7 +2520,9 @@ class RenderPassEncoder:
         )
 
     def end(self) -> None:
-        return lib.wgpuRenderPassEncoderEnd(self._cdata)
+        ret = lib.wgpuRenderPassEncoderEnd(self._cdata)
+        self.release()
+        return ret
 
     def endOcclusionQuery(self) -> None:
         return lib.wgpuRenderPassEncoderEndOcclusionQuery(self._cdata)
@@ -2766,7 +2800,9 @@ class ShaderModule:
     def isValid(self) -> None:
         return self._cdata != ffi.NULL
 
-    def getCompilationInfo(self, callback: "CompilationInfoCallback") -> None:
+    def getCompilationInfo(
+        self, callback: "ShaderModuleGetCompilationInfoCallback"
+    ) -> None:
         return lib.wgpuShaderModuleGetCompilationInfo(
             self._cdata, callback._ptr, callback._userdata
         )
@@ -2863,13 +2899,11 @@ class Surface:
     def getCurrentTexture(self, surfaceTexture: "SurfaceTexture") -> None:
         return lib.wgpuSurfaceGetCurrentTexture(self._cdata, surfaceTexture._cdata)
 
-    def getPreferredFormat(self, adapter: "Adapter") -> "TextureFormat":
-        return TextureFormat(
-            lib.wgpuSurfaceGetPreferredFormat(self._cdata, adapter._cdata)
-        )
-
     def present(self) -> None:
         return lib.wgpuSurfacePresent(self._cdata)
+
+    def setLabel(self, label: str) -> None:
+        return lib.wgpuSurfaceSetLabel(self._cdata, _ffi_unwrap_str(label))
 
     def unconfigure(self) -> None:
         return lib.wgpuSurfaceUnconfigure(self._cdata)
@@ -3029,10 +3063,10 @@ class TextureView:
 # ChainedStructOut is specially defined elsewhere
 
 
-class AdapterProperties:
+class AdapterInfo:
     def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
         self._parent = parent
-        self._cdata = _ffi_init("WGPUAdapterProperties *", cdata)
+        self._cdata = _ffi_init("WGPUAdapterInfo *", cdata)
 
     @property
     def nextInChain(self) -> Optional["ChainedStructOut"]:
@@ -3047,22 +3081,14 @@ class AdapterProperties:
             self._cdata.nextInChain = v._cdata
 
     @property
-    def vendorID(self) -> int:
-        return self._cdata.vendorID
+    def vendor(self) -> str:
+        return _ffi_string(self._cdata.vendor)
 
-    @vendorID.setter
-    def vendorID(self, v: int) -> None:
-        self._cdata.vendorID = v
-
-    @property
-    def vendorName(self) -> str:
-        return _ffi_string(self._cdata.vendorName)
-
-    @vendorName.setter
-    def vendorName(self, v: str) -> None:
-        self._vendorName = v
-        self._store_vendorName = _ffi_unwrap_str(v)
-        self._cdata.vendorName = self._store_vendorName
+    @vendor.setter
+    def vendor(self, v: str) -> None:
+        self._vendor = v
+        self._store_vendor = _ffi_unwrap_str(v)
+        self._cdata.vendor = self._store_vendor
 
     @property
     def architecture(self) -> str:
@@ -3075,32 +3101,32 @@ class AdapterProperties:
         self._cdata.architecture = self._store_architecture
 
     @property
-    def deviceID(self) -> int:
-        return self._cdata.deviceID
+    def device(self) -> str:
+        return _ffi_string(self._cdata.device)
 
-    @deviceID.setter
-    def deviceID(self, v: int) -> None:
-        self._cdata.deviceID = v
-
-    @property
-    def name(self) -> str:
-        return _ffi_string(self._cdata.name)
-
-    @name.setter
-    def name(self, v: str) -> None:
-        self._name = v
-        self._store_name = _ffi_unwrap_str(v)
-        self._cdata.name = self._store_name
+    @device.setter
+    def device(self, v: str) -> None:
+        self._device = v
+        self._store_device = _ffi_unwrap_str(v)
+        self._cdata.device = self._store_device
 
     @property
-    def driverDescription(self) -> str:
-        return _ffi_string(self._cdata.driverDescription)
+    def description(self) -> str:
+        return _ffi_string(self._cdata.description)
 
-    @driverDescription.setter
-    def driverDescription(self, v: str) -> None:
-        self._driverDescription = v
-        self._store_driverDescription = _ffi_unwrap_str(v)
-        self._cdata.driverDescription = self._store_driverDescription
+    @description.setter
+    def description(self, v: str) -> None:
+        self._description = v
+        self._store_description = _ffi_unwrap_str(v)
+        self._cdata.description = self._store_description
+
+    @property
+    def backendType(self) -> "BackendType":
+        return BackendType(self._cdata.backendType)
+
+    @backendType.setter
+    def backendType(self, v: "BackendType") -> None:
+        self._cdata.backendType = int(v)
 
     @property
     def adapterType(self) -> "AdapterType":
@@ -3111,36 +3137,44 @@ class AdapterProperties:
         self._cdata.adapterType = int(v)
 
     @property
-    def backendType(self) -> "BackendType":
-        return BackendType(self._cdata.backendType)
+    def vendorID(self) -> int:
+        return self._cdata.vendorID
 
-    @backendType.setter
-    def backendType(self, v: "BackendType") -> None:
-        self._cdata.backendType = int(v)
+    @vendorID.setter
+    def vendorID(self, v: int) -> None:
+        self._cdata.vendorID = v
+
+    @property
+    def deviceID(self) -> int:
+        return self._cdata.deviceID
+
+    @deviceID.setter
+    def deviceID(self, v: int) -> None:
+        self._cdata.deviceID = v
 
 
-def adapterProperties(
+def adapterInfo(
     *,
     nextInChain: Optional["ChainedStructOut"] = None,
-    vendorID: int,
-    vendorName: str,
+    vendor: str,
     architecture: str,
-    deviceID: int,
-    name: str,
-    driverDescription: str,
-    adapterType: "AdapterType",
+    device: str,
+    description: str,
     backendType: "BackendType",
-) -> AdapterProperties:
-    ret = AdapterProperties(cdata=None, parent=None)
+    adapterType: "AdapterType",
+    vendorID: int,
+    deviceID: int,
+) -> AdapterInfo:
+    ret = AdapterInfo(cdata=None, parent=None)
     ret.nextInChain = nextInChain
-    ret.vendorID = vendorID
-    ret.vendorName = vendorName
+    ret.vendor = vendor
     ret.architecture = architecture
-    ret.deviceID = deviceID
-    ret.name = name
-    ret.driverDescription = driverDescription
-    ret.adapterType = adapterType
+    ret.device = device
+    ret.description = description
     ret.backendType = backendType
+    ret.adapterType = adapterType
+    ret.vendorID = vendorID
+    ret.deviceID = deviceID
     return ret
 
 
@@ -5949,6 +5983,43 @@ def textureViewDescriptor(
     return ret
 
 
+class UncapturedErrorCallbackInfo:
+    def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
+        self._parent = parent
+        self._cdata = _ffi_init("WGPUUncapturedErrorCallbackInfo *", cdata)
+
+    @property
+    def nextInChain(self) -> Optional["ChainedStruct"]:
+        return self._nextInChain
+
+    @nextInChain.setter
+    def nextInChain(self, v: Optional["ChainedStruct"]) -> None:
+        self._nextInChain = v
+        if v is None:
+            self._cdata.nextInChain = ffi.NULL
+        else:
+            self._cdata.nextInChain = v._cdata
+
+    @property
+    def callback(self) -> "ErrorCallback":
+        return self._callback
+
+    @callback.setter
+    def callback(self, v: "ErrorCallback") -> None:
+        self._callback = v
+        self._cdata.callback = v._ptr
+        self._cdata.userdata = v._userdata
+
+
+def uncapturedErrorCallbackInfo(
+    *, nextInChain: Optional["ChainedStruct"] = None, callback: "ErrorCallback"
+) -> UncapturedErrorCallbackInfo:
+    ret = UncapturedErrorCallbackInfo(cdata=None, parent=None)
+    ret.nextInChain = nextInChain
+    ret.callback = callback
+    return ret
+
+
 class VertexAttribute:
     def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
         self._parent = parent
@@ -6617,6 +6688,14 @@ class RenderPassColorAttachment:
             self._cdata.view = v._cdata
 
     @property
+    def depthSlice(self) -> int:
+        return self._cdata.depthSlice
+
+    @depthSlice.setter
+    def depthSlice(self, v: int) -> None:
+        self._cdata.depthSlice = v
+
+    @property
     def resolveTarget(self) -> Optional["TextureView"]:
         return TextureView(self._cdata.resolveTarget, add_ref=True)
 
@@ -6657,6 +6736,7 @@ def renderPassColorAttachment(
     *,
     nextInChain: Optional["ChainedStruct"] = None,
     view: Optional["TextureView"] = None,
+    depthSlice: int,
     resolveTarget: Optional["TextureView"] = None,
     loadOp: "LoadOp",
     storeOp: "StoreOp",
@@ -6665,6 +6745,7 @@ def renderPassColorAttachment(
     ret = RenderPassColorAttachment(cdata=None, parent=None)
     ret.nextInChain = nextInChain
     ret.view = view
+    ret.depthSlice = depthSlice
     ret.resolveTarget = resolveTarget
     ret.loadOp = loadOp
     ret.storeOp = storeOp
@@ -7233,6 +7314,16 @@ class DeviceDescriptor:
         self._cdata.deviceLostCallback = v._ptr
         self._cdata.deviceLostUserdata = v._userdata
 
+    @property
+    def uncapturedErrorCallbackInfo(self) -> "UncapturedErrorCallbackInfo":
+        return UncapturedErrorCallbackInfo(
+            cdata=self._cdata.uncapturedErrorCallbackInfo, parent=self
+        )
+
+    @uncapturedErrorCallbackInfo.setter
+    def uncapturedErrorCallbackInfo(self, v: "UncapturedErrorCallbackInfo") -> None:
+        self._cdata.uncapturedErrorCallbackInfo = _ffi_deref(v._cdata)
+
 
 def deviceDescriptor(
     *,
@@ -7242,6 +7333,7 @@ def deviceDescriptor(
     requiredLimits: Optional["RequiredLimits"] = None,
     defaultQueue: "QueueDescriptor",
     deviceLostCallback: "DeviceLostCallback",
+    uncapturedErrorCallbackInfo: "UncapturedErrorCallbackInfo",
 ) -> DeviceDescriptor:
     ret = DeviceDescriptor(cdata=None, parent=None)
     ret.nextInChain = nextInChain
@@ -7250,6 +7342,7 @@ def deviceDescriptor(
     ret.requiredLimits = requiredLimits
     ret.defaultQueue = defaultQueue
     ret.deviceLostCallback = deviceLostCallback
+    ret.uncapturedErrorCallbackInfo = uncapturedErrorCallbackInfo
     return ret
 
 
@@ -8512,11 +8605,11 @@ class SurfaceConfigurationExtras(Chainable):
         self._cdata.chain.sType = SType.SurfaceConfigurationExtras
 
     @property
-    def desiredMaximumFrameLatency(self) -> bool:
+    def desiredMaximumFrameLatency(self) -> int:
         return self._cdata.desiredMaximumFrameLatency
 
     @desiredMaximumFrameLatency.setter
-    def desiredMaximumFrameLatency(self, v: bool) -> None:
+    def desiredMaximumFrameLatency(self, v: int) -> None:
         self._cdata.desiredMaximumFrameLatency = v
 
     @property
@@ -8525,7 +8618,7 @@ class SurfaceConfigurationExtras(Chainable):
 
 
 def surfaceConfigurationExtras(
-    *, desiredMaximumFrameLatency: bool
+    *, desiredMaximumFrameLatency: int
 ) -> SurfaceConfigurationExtras:
     ret = SurfaceConfigurationExtras(cdata=None, parent=None)
     ret.desiredMaximumFrameLatency = desiredMaximumFrameLatency
@@ -8541,6 +8634,10 @@ def createInstanceFromDesc(descriptor: Optional["InstanceDescriptor"]) -> "Insta
 
 def createInstance(*, nextInChain: Optional["ChainedStruct"] = None) -> "Instance":
     return createInstanceFromDesc(instanceDescriptor(nextInChain=nextInChain))
+
+
+def adapterInfoFreeMembers(adapterInfo: "AdapterInfo") -> None:
+    return lib.wgpuAdapterInfoFreeMembers(_ffi_deref(adapterInfo._cdata))
 
 
 # FreeMembers: Not needed
@@ -8560,114 +8657,6 @@ def getVersion() -> int:
 
 
 # Util wrapper types
-
-_callback_map_BufferMapCallback = CBMap()
-
-
-@ffi.def_extern()
-def _raw_callback_BufferMapCallback(status, userdata):  # noqa
-    idx = _cast_userdata(userdata)
-    cb = _callback_map_BufferMapCallback.get(idx)
-    if cb is not None:
-        cb(BufferMapAsyncStatus(status))
-
-
-class BufferMapCallback:
-    def __init__(self, callback: Callable[["BufferMapAsyncStatus"], None]):
-        self.index = _callback_map_BufferMapCallback.add(callback)
-        # Yes, we're just storing ints into pointers.
-        self._userdata = ffi.cast("void *", self.index)
-        self._ptr = lib._raw_callback_BufferMapCallback
-
-    def remove(self) -> None:
-        _callback_map_BufferMapCallback.remove(self.index)
-
-
-_callback_map_CompilationInfoCallback = CBMap()
-
-
-@ffi.def_extern()
-def _raw_callback_CompilationInfoCallback(status, compilationInfo, userdata):  # noqa
-    idx = _cast_userdata(userdata)
-    cb = _callback_map_CompilationInfoCallback.get(idx)
-    if cb is not None:
-        cb(
-            CompilationInfoRequestStatus(status),
-            CompilationInfo(cdata=compilationInfo, parent=None),
-        )
-
-
-class CompilationInfoCallback:
-    def __init__(
-        self,
-        callback: Callable[["CompilationInfoRequestStatus", "CompilationInfo"], None],
-    ):
-        self.index = _callback_map_CompilationInfoCallback.add(callback)
-        # Yes, we're just storing ints into pointers.
-        self._userdata = ffi.cast("void *", self.index)
-        self._ptr = lib._raw_callback_CompilationInfoCallback
-
-    def remove(self) -> None:
-        _callback_map_CompilationInfoCallback.remove(self.index)
-
-
-_callback_map_CreateComputePipelineAsyncCallback = CBMap()
-
-
-@ffi.def_extern()
-def _raw_callback_CreateComputePipelineAsyncCallback(status, pipeline, message, userdata):  # noqa
-    idx = _cast_userdata(userdata)
-    cb = _callback_map_CreateComputePipelineAsyncCallback.get(idx)
-    if cb is not None:
-        cb(
-            CreatePipelineAsyncStatus(status),
-            ComputePipeline(pipeline, add_ref=False),
-            _ffi_string(message),
-        )
-
-
-class CreateComputePipelineAsyncCallback:
-    def __init__(
-        self,
-        callback: Callable[["CreatePipelineAsyncStatus", "ComputePipeline", str], None],
-    ):
-        self.index = _callback_map_CreateComputePipelineAsyncCallback.add(callback)
-        # Yes, we're just storing ints into pointers.
-        self._userdata = ffi.cast("void *", self.index)
-        self._ptr = lib._raw_callback_CreateComputePipelineAsyncCallback
-
-    def remove(self) -> None:
-        _callback_map_CreateComputePipelineAsyncCallback.remove(self.index)
-
-
-_callback_map_CreateRenderPipelineAsyncCallback = CBMap()
-
-
-@ffi.def_extern()
-def _raw_callback_CreateRenderPipelineAsyncCallback(status, pipeline, message, userdata):  # noqa
-    idx = _cast_userdata(userdata)
-    cb = _callback_map_CreateRenderPipelineAsyncCallback.get(idx)
-    if cb is not None:
-        cb(
-            CreatePipelineAsyncStatus(status),
-            RenderPipeline(pipeline, add_ref=False),
-            _ffi_string(message),
-        )
-
-
-class CreateRenderPipelineAsyncCallback:
-    def __init__(
-        self,
-        callback: Callable[["CreatePipelineAsyncStatus", "RenderPipeline", str], None],
-    ):
-        self.index = _callback_map_CreateRenderPipelineAsyncCallback.add(callback)
-        # Yes, we're just storing ints into pointers.
-        self._userdata = ffi.cast("void *", self.index)
-        self._ptr = lib._raw_callback_CreateRenderPipelineAsyncCallback
-
-    def remove(self) -> None:
-        _callback_map_CreateRenderPipelineAsyncCallback.remove(self.index)
-
 
 _callback_map_DeviceLostCallback = CBMap()
 
@@ -8713,63 +8702,13 @@ class ErrorCallback:
         _callback_map_ErrorCallback.remove(self.index)
 
 
-_callback_map_QueueWorkDoneCallback = CBMap()
+_callback_map_AdapterRequestDeviceCallback = CBMap()
 
 
 @ffi.def_extern()
-def _raw_callback_QueueWorkDoneCallback(status, userdata):  # noqa
+def _raw_callback_AdapterRequestDeviceCallback(status, device, message, userdata):  # noqa
     idx = _cast_userdata(userdata)
-    cb = _callback_map_QueueWorkDoneCallback.get(idx)
-    if cb is not None:
-        cb(QueueWorkDoneStatus(status))
-
-
-class QueueWorkDoneCallback:
-    def __init__(self, callback: Callable[["QueueWorkDoneStatus"], None]):
-        self.index = _callback_map_QueueWorkDoneCallback.add(callback)
-        # Yes, we're just storing ints into pointers.
-        self._userdata = ffi.cast("void *", self.index)
-        self._ptr = lib._raw_callback_QueueWorkDoneCallback
-
-    def remove(self) -> None:
-        _callback_map_QueueWorkDoneCallback.remove(self.index)
-
-
-_callback_map_RequestAdapterCallback = CBMap()
-
-
-@ffi.def_extern()
-def _raw_callback_RequestAdapterCallback(status, adapter, message, userdata):  # noqa
-    idx = _cast_userdata(userdata)
-    cb = _callback_map_RequestAdapterCallback.get(idx)
-    if cb is not None:
-        cb(
-            RequestAdapterStatus(status),
-            Adapter(adapter, add_ref=False),
-            _ffi_string(message),
-        )
-
-
-class RequestAdapterCallback:
-    def __init__(
-        self, callback: Callable[["RequestAdapterStatus", "Adapter", str], None]
-    ):
-        self.index = _callback_map_RequestAdapterCallback.add(callback)
-        # Yes, we're just storing ints into pointers.
-        self._userdata = ffi.cast("void *", self.index)
-        self._ptr = lib._raw_callback_RequestAdapterCallback
-
-    def remove(self) -> None:
-        _callback_map_RequestAdapterCallback.remove(self.index)
-
-
-_callback_map_RequestDeviceCallback = CBMap()
-
-
-@ffi.def_extern()
-def _raw_callback_RequestDeviceCallback(status, device, message, userdata):  # noqa
-    idx = _cast_userdata(userdata)
-    cb = _callback_map_RequestDeviceCallback.get(idx)
+    cb = _callback_map_AdapterRequestDeviceCallback.get(idx)
     if cb is not None:
         cb(
             RequestDeviceStatus(status),
@@ -8778,37 +8717,179 @@ def _raw_callback_RequestDeviceCallback(status, device, message, userdata):  # n
         )
 
 
-class RequestDeviceCallback:
+class AdapterRequestDeviceCallback:
     def __init__(self, callback: Callable[["RequestDeviceStatus", "Device", str], None]):
-        self.index = _callback_map_RequestDeviceCallback.add(callback)
+        self.index = _callback_map_AdapterRequestDeviceCallback.add(callback)
         # Yes, we're just storing ints into pointers.
         self._userdata = ffi.cast("void *", self.index)
-        self._ptr = lib._raw_callback_RequestDeviceCallback
+        self._ptr = lib._raw_callback_AdapterRequestDeviceCallback
 
     def remove(self) -> None:
-        _callback_map_RequestDeviceCallback.remove(self.index)
+        _callback_map_AdapterRequestDeviceCallback.remove(self.index)
 
 
-_callback_map_ProcDeviceSetUncapturedErrorCallback = CBMap()
+_callback_map_BufferMapAsyncCallback = CBMap()
 
 
 @ffi.def_extern()
-def _raw_callback_ProcDeviceSetUncapturedErrorCallback(device, callback, userdata):  # noqa
+def _raw_callback_BufferMapAsyncCallback(status, userdata):  # noqa
     idx = _cast_userdata(userdata)
-    cb = _callback_map_ProcDeviceSetUncapturedErrorCallback.get(idx)
+    cb = _callback_map_BufferMapAsyncCallback.get(idx)
     if cb is not None:
-        cb(Device(device, add_ref=False), callback)
+        cb(BufferMapAsyncStatus(status))
 
 
-class ProcDeviceSetUncapturedErrorCallback:
-    def __init__(self, callback: Callable[["Device", "ErrorCallback"], None]):
-        self.index = _callback_map_ProcDeviceSetUncapturedErrorCallback.add(callback)
+class BufferMapAsyncCallback:
+    def __init__(self, callback: Callable[["BufferMapAsyncStatus"], None]):
+        self.index = _callback_map_BufferMapAsyncCallback.add(callback)
         # Yes, we're just storing ints into pointers.
         self._userdata = ffi.cast("void *", self.index)
-        self._ptr = lib._raw_callback_ProcDeviceSetUncapturedErrorCallback
+        self._ptr = lib._raw_callback_BufferMapAsyncCallback
 
     def remove(self) -> None:
-        _callback_map_ProcDeviceSetUncapturedErrorCallback.remove(self.index)
+        _callback_map_BufferMapAsyncCallback.remove(self.index)
+
+
+_callback_map_DeviceCreateComputePipelineAsyncCallback = CBMap()
+
+
+@ffi.def_extern()
+def _raw_callback_DeviceCreateComputePipelineAsyncCallback(
+    status, pipeline, message, userdata
+):
+    idx = _cast_userdata(userdata)
+    cb = _callback_map_DeviceCreateComputePipelineAsyncCallback.get(idx)
+    if cb is not None:
+        cb(
+            CreatePipelineAsyncStatus(status),
+            ComputePipeline(pipeline, add_ref=False),
+            _ffi_string(message),
+        )
+
+
+class DeviceCreateComputePipelineAsyncCallback:
+    def __init__(
+        self,
+        callback: Callable[["CreatePipelineAsyncStatus", "ComputePipeline", str], None],
+    ):
+        self.index = _callback_map_DeviceCreateComputePipelineAsyncCallback.add(callback)
+        # Yes, we're just storing ints into pointers.
+        self._userdata = ffi.cast("void *", self.index)
+        self._ptr = lib._raw_callback_DeviceCreateComputePipelineAsyncCallback
+
+    def remove(self) -> None:
+        _callback_map_DeviceCreateComputePipelineAsyncCallback.remove(self.index)
+
+
+_callback_map_DeviceCreateRenderPipelineAsyncCallback = CBMap()
+
+
+@ffi.def_extern()
+def _raw_callback_DeviceCreateRenderPipelineAsyncCallback(
+    status, pipeline, message, userdata
+):
+    idx = _cast_userdata(userdata)
+    cb = _callback_map_DeviceCreateRenderPipelineAsyncCallback.get(idx)
+    if cb is not None:
+        cb(
+            CreatePipelineAsyncStatus(status),
+            RenderPipeline(pipeline, add_ref=False),
+            _ffi_string(message),
+        )
+
+
+class DeviceCreateRenderPipelineAsyncCallback:
+    def __init__(
+        self,
+        callback: Callable[["CreatePipelineAsyncStatus", "RenderPipeline", str], None],
+    ):
+        self.index = _callback_map_DeviceCreateRenderPipelineAsyncCallback.add(callback)
+        # Yes, we're just storing ints into pointers.
+        self._userdata = ffi.cast("void *", self.index)
+        self._ptr = lib._raw_callback_DeviceCreateRenderPipelineAsyncCallback
+
+    def remove(self) -> None:
+        _callback_map_DeviceCreateRenderPipelineAsyncCallback.remove(self.index)
+
+
+_callback_map_InstanceRequestAdapterCallback = CBMap()
+
+
+@ffi.def_extern()
+def _raw_callback_InstanceRequestAdapterCallback(status, adapter, message, userdata):  # noqa
+    idx = _cast_userdata(userdata)
+    cb = _callback_map_InstanceRequestAdapterCallback.get(idx)
+    if cb is not None:
+        cb(
+            RequestAdapterStatus(status),
+            Adapter(adapter, add_ref=False),
+            _ffi_string(message),
+        )
+
+
+class InstanceRequestAdapterCallback:
+    def __init__(
+        self, callback: Callable[["RequestAdapterStatus", "Adapter", str], None]
+    ):
+        self.index = _callback_map_InstanceRequestAdapterCallback.add(callback)
+        # Yes, we're just storing ints into pointers.
+        self._userdata = ffi.cast("void *", self.index)
+        self._ptr = lib._raw_callback_InstanceRequestAdapterCallback
+
+    def remove(self) -> None:
+        _callback_map_InstanceRequestAdapterCallback.remove(self.index)
+
+
+_callback_map_QueueOnSubmittedWorkDoneCallback = CBMap()
+
+
+@ffi.def_extern()
+def _raw_callback_QueueOnSubmittedWorkDoneCallback(status, userdata):  # noqa
+    idx = _cast_userdata(userdata)
+    cb = _callback_map_QueueOnSubmittedWorkDoneCallback.get(idx)
+    if cb is not None:
+        cb(QueueWorkDoneStatus(status))
+
+
+class QueueOnSubmittedWorkDoneCallback:
+    def __init__(self, callback: Callable[["QueueWorkDoneStatus"], None]):
+        self.index = _callback_map_QueueOnSubmittedWorkDoneCallback.add(callback)
+        # Yes, we're just storing ints into pointers.
+        self._userdata = ffi.cast("void *", self.index)
+        self._ptr = lib._raw_callback_QueueOnSubmittedWorkDoneCallback
+
+    def remove(self) -> None:
+        _callback_map_QueueOnSubmittedWorkDoneCallback.remove(self.index)
+
+
+_callback_map_ShaderModuleGetCompilationInfoCallback = CBMap()
+
+
+@ffi.def_extern()
+def _raw_callback_ShaderModuleGetCompilationInfoCallback(
+    status, compilationInfo, userdata
+):
+    idx = _cast_userdata(userdata)
+    cb = _callback_map_ShaderModuleGetCompilationInfoCallback.get(idx)
+    if cb is not None:
+        cb(
+            CompilationInfoRequestStatus(status),
+            CompilationInfo(cdata=compilationInfo, parent=None),
+        )
+
+
+class ShaderModuleGetCompilationInfoCallback:
+    def __init__(
+        self,
+        callback: Callable[["CompilationInfoRequestStatus", "CompilationInfo"], None],
+    ):
+        self.index = _callback_map_ShaderModuleGetCompilationInfoCallback.add(callback)
+        # Yes, we're just storing ints into pointers.
+        self._userdata = ffi.cast("void *", self.index)
+        self._ptr = lib._raw_callback_ShaderModuleGetCompilationInfoCallback
+
+    def remove(self) -> None:
+        _callback_map_ShaderModuleGetCompilationInfoCallback.remove(self.index)
 
 
 _callback_map_LogCallback = CBMap()

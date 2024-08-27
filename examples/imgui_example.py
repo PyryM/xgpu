@@ -5,6 +5,7 @@ Imgui integration?
 import imgui
 
 import xgpu as xg
+from xgpu.extensions import get_preferred_format
 from xgpu.extensions.imgui_renderer import ImguiWindow, XGPUImguiRenderer
 
 
@@ -80,9 +81,7 @@ def main():
     )
     assert surface is not None, "Failed to get surface!"
 
-    # Imgui doesn't
-    # window_tex_format = xg.TextureFormat.BGRA8Unorm
-    window_tex_format = surface.getPreferredFormat(adapter)
+    window_tex_format = get_preferred_format(adapter, surface)
     print("Window tex format:", window_tex_format.name)
     window.configure_surface(device, window_tex_format)
 
