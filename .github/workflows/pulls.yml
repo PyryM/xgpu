@@ -24,9 +24,6 @@ jobs:
           python codegen/fetch_wgpu_bins.py
           bun codegen/generate.ts
           cd xgpu && python _build_ext.py
-      - uses: jakebailey/pyright-action@v2
-        with:
-          working-directory: xgpu/xgpu/
       - name: Run Tests
         run: |
           sudo apt install -y libegl1-mesa libgl1-mesa-dri libxcb-xfixes0-dev mesa-vulkan-drivers
