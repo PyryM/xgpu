@@ -144,8 +144,8 @@ if OS == "macos":
         [
             "lipo",
             "-create",
-            f"{UNZIP_PATH}/libwgpu_native.dylib",
-            f"{UNZIP_PATH}_ARM/libwgpu_native.dylib",
+            f"{UNZIP_PATH}/lib/libwgpu_native.dylib",
+            f"{UNZIP_PATH}_ARM/lib/libwgpu_native.dylib",
             "-output",
             "xgpu/libwgpu_native.dylib",
         ]
