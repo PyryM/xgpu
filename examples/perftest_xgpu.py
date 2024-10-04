@@ -12,7 +12,7 @@ from numpy.typing import NDArray
 
 import xgpu as xg
 import xgpu.renderdoc as renderdoc
-from xgpu.extensions import XDevice
+from xgpu.extensions import XDevice, get_preferred_format
 from xgpu.extensions.glfw_window import GLFWWindow
 
 
@@ -127,8 +127,7 @@ def main() -> None:
         bindGroupLayouts=[bind_layout, bind_layout]
     )
 
-    window_tex_format = surface.getPreferredFormat(adapter)
-    # xg.TextureFormat.BGRA8Unorm
+    window_tex_format = get_preferred_format(adapter, surface)
     print("Window tex format:", window_tex_format.name)
 
     window.configure_surface(device, window_tex_format)
@@ -253,6 +252,7 @@ def main() -> None:
 
         color_attachment = xg.renderPassColorAttachment(
             view=color_view,
+            depthSlice=0,
             loadOp=xg.LoadOp.Clear,
             storeOp=xg.StoreOp.Store,
             clearValue=xg.color(r=0.5, g=0.5, b=0.5, a=1.0),
@@ -296,6 +296,7 @@ def main() -> None:
             render_pass.setBindGroup(1, bg, [])
             render_pass.drawIndexed(12 * 3, 1, 0, 0, 0)
         render_pass.end()
+        #render_pass.release()
 
         queue.submit([command_encoder.finish()])
 

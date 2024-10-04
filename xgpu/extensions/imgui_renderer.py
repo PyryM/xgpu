@@ -424,6 +424,7 @@ class XGPUImguiRenderer:
 
         color_attachment = xg.renderPassColorAttachment(
             view=color_view,
+            depthSlice=0,
             loadOp=xg.LoadOp.Load,
             storeOp=xg.StoreOp.Store,
             clearValue=xg.Color(),

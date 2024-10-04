@@ -118,6 +118,7 @@ def main() -> None:
 
         color_attachment = xg.renderPassColorAttachment(
             view=color_view,
+            depthSlice=0,
             loadOp=xg.LoadOp.Clear,
             storeOp=xg.StoreOp.Store,
             clearValue=xg.color(r=0.5, g=0.5, b=0.5, a=1.0),

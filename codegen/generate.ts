@@ -520,11 +520,11 @@ class ApiInfo {
         fields.push(new ArrayField(listField.name, countField.name, innerCType));
         fieldPos += 2;
       } else if (
-        name.endsWith("Callback") &&
+        name.toLowerCase().endsWith("callback") &&
         fieldPos + 1 < rawFields.length &&
-        rawFields[fieldPos + 1].name.endsWith("Userdata")
+        rawFields[fieldPos + 1].name.toLowerCase().endsWith("userdata")
       ) {
-        fields.push(new CallbackField(name, this.getType(type)));
+        fields.push(new CallbackField(name, rawFields[fieldPos+1].name, this.getType(type)));
         fieldPos += 2;
       } else {
         fields.push(this._createField(name, type, cName));
@@ -815,7 +815,7 @@ def ${this.name}(self, v: ${this.argType()}) -> None:
 // hate that I have to special case for like one struct that
 // has embedded callbacks!
 class CallbackField implements CStructField {
-  constructor(public name: string, public ctype: CType) {}
+  constructor(public name: string, public userdataName: string, public ctype: CType) {}
 
   arg(): string {
     return `${this.name}: ${this.ctype.pyAnnotation(false, false)}`;
@@ -831,7 +831,7 @@ def ${this.name}(self) -> ${this.ctype.pyAnnotation(false, true)}:
 def ${this.name}(self, v: ${this.ctype.pyAnnotation(false, false)}) -> None:
     self._${this.name} = v
     self._cdata.${this.name} = v._ptr
-    self._cdata.${this.name.replaceAll("Callback", "Userdata")} = v._userdata
+    self._cdata.${this.userdataName} = v._userdata
     `;
   }
 }
@@ -1578,6 +1578,6 @@ writeFileSync(`${PNAME}/_build_ext.py`, cffiBuilderOutput);
 writeFileSync(`${PNAME}/bindings.py`, pylibOutput);
 
 await Bun.spawn(["ruff", "format", `${PNAME}/`]).exited;
-await Bun.spawn(["ruff", "--fix", `${PNAME}/`]).exited;
+await Bun.spawn(["ruff", "check", "--fix", `${PNAME}/`]).exited;
 
 console.log("Done?");

@@ -8,7 +8,7 @@ def _mapped_cb(status: xg.BufferMapAsyncStatus) -> None:
         raise RuntimeError(f"Mapping error! {status}")
 
 
-mapped_cb = xg.BufferMapCallback(_mapped_cb)
+mapped_cb = xg.BufferMapAsyncCallback(_mapped_cb)
 
 
 def round_up_to(v: int, align: int) -> int:
@@ -23,7 +23,7 @@ class XAdapter(xg.Adapter):
         """Wrap an Adapter into an XAdapter; invalidates the Adapter object"""
         self._cdata = inner._cdata
         inner.invalidate()
-        self.properties = xg.AdapterProperties()
+        self.info = xg.AdapterInfo()
         self.limits = xg.SupportedLimits()
 
     def getLimits2(self) -> xg.Limits:
@@ -32,9 +32,9 @@ class XAdapter(xg.Adapter):
             raise RuntimeError("Failed to get limits.")
         return self.limits.limits
 
-    def getProperties2(self) -> xg.AdapterProperties:
-        self.getProperties(self.properties)
-        return self.properties
+    def getInfo2(self) -> xg.AdapterInfo:
+        self.getInfo(self.info)
+        return self.info
 
 
 class XDevice(xg.Device):

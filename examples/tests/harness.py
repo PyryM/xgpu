@@ -227,6 +227,7 @@ class RenderHarness:
         self.color_view = default_view(self.color_tex)
         color_attachment = xg.renderPassColorAttachment(
             view=self.color_view,
+            depthSlice=0,
             loadOp=xg.LoadOp.Clear,
             storeOp=xg.StoreOp.Store,
             clearValue=xg.color(r=0.0, g=0.5, b=1.0, a=1.0),

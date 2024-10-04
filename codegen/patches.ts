@@ -50,6 +50,15 @@ def getCapabilities(self, adapter: "Adapter") -> "SurfaceCapabilities":
   .trim()
   .split("\n");
 
+function releasePassOnEnd(kind: string): string[] {
+  return [
+    `def end(self) -> None:`,
+    `    ret = lib.wgpu${kind}PassEncoderEnd(self._cdata)`,
+    `    self.release()`,
+    `    return ret`,
+  ]
+}
+
 export const PATCHED_FUNCTIONS: Map<string, string[]> = new Map([
   ["wgpuAdapterEnumerateFeatures", listFeatures("Adapter")],
   ["wgpuDeviceEnumerateFeatures", listFeatures("Device")],
@@ -58,4 +67,6 @@ export const PATCHED_FUNCTIONS: Map<string, string[]> = new Map([
     "wgpuSurfaceCapabilitiesFreeMembers",
     commentedOut("FreeMembers", "Not needed"),
   ],
+  ["wgpuRenderPassEncoderEnd", releasePassOnEnd("Render")],
+  ["wgpuComputePassEncoderEnd", releasePassOnEnd("Compute")]
 ]);

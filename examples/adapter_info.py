@@ -6,8 +6,8 @@ def main():
     import xgpu
     import xgpu.extensions.helpers as xgutils
 
-    def print_props(props: xgpu.AdapterProperties):
-        print(f"{props.name} [{props.backendType.name}], {props.driverDescription}")
+    def print_props(props: xgpu.AdapterInfo):
+        print(f"{props.device} [{props.backendType.name}], {props.description}")
 
     def print_features(features: List[xgpu.FeatureName]):
         flist = sorted([f.name for f in features])
@@ -22,7 +22,7 @@ def main():
     (adapter, instance) = xgutils.get_adapter()
     features = adapter.enumerateFeatures()
     print("========== ADAPTER ==========")
-    print_props(adapter.getProperties2())
+    print_props(adapter.getInfo2())
     print_features(features)
     print_limits(adapter.getLimits2())
 

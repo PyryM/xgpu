@@ -21,6 +21,10 @@
 # My dump dir
 /ehhhhh
 
+# Stuff examples produce
+/examples/imgui.ini
+/examples/test.png
+
 # Emitted C artifacts
 *.o
 *.c
