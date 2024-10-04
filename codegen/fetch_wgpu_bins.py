@@ -81,6 +81,12 @@ ALIASES = {
 def fix_name(name: str) -> str:
     return ALIASES.get(name, name)
 
+def fix_arch(name: str) -> str:
+    if IS_WINDOWS:
+        return fix_name(name) + "-msvc"
+    else:
+        return fix_name(name)
+
 
 BASE_URL = "https://github.com/gfx-rs/wgpu-native/releases/download/"
 VERSION = "22.1.0.5"
@@ -88,7 +94,7 @@ VERSION = "22.1.0.5"
 SYSNAME = uname().system.lower()
 IS_WINDOWS = SYSNAME == "windows" or ("microsoft" in uname().release.lower())
 OS = fix_name("windows" if IS_WINDOWS else SYSNAME)
-ARCH = fix_name(uname().machine.lower())
+ARCH = fix_arch(uname().machine.lower())
 
 
 def make_url(osname: str, arch: str) -> str:
