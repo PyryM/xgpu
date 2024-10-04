@@ -83,7 +83,7 @@ def fix_name(name: str) -> str:
 
 
 BASE_URL = "https://github.com/gfx-rs/wgpu-native/releases/download/"
-VERSION = "22.1.0.1"
+VERSION = "22.1.0.5"
 
 SYSNAME = uname().system.lower()
 IS_WINDOWS = SYSNAME == "windows" or ("microsoft" in uname().release.lower())
@@ -117,13 +117,13 @@ else:
     unzip_to(make_url("macos", "aarch64"), f"{UNZIP_PATH}_ARM")
 
 LIBS = [
-    (f"{UNZIP_PATH}/{lib.src}", f"xgpu/{lib.dest}")
+    (f"{UNZIP_PATH}/lib/{lib.src}", f"xgpu/{lib.dest}")
     for lib in SYSLIBS.get(OS, [Lib("libwgpu_native.so")])
 ]
 
 COPIES = [
-    (f"{UNZIP_PATH}/webgpu.h", f"{INCLUDE_PATH}/webgpu.h"),
-    (f"{UNZIP_PATH}/wgpu.h", f"{INCLUDE_PATH}/wgpu.h"),
+    (f"{UNZIP_PATH}/include/webgpu/webgpu.h", f"{INCLUDE_PATH}/webgpu.h"),
+    (f"{UNZIP_PATH}/include/wgpu/wgpu.h", f"{INCLUDE_PATH}/wgpu.h"),
     *LIBS,
 ]
 
