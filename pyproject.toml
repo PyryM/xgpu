@@ -73,7 +73,8 @@ manylinux-x86_64-image = "manylinux_2_28"
 before-build = "pip install cffi setuptools && cd xgpu && python _build_ext.py"
 
 # Skip 32-bit builds, musl, etc
-skip = ["*-win32", "*-manylinux_i686", "*musl*"]
+# Skipping pypy builds because of: https://github.com/python-cffi/cffi/issues/117
+skip = ["*-win32", "*-manylinux_i686", "*musl*", "pp*"]
 
 # just make sure the library imports for now
 test-command = 'python -c "import xgpu"'
