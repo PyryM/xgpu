@@ -70,7 +70,7 @@ ignore = [
 [tool.cibuildwheel]
 # wgpu-native does not build with older manylinux
 manylinux-x86_64-image = "manylinux_2_28"
-before-build = "pip install cffi && cd xgpu && python _build_ext.py"
+before-build = "pip install cffi setuptools && cd xgpu && python _build_ext.py"
 
 # Skip 32-bit builds, musl, etc
 skip = ["*-win32", "*-manylinux_i686", "*musl*"]
