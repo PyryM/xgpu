@@ -1,17 +1,17 @@
 import time
 
 
-def main():
+def main() -> None:
     import wgpu
 
-    def print_props(props):
+    def print_props(props) -> None:
         print(f"{props['device']} [{props['backend_type']}], {props['description']}")
 
-    def print_features(features):
+    def print_features(features) -> None:
         flist = sorted([str(f) for f in features])
         print("Features:", ", ".join(flist))
 
-    def print_limits(limits):
+    def print_limits(limits) -> None:
         print("Limits:")
         for k in limits:
             print(f"{k} -> {limits[k]}")

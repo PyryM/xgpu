@@ -2,18 +2,18 @@ import time
 from typing import List
 
 
-def main():
+def main() -> None:
     import xgpu
     import xgpu.extensions.helpers as xgutils
 
-    def print_props(props: xgpu.AdapterInfo):
+    def print_props(props: xgpu.AdapterInfo) -> None:
         print(f"{props.device} [{props.backendType.name}], {props.description}")
 
-    def print_features(features: List[xgpu.FeatureName]):
+    def print_features(features: List[xgpu.FeatureName]) -> None:
         flist = sorted([f.name for f in features])
         print("Features:", ", ".join(flist))
 
-    def print_limits(limits: xgpu.Limits):
+    def print_limits(limits: xgpu.Limits) -> None:
         print("Limits:")
         for k in dir(limits):
             if not k.startswith("_"):

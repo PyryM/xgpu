@@ -10,15 +10,15 @@ from xgpu.extensions.imgui_renderer import ImguiWindow, XGPUImguiRenderer
 
 
 class IgWindow:
-    def __init__(self, title: str, open=True):
+    def __init__(self, title: str, open: bool=True):
         self.open = open
         self.title = title
         self.expand = True
 
-    def content(self):
+    def content(self) -> None:
         pass
 
-    def render(self):
+    def render(self) -> None:
         if not self.open:
             return
         self.expand, self.open = imgui.begin(self.title, True)
@@ -31,17 +31,17 @@ def undent(text: str) -> str:
     return "\n".join(line.strip() for line in text.split("\n"))
 
 
-def text_tab(title: str, content: str):
+def text_tab(title: str, content: str) -> None:
     with imgui.begin_tab_item(title) as item:
         if item.selected:
             imgui.text(undent(content))
 
 
 class AboutWindow(IgWindow):
-    def __init__(self, open=True):
+    def __init__(self, open: bool=True):
         super().__init__("About XGPU", open)
 
-    def content(self):
+    def content(self) -> None:
         with imgui.begin_tab_bar("MyTabBar") as tab_bar:
             if tab_bar.opened:
                 text_tab(
@@ -65,7 +65,7 @@ class AboutWindow(IgWindow):
                 )
 
 
-def main():
+def main() -> None:
     WIDTH = 1024
     HEIGHT = 1024
 
