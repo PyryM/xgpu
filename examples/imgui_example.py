@@ -10,7 +10,7 @@ from xgpu.extensions.imgui_renderer import ImguiWindow, XGPUImguiRenderer
 
 
 class IgWindow:
-    def __init__(self, title: str, open: bool=True):
+    def __init__(self, title: str, open: bool = True):
         self.open = open
         self.title = title
         self.expand = True
@@ -38,7 +38,7 @@ def text_tab(title: str, content: str) -> None:
 
 
 class AboutWindow(IgWindow):
-    def __init__(self, open: bool=True):
+    def __init__(self, open: bool = True):
         super().__init__("About XGPU", open)
 
     def content(self) -> None:

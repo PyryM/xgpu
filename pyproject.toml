@@ -43,7 +43,7 @@ xgpu = [
 target-version = "py37"
 respect-gitignore = false
 line-length = 90
-exclude = [".venv", "xgpu/_build_ext.py", "build/"]
+exclude = [".venv", "xgpu/_build_ext.py", "build/", "examples/wgpu_comparisons/"]
 
 [tool.ruff.lint]
 select = [
@@ -62,8 +62,6 @@ select = [
 ignore = [
     "F403", # unable to detect undefined names with import *
     "E501", # Line too long ({width} > {limit} characters)
-    "ANN101",
-    "ANN102",
     "ANN204",
     "ANN401",
 ]
