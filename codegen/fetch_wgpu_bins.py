@@ -55,7 +55,7 @@ def download_file(url: str, local_path: str) -> None:
 
 
 class Lib:
-    def __init__(self, src: str, dest: Optional[str]=None):
+    def __init__(self, src: str, dest: Optional[str] = None):
         self.src = src
         self.dest = dest
         if self.dest is None:
@@ -80,6 +80,7 @@ ALIASES = {
 
 def fix_name(name: str) -> str:
     return ALIASES.get(name, name)
+
 
 def fix_arch(name: str) -> str:
     if IS_WINDOWS:

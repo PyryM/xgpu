@@ -144,7 +144,9 @@ def main() -> None:
         bindGroupLayouts=[bind_factory.layout, bind_factory.layout]
     )
 
-    window_tex_format = get_preferred_format(adapter, surface) #xg.TextureFormat.BGRA8Unorm
+    window_tex_format = get_preferred_format(
+        adapter, surface
+    )  # xg.TextureFormat.BGRA8Unorm
     print("Window tex format:", window_tex_format.name)
 
     window.configure_surface(device, window_tex_format)

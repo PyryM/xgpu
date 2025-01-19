@@ -43,6 +43,7 @@ xgpu = [
 target-version = "py37"
 respect-gitignore = false
 line-length = 90
+exclude = [".venv", "xgpu/_build_ext.py"]
 
 [tool.ruff.lint]
 select = [

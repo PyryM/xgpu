@@ -247,7 +247,9 @@ def main() -> None:
         bindGroupLayouts=[view_bind_factory.layout, model_bind_factory.layout]
     )
 
-    window_tex_format = get_preferred_format(adapter, surface) #xg.TextureFormat.BGRA8Unorm
+    window_tex_format = get_preferred_format(
+        adapter, surface
+    )  # xg.TextureFormat.BGRA8Unorm
     print("Window tex format:", window_tex_format.name)
 
     window.configure_surface(device, window_tex_format)
@@ -274,7 +276,9 @@ def main() -> None:
         writeMask=xg.ColorWriteMask.All,
     )
 
-    vertex_layout, vbuff, ibuff, vcount, icount = load_geometry_buffers(device, "assets/cat.obj")
+    vertex_layout, vbuff, ibuff, vcount, icount = load_geometry_buffers(
+        device, "assets/cat.obj"
+    )
 
     render_pipeline = device.createRenderPipeline(
         layout=pipeline_layout,

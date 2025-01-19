@@ -8662,7 +8662,7 @@ _callback_map_DeviceLostCallback = CBMap()
 
 
 @ffi.def_extern()
-def _raw_callback_DeviceLostCallback(reason, message, userdata):  # noqa
+def _raw_callback_DeviceLostCallback(reason, message, userdata):  # noqa # fmt: skip
     idx = _cast_userdata(userdata)
     cb = _callback_map_DeviceLostCallback.get(idx)
     if cb is not None:
@@ -8684,7 +8684,7 @@ _callback_map_ErrorCallback = CBMap()
 
 
 @ffi.def_extern()
-def _raw_callback_ErrorCallback(type, message, userdata):  # noqa
+def _raw_callback_ErrorCallback(type, message, userdata):  # noqa # fmt: skip
     idx = _cast_userdata(userdata)
     cb = _callback_map_ErrorCallback.get(idx)
     if cb is not None:
@@ -8706,7 +8706,7 @@ _callback_map_AdapterRequestDeviceCallback = CBMap()
 
 
 @ffi.def_extern()
-def _raw_callback_AdapterRequestDeviceCallback(status, device, message, userdata):  # noqa
+def _raw_callback_AdapterRequestDeviceCallback(status, device, message, userdata):  # noqa # fmt: skip
     idx = _cast_userdata(userdata)
     cb = _callback_map_AdapterRequestDeviceCallback.get(idx)
     if cb is not None:
@@ -8732,7 +8732,7 @@ _callback_map_BufferMapAsyncCallback = CBMap()
 
 
 @ffi.def_extern()
-def _raw_callback_BufferMapAsyncCallback(status, userdata):  # noqa
+def _raw_callback_BufferMapAsyncCallback(status, userdata):  # noqa # fmt: skip
     idx = _cast_userdata(userdata)
     cb = _callback_map_BufferMapAsyncCallback.get(idx)
     if cb is not None:
@@ -8754,9 +8754,7 @@ _callback_map_DeviceCreateComputePipelineAsyncCallback = CBMap()
 
 
 @ffi.def_extern()
-def _raw_callback_DeviceCreateComputePipelineAsyncCallback(
-    status, pipeline, message, userdata
-):
+def _raw_callback_DeviceCreateComputePipelineAsyncCallback(status, pipeline, message, userdata):  # noqa # fmt: skip
     idx = _cast_userdata(userdata)
     cb = _callback_map_DeviceCreateComputePipelineAsyncCallback.get(idx)
     if cb is not None:
@@ -8785,9 +8783,7 @@ _callback_map_DeviceCreateRenderPipelineAsyncCallback = CBMap()
 
 
 @ffi.def_extern()
-def _raw_callback_DeviceCreateRenderPipelineAsyncCallback(
-    status, pipeline, message, userdata
-):
+def _raw_callback_DeviceCreateRenderPipelineAsyncCallback(status, pipeline, message, userdata):  # noqa # fmt: skip
     idx = _cast_userdata(userdata)
     cb = _callback_map_DeviceCreateRenderPipelineAsyncCallback.get(idx)
     if cb is not None:
@@ -8816,7 +8812,7 @@ _callback_map_InstanceRequestAdapterCallback = CBMap()
 
 
 @ffi.def_extern()
-def _raw_callback_InstanceRequestAdapterCallback(status, adapter, message, userdata):  # noqa
+def _raw_callback_InstanceRequestAdapterCallback(status, adapter, message, userdata):  # noqa # fmt: skip
     idx = _cast_userdata(userdata)
     cb = _callback_map_InstanceRequestAdapterCallback.get(idx)
     if cb is not None:
@@ -8844,7 +8840,7 @@ _callback_map_QueueOnSubmittedWorkDoneCallback = CBMap()
 
 
 @ffi.def_extern()
-def _raw_callback_QueueOnSubmittedWorkDoneCallback(status, userdata):  # noqa
+def _raw_callback_QueueOnSubmittedWorkDoneCallback(status, userdata):  # noqa # fmt: skip
     idx = _cast_userdata(userdata)
     cb = _callback_map_QueueOnSubmittedWorkDoneCallback.get(idx)
     if cb is not None:
@@ -8866,9 +8862,7 @@ _callback_map_ShaderModuleGetCompilationInfoCallback = CBMap()
 
 
 @ffi.def_extern()
-def _raw_callback_ShaderModuleGetCompilationInfoCallback(
-    status, compilationInfo, userdata
-):
+def _raw_callback_ShaderModuleGetCompilationInfoCallback(status, compilationInfo, userdata):  # noqa # fmt: skip
     idx = _cast_userdata(userdata)
     cb = _callback_map_ShaderModuleGetCompilationInfoCallback.get(idx)
     if cb is not None:
@@ -8896,7 +8890,7 @@ _callback_map_LogCallback = CBMap()
 
 
 @ffi.def_extern()
-def _raw_callback_LogCallback(level, message, userdata):  # noqa
+def _raw_callback_LogCallback(level, message, userdata):  # noqa # fmt: skip
     idx = _cast_userdata(userdata)
     cb = _callback_map_LogCallback.get(idx)
     if cb is not None:

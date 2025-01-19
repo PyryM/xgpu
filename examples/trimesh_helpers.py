@@ -7,8 +7,10 @@ import trimesh
 import xgpu
 from xgpu.extensions import auto_vertex_layout
 
+
 def euler_matrix(rx: float, ry: float, rz: float) -> NDArray:
     return trimesh.transformations.euler_matrix(rx, ry, rz)[0:3, 0:3]
+
 
 def mesh_to_struct(mesh: trimesh.Trimesh) -> Tuple[NDArray, NDArray]:
     """
@@ -57,6 +59,7 @@ def simple_vertex_layout() -> xgpu.VertexBufferLayout:
             xgpu.VertexFormat.Float32x2,  # texcoord
         ]
     )
+
 
 def load_mesh_simple(fn: str) -> Tuple[NDArray, NDArray, xgpu.VertexBufferLayout]:
     mesh: trimesh.Trimesh = trimesh.load_mesh(fn)

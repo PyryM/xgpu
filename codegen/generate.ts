@@ -1189,7 +1189,7 @@ class CallbackWrapper implements Emittable {
 ${mapName} = CBMap()
 
 @ffi.def_extern()
-def ${this.rawName()}(${rawArglist.join(", ")}): # noqa
+def ${this.rawName()}(${rawArglist.join(", ")}): # noqa # fmt: skip
     idx = _cast_userdata(userdata)
     cb = ${mapName}.get(idx)
     if cb is not None:

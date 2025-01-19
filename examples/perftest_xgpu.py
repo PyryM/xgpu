@@ -296,7 +296,7 @@ def main() -> None:
             render_pass.setBindGroup(1, bg, [])
             render_pass.drawIndexed(12 * 3, 1, 0, 0, 0)
         render_pass.end()
-        #render_pass.release()
+        # render_pass.release()
 
         queue.submit([command_encoder.finish()])
 
