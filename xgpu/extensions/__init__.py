@@ -5,7 +5,8 @@ from .helpers import (
     get_preferred_format,
     startup,
 )
-from .wrappers import BinderBuilder, XAdapter, XDevice, XSurface, auto_vertex_layout
+from .layoutbuilder import Binder, BinderBuilder, TypedBindGroup, auto_vertex_layout
+from .wrappers import XAdapter, XDevice, XSurface
 
 __all__ = [
     "get_device",
@@ -13,7 +14,9 @@ __all__ = [
     "enable_logging",
     "create_default_view",
     "get_preferred_format",
+    "Binder",
     "BinderBuilder",
+    "TypedBindGroup",
     "XAdapter",
     "XDevice",
     "XSurface",
