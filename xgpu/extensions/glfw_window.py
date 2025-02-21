@@ -139,9 +139,9 @@ class GLFWWindow:
         print("Configured surface?")
 
     def get_depth_buffer(self) -> xgpu.Texture:
-        assert (
-            self.depth_buffer is not None
-        ), "No depth buffer created! Configure surface first!"
+        assert self.depth_buffer is not None, (
+            "No depth buffer created! Configure surface first!"
+        )
         return self.depth_buffer
 
     def get_surface(self, instance: Instance) -> XSurface:

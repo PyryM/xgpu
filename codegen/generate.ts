@@ -1,14 +1,13 @@
 import { readFileSync, writeFileSync } from "fs";
 import {
   cleanup,
-  removePrefix,
   removePrefixCaseInsensitive,
   sanitizeIdent,
   quoted,
   cleanHeader,
-  recase,
   indent2,
   indent,
+  removeComments,
   titleCase,
 } from "./stringmanip";
 import { docs } from "./extract_docs";
@@ -21,7 +20,7 @@ function readHeader(fn: string): string {
   // (e.g., "void*" -> "void *")
   header = header.replaceAll(/([A-Za-z0-9_])+\*/g, (match) => {
     const ret = `${match.slice(0, match.length - 1)} *`;
-    console.log(match, "->", ret);
+    //console.log(match, "->", ret);
     return ret;
   });
   return header;
@@ -287,7 +286,7 @@ function convertEnumValuesToConstants(
         );
       }
       nVal = eval(val);
-      console.log("Evaled to:", val, "->", nVal);
+      //console.log("Evaled to:", val, "->", nVal);
       if (!isFinite(nVal)) {
         console.log("Could not parse enum entry:", name, val);
         nVal = 0;
@@ -639,23 +638,25 @@ class ApiInfo {
 
   findBitflags(src: string) {
     const reg =
-      /typedef WGPUFlags ([A-Za-z0-9]*)Flags(?: WGPU_ENUM_ATTRIBUTE)?;/g;
+      /typedef WGPUFlags ([A-Za-z0-9]*)(?: WGPU_ENUM_ATTRIBUTE)?;/g;
+
+    let etypes: Record<string, CEnum> = {};
     for (const [_wholeMatch, enumType] of src.matchAll(reg)) {
-      let ee = this.types.get(enumType);
-      if (ee === undefined || !(ee instanceof CEnum)) {
-        // hack to deal with special case of
-        // "WGPUInstanceFlag" -> "WGPUInstanceFlags"
-        ee = this.types.get(enumType + "Flag");
-        if (ee === undefined || !(ee instanceof CEnum)) {
-          console.log(`Couldn't find enum "${enumType}" or "${enumType}Flag"!`);
-          console.log("Whole match:", _wholeMatch);
-          continue;
-        }
-      }
-      const cname = `${enumType}Flags`;
+      console.log(`===== FOUND FLAGS: ${enumType}`)
+      const cname = `${enumType}`;
       const pyName = toPyName(cname, true);
 
-      this.types.set(cname, new CFlags(cname, pyName, ee));
+      const etype = new CEnum(`__fake_flags_${cname}`, `${pyName}Flags`, []);
+      etypes[cname] = etype;
+      this.types.set(`__fake_flags_${cname}`, etype);
+      this.types.set(cname, new CFlags(cname, pyName, etype));
+    }
+
+    const val_reg = /static\s+const\s+([A-Za-z0-9]*)\s+[A-Za-z0-9]*_([A-Za-z0-9]*)\s*=\s*([A-Za-z0-9]*)\s*;/g
+    for (const [_wholeMatch, flagName, valName, valStr] of src.matchAll(val_reg)) {
+      console.log(`===== FOUND VAL: ${flagName}.${valName} = '${valStr}'`);
+
+      etypes[flagName].mergeValues([{name: valName, val: valStr}])
     }
   }
 
@@ -680,7 +681,7 @@ class ApiInfo {
         // assume this is a (count, ptr) combo
         const wrapperName = this.getListWrapper(next.ctype);
         const lname = quoted(wrapperName);
-        const maybeList = pyUnion(lname, pyList(next.ctype.pyName));
+        const maybeList = pyUnion(lname, pyList(quoted(next.ctype.pyName)));
         pyArgs.push(`${next.name}: ${maybeList}`);
         staging.push(`if isinstance(${next.name}, list):`);
         staging.push(`    ${next.name}_staged = ${wrapperName}(${next.name})`);
@@ -1081,8 +1082,9 @@ class COpaque implements CType {
   }
 
   addFunc(func: CFunc): void {
+    //console.log(`Adding ${func.name} to ${this.cName}`);
     let pyFname = toPyName(removePrefixCaseInsensitive(func.name, this.cName));
-    if (pyFname === "release" || pyFname === "reference") {
+    if (pyFname === "release" || pyFname === "addRef") {
       pyFname = `_${pyFname}`;
     }
     this.funcs.set(pyFname, func);
@@ -1097,7 +1099,7 @@ class COpaque implements CType {
     for (const [pyFname, func] of this.funcs.entries()) {
       funcdefs.push(this.emitFunc(api, pyFname, func));
     }
-    const reffer = this.funcs.get("_reference");
+    const reffer = this.funcs.get("_addRef");
     const releaser = this.funcs.get("_release");
     if (reffer === undefined || releaser === undefined) {
       throw new Error(`Opaque ${this.cName} missing reference or release!`);
@@ -1346,9 +1348,8 @@ ${indent(1, conlines.join("\n"))}
 
 const api = new ApiInfo();
 
-const SRC_NO_COMMENTS = SRC.split("\n")
-  .filter((line) => !line.trim().startsWith("//"))
-  .join("\n");
+const SRC_NO_COMMENTS = removeComments(SRC);
+//console.log(SRC_NO_COMMENTS);
 api.parse(SRC_NO_COMMENTS);
 
 const pyFrags: string[] = [];

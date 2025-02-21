@@ -182,7 +182,7 @@ def infer_layout(format: TextureFormat, shape: Tuple[int, int, int]) -> TextureD
     (block_footprint, (blockwidth, blockheight)) = info
     if (shape[0] % blockwidth != 0) or (shape[1] % blockheight != 0):
         raise ValueError(
-            f"Shape {shape} is not a multiple of the block size {(blockwidth,blockheight)}"
+            f"Shape {shape} is not a multiple of the block size {(blockwidth, blockheight)}"
         )
     texel_cols = shape[0] // blockwidth
     texel_rows = shape[1] // blockheight

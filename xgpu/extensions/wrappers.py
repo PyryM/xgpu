@@ -409,9 +409,9 @@ class VertexLayoutBuilder:
         if size is None:
             size = format_size
         else:
-            assert (
-                size >= format_size
-            ), f"Declared size {size} is smaller than size({format.name}): {format_size}"
+            assert size >= format_size, (
+                f"Declared size {size} is smaller than size({format.name}): {format_size}"
+            )
 
         self.attributes.append(
             xg.vertexAttribute(
@@ -427,9 +427,9 @@ class VertexLayoutBuilder:
         """Produce a vertex buffer layout"""
         if self.stride is not None:
             stride = self.stride
-            assert (
-                stride >= self.offset
-            ), f"Declared stride {stride} is smaller than vertex size {self.offset}"
+            assert stride >= self.offset, (
+                f"Declared stride {stride} is smaller than vertex size {self.offset}"
+            )
         else:
             stride = self.offset
         return xg.vertexBufferLayout(

@@ -21,6 +21,14 @@ function deleteStrings(line: string, deletions: string[]): string {
   return line;
 }
 
+export function removeComments(src: string): string {
+  const MULTILINE_COMMENT = /\/\*[^*]*\*+(?:[^/*][^*]*\*+)*\//g;  
+
+  return src.replaceAll(MULTILINE_COMMENT, "").split("\n")
+    .filter((line) => !line.trim().startsWith("//"))
+    .join("\n");
+}
+
 export function cleanHeader(src: string, deletions: string[]): string {
   const lines = src.replaceAll("\r", "").split("\n");
   let frags: string[] = [];
@@ -60,6 +68,9 @@ export function quoted(s: string): string {
 export function sanitizeIdent(ident: string): string {
   if (!ident.match(/^[a-zA-Z]/) || ident === "None") {
     ident = "_" + ident;
+  }
+  if(ident === "True" || ident === "False") {
+    return "_" + ident;
   }
   return ident;
 }

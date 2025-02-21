@@ -165,16 +165,17 @@ def getVersionStr() -> str:
 
 # Basic types
 class AdapterType(IntEnum):
-    DiscreteGPU = 0x00000000
-    IntegratedGPU = 0x00000001
-    CPU = 0x00000002
-    Unknown = 0x00000003
+    DiscreteGPU = 0x00000001
+    IntegratedGPU = 0x00000002
+    CPU = 0x00000003
+    Unknown = 0x00000004
 
 
 class AddressMode(IntEnum):
-    Repeat = 0x00000000
-    MirrorRepeat = 0x00000001
-    ClampToEdge = 0x00000002
+    Undefined = 0x00000000
+    ClampToEdge = 0x00000001
+    Repeat = 0x00000002
+    MirrorRepeat = 0x00000003
 
 
 class BackendType(IntEnum):
@@ -190,77 +191,78 @@ class BackendType(IntEnum):
 
 
 class BlendFactor(IntEnum):
-    Zero = 0x00000000
-    One = 0x00000001
-    Src = 0x00000002
-    OneMinusSrc = 0x00000003
-    SrcAlpha = 0x00000004
-    OneMinusSrcAlpha = 0x00000005
-    Dst = 0x00000006
-    OneMinusDst = 0x00000007
-    DstAlpha = 0x00000008
-    OneMinusDstAlpha = 0x00000009
-    SrcAlphaSaturated = 0x0000000A
-    Constant = 0x0000000B
-    OneMinusConstant = 0x0000000C
+    Undefined = 0x00000000
+    Zero = 0x00000001
+    One = 0x00000002
+    Src = 0x00000003
+    OneMinusSrc = 0x00000004
+    SrcAlpha = 0x00000005
+    OneMinusSrcAlpha = 0x00000006
+    Dst = 0x00000007
+    OneMinusDst = 0x00000008
+    DstAlpha = 0x00000009
+    OneMinusDstAlpha = 0x0000000A
+    SrcAlphaSaturated = 0x0000000B
+    Constant = 0x0000000C
+    OneMinusConstant = 0x0000000D
+    Src1 = 0x0000000E
+    OneMinusSrc1 = 0x0000000F
+    Src1Alpha = 0x00000010
+    OneMinusSrc1Alpha = 0x00000011
 
 
 class BlendOperation(IntEnum):
-    Add = 0x00000000
-    Subtract = 0x00000001
-    ReverseSubtract = 0x00000002
-    Min = 0x00000003
-    Max = 0x00000004
+    Undefined = 0x00000000
+    Add = 0x00000001
+    Subtract = 0x00000002
+    ReverseSubtract = 0x00000003
+    Min = 0x00000004
+    Max = 0x00000005
 
 
 class BufferBindingType(IntEnum):
-    Undefined = 0x00000000
-    Uniform = 0x00000001
-    Storage = 0x00000002
-    ReadOnlyStorage = 0x00000003
-
-
-class BufferMapAsyncStatus(IntEnum):
-    Success = 0x00000000
-    ValidationError = 0x00000001
-    Unknown = 0x00000002
-    DeviceLost = 0x00000003
-    DestroyedBeforeCallback = 0x00000004
-    UnmappedBeforeCallback = 0x00000005
-    MappingAlreadyPending = 0x00000006
-    OffsetOutOfRange = 0x00000007
-    SizeOutOfRange = 0x00000008
+    BindingNotUsed = 0x00000000
+    Undefined = 0x00000001
+    Uniform = 0x00000002
+    Storage = 0x00000003
+    ReadOnlyStorage = 0x00000004
 
 
 class BufferMapState(IntEnum):
-    Unmapped = 0x00000000
-    Pending = 0x00000001
-    Mapped = 0x00000002
+    Unmapped = 0x00000001
+    Pending = 0x00000002
+    Mapped = 0x00000003
+
+
+class CallbackMode(IntEnum):
+    WaitAnyOnly = 0x00000001
+    AllowProcessEvents = 0x00000002
+    AllowSpontaneous = 0x00000003
 
 
 class CompareFunction(IntEnum):
     Undefined = 0x00000000
     Never = 0x00000001
     Less = 0x00000002
-    LessEqual = 0x00000003
-    Greater = 0x00000004
-    GreaterEqual = 0x00000005
-    Equal = 0x00000006
-    NotEqual = 0x00000007
+    Equal = 0x00000003
+    LessEqual = 0x00000004
+    Greater = 0x00000005
+    NotEqual = 0x00000006
+    GreaterEqual = 0x00000007
     Always = 0x00000008
 
 
 class CompilationInfoRequestStatus(IntEnum):
-    Success = 0x00000000
-    Error = 0x00000001
-    DeviceLost = 0x00000002
-    Unknown = 0x00000003
+    Success = 0x00000001
+    InstanceDropped = 0x00000002
+    Error = 0x00000003
+    Unknown = 0x00000004
 
 
 class CompilationMessageType(IntEnum):
-    Error = 0x00000000
-    Warning = 0x00000001
-    Info = 0x00000002
+    Error = 0x00000001
+    Warning = 0x00000002
+    Info = 0x00000003
 
 
 class CompositeAlphaMode(IntEnum):
@@ -272,38 +274,44 @@ class CompositeAlphaMode(IntEnum):
 
 
 class CreatePipelineAsyncStatus(IntEnum):
-    Success = 0x00000000
-    ValidationError = 0x00000001
-    InternalError = 0x00000002
-    DeviceLost = 0x00000003
-    DeviceDestroyed = 0x00000004
+    Success = 0x00000001
+    InstanceDropped = 0x00000002
+    ValidationError = 0x00000003
+    InternalError = 0x00000004
     Unknown = 0x00000005
 
 
 class CullMode(IntEnum):
-    _None = 0x00000000
-    Front = 0x00000001
-    Back = 0x00000002
+    Undefined = 0x00000000
+    _None = 0x00000001
+    Front = 0x00000002
+    Back = 0x00000003
 
 
 class DeviceLostReason(IntEnum):
     Unknown = 0x00000001
     Destroyed = 0x00000002
+    InstanceDropped = 0x00000003
+    FailedCreation = 0x00000004
 
 
 class ErrorFilter(IntEnum):
-    Validation = 0x00000000
-    OutOfMemory = 0x00000001
-    Internal = 0x00000002
-
-
-class ErrorType(IntEnum):
-    NoError = 0x00000000
     Validation = 0x00000001
     OutOfMemory = 0x00000002
     Internal = 0x00000003
-    Unknown = 0x00000004
-    DeviceLost = 0x00000005
+
+
+class ErrorType(IntEnum):
+    NoError = 0x00000001
+    Validation = 0x00000002
+    OutOfMemory = 0x00000003
+    Internal = 0x00000004
+    Unknown = 0x00000005
+
+
+class FeatureLevel(IntEnum):
+    Compatibility = 0x00000001
+    Core = 0x00000002
 
 
 class FeatureName(IntEnum):
@@ -312,13 +320,18 @@ class FeatureName(IntEnum):
     Depth32FloatStencil8 = 0x00000002
     TimestampQuery = 0x00000003
     TextureCompressionBC = 0x00000004
-    TextureCompressionETC2 = 0x00000005
-    TextureCompressionASTC = 0x00000006
-    IndirectFirstInstance = 0x00000007
-    ShaderF16 = 0x00000008
-    RG11B10UfloatRenderable = 0x00000009
-    BGRA8UnormStorage = 0x0000000A
-    Float32Filterable = 0x0000000B
+    TextureCompressionBCSliced3D = 0x00000005
+    TextureCompressionETC2 = 0x00000006
+    TextureCompressionASTC = 0x00000007
+    TextureCompressionASTCSliced3D = 0x00000008
+    IndirectFirstInstance = 0x00000009
+    ShaderF16 = 0x0000000A
+    RG11B10UfloatRenderable = 0x0000000B
+    BGRA8UnormStorage = 0x0000000C
+    Float32Filterable = 0x0000000D
+    Float32Blendable = 0x0000000E
+    ClipDistances = 0x0000000F
+    DualSourceBlending = 0x00000010
     PushConstants = 0x00030001
     TextureAdapterSpecificFormatFeatures = 0x00030002
     MultiDrawIndirect = 0x00030003
@@ -334,6 +347,7 @@ class FeatureName(IntEnum):
     MappablePrimaryBuffers = 0x0003000E
     BufferBindingArray = 0x0003000F
     UniformBufferAndStorageTextureArrayNonUniformIndexing = 0x00030010
+    SpirvShaderPassthrough = 0x00030017
     VertexAttribute64bit = 0x00030019
     TextureFormatNv12 = 0x0003001A
     RayTracingAccelerationStructure = 0x0003001B
@@ -342,16 +356,23 @@ class FeatureName(IntEnum):
     ShaderI16 = 0x0003001E
     ShaderPrimitiveIndex = 0x0003001F
     ShaderEarlyDepthTest = 0x00030020
+    Subgroup = 0x00030021
+    SubgroupVertex = 0x00030022
+    SubgroupBarrier = 0x00030023
+    TimestampQueryInsideEncoders = 0x00030024
+    TimestampQueryInsidePasses = 0x00030025
 
 
 class FilterMode(IntEnum):
-    Nearest = 0x00000000
-    Linear = 0x00000001
+    Undefined = 0x00000000
+    Nearest = 0x00000001
+    Linear = 0x00000002
 
 
 class FrontFace(IntEnum):
-    CCW = 0x00000000
-    CW = 0x00000001
+    Undefined = 0x00000000
+    CCW = 0x00000001
+    CW = 0x00000002
 
 
 class IndexFormat(IntEnum):
@@ -362,13 +383,34 @@ class IndexFormat(IntEnum):
 
 class LoadOp(IntEnum):
     Undefined = 0x00000000
-    Clear = 0x00000001
-    Load = 0x00000002
+    Load = 0x00000001
+    Clear = 0x00000002
+
+
+class MapAsyncStatus(IntEnum):
+    Success = 0x00000001
+    InstanceDropped = 0x00000002
+    Error = 0x00000003
+    Aborted = 0x00000004
+    Unknown = 0x00000005
 
 
 class MipmapFilterMode(IntEnum):
-    Nearest = 0x00000000
-    Linear = 0x00000001
+    Undefined = 0x00000000
+    Nearest = 0x00000001
+    Linear = 0x00000002
+
+
+class OptionalBool(IntEnum):
+    _False = 0x00000000
+    _True = 0x00000001
+    Undefined = 0x00000002
+
+
+class PopErrorScopeStatus(IntEnum):
+    Success = 0x00000001
+    InstanceDropped = 0x00000002
+    EmptyStack = 0x00000003
 
 
 class PowerPreference(IntEnum):
@@ -378,63 +420,63 @@ class PowerPreference(IntEnum):
 
 
 class PresentMode(IntEnum):
-    Fifo = 0x00000000
-    FifoRelaxed = 0x00000001
-    Immediate = 0x00000002
-    Mailbox = 0x00000003
+    Undefined = 0x00000000
+    Fifo = 0x00000001
+    FifoRelaxed = 0x00000002
+    Immediate = 0x00000003
+    Mailbox = 0x00000004
 
 
 class PrimitiveTopology(IntEnum):
-    PointList = 0x00000000
-    LineList = 0x00000001
-    LineStrip = 0x00000002
-    TriangleList = 0x00000003
-    TriangleStrip = 0x00000004
+    Undefined = 0x00000000
+    PointList = 0x00000001
+    LineList = 0x00000002
+    LineStrip = 0x00000003
+    TriangleList = 0x00000004
+    TriangleStrip = 0x00000005
 
 
 class QueryType(IntEnum):
-    Occlusion = 0x00000000
-    Timestamp = 0x00000001
+    Occlusion = 0x00000001
+    Timestamp = 0x00000002
 
 
 class QueueWorkDoneStatus(IntEnum):
-    Success = 0x00000000
-    Error = 0x00000001
-    Unknown = 0x00000002
-    DeviceLost = 0x00000003
+    Success = 0x00000001
+    InstanceDropped = 0x00000002
+    Error = 0x00000003
+    Unknown = 0x00000004
 
 
 class RequestAdapterStatus(IntEnum):
-    Success = 0x00000000
-    Unavailable = 0x00000001
-    Error = 0x00000002
-    Unknown = 0x00000003
+    Success = 0x00000001
+    InstanceDropped = 0x00000002
+    Unavailable = 0x00000003
+    Error = 0x00000004
+    Unknown = 0x00000005
 
 
 class RequestDeviceStatus(IntEnum):
-    Success = 0x00000000
-    Error = 0x00000001
-    Unknown = 0x00000002
+    Success = 0x00000001
+    InstanceDropped = 0x00000002
+    Error = 0x00000003
+    Unknown = 0x00000004
 
 
 class SType(IntEnum):
-    Invalid = 0x00000000
-    SurfaceDescriptorFromMetalLayer = 0x00000001
-    SurfaceDescriptorFromWindowsHWND = 0x00000002
-    SurfaceDescriptorFromXlibWindow = 0x00000003
-    SurfaceDescriptorFromCanvasHTMLSelector = 0x00000004
-    ShaderModuleSPIRVDescriptor = 0x00000005
-    ShaderModuleWGSLDescriptor = 0x00000006
-    PrimitiveDepthClipControl = 0x00000007
-    SurfaceDescriptorFromWaylandSurface = 0x00000008
-    SurfaceDescriptorFromAndroidNativeWindow = 0x00000009
-    SurfaceDescriptorFromXcbWindow = 0x0000000A
-    RenderPassDescriptorMaxDrawCount = 0x0000000F
+    ShaderSourceSPIRV = 0x00000001
+    ShaderSourceWGSL = 0x00000002
+    RenderPassMaxDrawCount = 0x00000003
+    SurfaceSourceMetalLayer = 0x00000004
+    SurfaceSourceWindowsHWND = 0x00000005
+    SurfaceSourceXlibWindow = 0x00000006
+    SurfaceSourceWaylandSurface = 0x00000007
+    SurfaceSourceAndroidNativeWindow = 0x00000008
+    SurfaceSourceXCBWindow = 0x00000009
     DeviceExtras = 0x00030001
-    RequiredLimitsExtras = 0x00030002
+    NativeLimits = 0x00030002
     PipelineLayoutExtras = 0x00030003
     ShaderModuleGLSLDescriptor = 0x00030004
-    SupportedLimitsExtras = 0x00030005
     InstanceExtras = 0x00030006
     BindGroupEntryExtras = 0x00030007
     BindGroupLayoutEntryExtras = 0x00030008
@@ -443,28 +485,36 @@ class SType(IntEnum):
 
 
 class SamplerBindingType(IntEnum):
-    Undefined = 0x00000000
-    Filtering = 0x00000001
-    NonFiltering = 0x00000002
-    Comparison = 0x00000003
+    BindingNotUsed = 0x00000000
+    Undefined = 0x00000001
+    Filtering = 0x00000002
+    NonFiltering = 0x00000003
+    Comparison = 0x00000004
+
+
+class Status(IntEnum):
+    Success = 0x00000001
+    Error = 0x00000002
 
 
 class StencilOperation(IntEnum):
-    Keep = 0x00000000
-    Zero = 0x00000001
-    Replace = 0x00000002
-    Invert = 0x00000003
-    IncrementClamp = 0x00000004
-    DecrementClamp = 0x00000005
-    IncrementWrap = 0x00000006
-    DecrementWrap = 0x00000007
+    Undefined = 0x00000000
+    Keep = 0x00000001
+    Zero = 0x00000002
+    Replace = 0x00000003
+    Invert = 0x00000004
+    IncrementClamp = 0x00000005
+    DecrementClamp = 0x00000006
+    IncrementWrap = 0x00000007
+    DecrementWrap = 0x00000008
 
 
 class StorageTextureAccess(IntEnum):
-    Undefined = 0x00000000
-    WriteOnly = 0x00000001
-    ReadOnly = 0x00000002
-    ReadWrite = 0x00000003
+    BindingNotUsed = 0x00000000
+    Undefined = 0x00000001
+    WriteOnly = 0x00000002
+    ReadOnly = 0x00000003
+    ReadWrite = 0x00000004
 
 
 class StoreOp(IntEnum):
@@ -474,24 +524,28 @@ class StoreOp(IntEnum):
 
 
 class SurfaceGetCurrentTextureStatus(IntEnum):
-    Success = 0x00000000
-    Timeout = 0x00000001
-    Outdated = 0x00000002
-    Lost = 0x00000003
-    OutOfMemory = 0x00000004
-    DeviceLost = 0x00000005
+    SuccessOptimal = 0x00000001
+    SuccessSuboptimal = 0x00000002
+    Timeout = 0x00000003
+    Outdated = 0x00000004
+    Lost = 0x00000005
+    OutOfMemory = 0x00000006
+    DeviceLost = 0x00000007
+    Error = 0x00000008
 
 
 class TextureAspect(IntEnum):
-    All = 0x00000000
-    StencilOnly = 0x00000001
-    DepthOnly = 0x00000002
+    Undefined = 0x00000000
+    All = 0x00000001
+    StencilOnly = 0x00000002
+    DepthOnly = 0x00000003
 
 
 class TextureDimension(IntEnum):
-    _1D = 0x00000000
-    _2D = 0x00000001
-    _3D = 0x00000002
+    Undefined = 0x00000000
+    _1D = 0x00000001
+    _2D = 0x00000002
+    _3D = 0x00000003
 
 
 class TextureFormat(IntEnum):
@@ -594,12 +648,13 @@ class TextureFormat(IntEnum):
 
 
 class TextureSampleType(IntEnum):
-    Undefined = 0x00000000
-    Float = 0x00000001
-    UnfilterableFloat = 0x00000002
-    Depth = 0x00000003
-    Sint = 0x00000004
-    Uint = 0x00000005
+    BindingNotUsed = 0x00000000
+    Undefined = 0x00000001
+    Float = 0x00000002
+    UnfilterableFloat = 0x00000003
+    Depth = 0x00000004
+    Sint = 0x00000005
+    Uint = 0x00000006
 
 
 class TextureViewDimension(IntEnum):
@@ -613,111 +668,69 @@ class TextureViewDimension(IntEnum):
 
 
 class VertexFormat(IntEnum):
-    Undefined = 0x00000000
-    Uint8x2 = 0x00000001
-    Uint8x4 = 0x00000002
-    Sint8x2 = 0x00000003
-    Sint8x4 = 0x00000004
-    Unorm8x2 = 0x00000005
-    Unorm8x4 = 0x00000006
-    Snorm8x2 = 0x00000007
-    Snorm8x4 = 0x00000008
-    Uint16x2 = 0x00000009
-    Uint16x4 = 0x0000000A
-    Sint16x2 = 0x0000000B
-    Sint16x4 = 0x0000000C
-    Unorm16x2 = 0x0000000D
-    Unorm16x4 = 0x0000000E
-    Snorm16x2 = 0x0000000F
-    Snorm16x4 = 0x00000010
-    Float16x2 = 0x00000011
-    Float16x4 = 0x00000012
-    Float32 = 0x00000013
-    Float32x2 = 0x00000014
-    Float32x3 = 0x00000015
-    Float32x4 = 0x00000016
-    Uint32 = 0x00000017
-    Uint32x2 = 0x00000018
-    Uint32x3 = 0x00000019
-    Uint32x4 = 0x0000001A
-    Sint32 = 0x0000001B
-    Sint32x2 = 0x0000001C
-    Sint32x3 = 0x0000001D
-    Sint32x4 = 0x0000001E
+    Uint8 = 0x00000001
+    Uint8x2 = 0x00000002
+    Uint8x4 = 0x00000003
+    Sint8 = 0x00000004
+    Sint8x2 = 0x00000005
+    Sint8x4 = 0x00000006
+    Unorm8 = 0x00000007
+    Unorm8x2 = 0x00000008
+    Unorm8x4 = 0x00000009
+    Snorm8 = 0x0000000A
+    Snorm8x2 = 0x0000000B
+    Snorm8x4 = 0x0000000C
+    Uint16 = 0x0000000D
+    Uint16x2 = 0x0000000E
+    Uint16x4 = 0x0000000F
+    Sint16 = 0x00000010
+    Sint16x2 = 0x00000011
+    Sint16x4 = 0x00000012
+    Unorm16 = 0x00000013
+    Unorm16x2 = 0x00000014
+    Unorm16x4 = 0x00000015
+    Snorm16 = 0x00000016
+    Snorm16x2 = 0x00000017
+    Snorm16x4 = 0x00000018
+    Float16 = 0x00000019
+    Float16x2 = 0x0000001A
+    Float16x4 = 0x0000001B
+    Float32 = 0x0000001C
+    Float32x2 = 0x0000001D
+    Float32x3 = 0x0000001E
+    Float32x4 = 0x0000001F
+    Uint32 = 0x00000020
+    Uint32x2 = 0x00000021
+    Uint32x3 = 0x00000022
+    Uint32x4 = 0x00000023
+    Sint32 = 0x00000024
+    Sint32x2 = 0x00000025
+    Sint32x3 = 0x00000026
+    Sint32x4 = 0x00000027
+    Unorm10_10_10_2 = 0x00000028
+    Unorm8x4BGRA = 0x00000029
 
 
 class VertexStepMode(IntEnum):
-    Vertex = 0x00000000
-    Instance = 0x00000001
-    VertexBufferNotUsed = 0x00000002
+    VertexBufferNotUsed = 0x00000000
+    Undefined = 0x00000001
+    Vertex = 0x00000002
+    Instance = 0x00000003
 
 
-class WGSLFeatureName(IntEnum):
-    Undefined = 0x00000000
+class WGSLLanguageFeatureName(IntEnum):
     ReadonlyAndReadwriteStorageTextures = 0x00000001
     Packed4x8IntegerDotProduct = 0x00000002
     UnrestrictedPointerParameters = 0x00000003
     PointerCompositeAccess = 0x00000004
 
 
-class BufferUsage(IntEnum):
-    _None = 0x00000000
-    MapRead = 0x00000001
-    MapWrite = 0x00000002
-    CopySrc = 0x00000004
-    CopyDst = 0x00000008
-    Index = 0x00000010
-    Vertex = 0x00000020
-    Uniform = 0x00000040
-    Storage = 0x00000080
-    Indirect = 0x00000100
-    QueryResolve = 0x00000200
-
-    def asflag(self) -> "BufferUsageFlags":
-        return BufferUsageFlags(self)
-
-
-class ColorWriteMask(IntEnum):
-    _None = 0x00000000
-    Red = 0x00000001
-    Green = 0x00000002
-    Blue = 0x00000004
-    Alpha = 0x00000008
-    All = 0x0000000F
-
-    def asflag(self) -> "ColorWriteMaskFlags":
-        return ColorWriteMaskFlags(self)
-
-
-class MapMode(IntEnum):
-    _None = 0x00000000
-    Read = 0x00000001
-    Write = 0x00000002
-
-    def asflag(self) -> "MapModeFlags":
-        return MapModeFlags(self)
-
-
-class ShaderStage(IntEnum):
-    _None = 0x00000000
-    Vertex = 0x00000001
-    Fragment = 0x00000002
-    Compute = 0x00000004
-
-    def asflag(self) -> "ShaderStageFlags":
-        return ShaderStageFlags(self)
-
-
-class TextureUsage(IntEnum):
-    _None = 0x00000000
-    CopySrc = 0x00000001
-    CopyDst = 0x00000002
-    TextureBinding = 0x00000004
-    StorageBinding = 0x00000008
-    RenderAttachment = 0x00000010
-
-    def asflag(self) -> "TextureUsageFlags":
-        return TextureUsageFlags(self)
+class WaitStatus(IntEnum):
+    Success = 0x00000001
+    TimedOut = 0x00000002
+    UnsupportedTimeout = 0x00000003
+    UnsupportedCount = 0x00000004
+    UnsupportedMixedSources = 0x00000005
 
 
 class LogLevel(IntEnum):
@@ -727,31 +740,6 @@ class LogLevel(IntEnum):
     Info = 0x00000003
     Debug = 0x00000004
     Trace = 0x00000005
-
-
-class InstanceBackend(IntEnum):
-    All = 0x00000000
-    Vulkan = 0x00000001
-    GL = 0x00000002
-    Metal = 0x00000004
-    DX12 = 0x00000008
-    DX11 = 0x00000010
-    BrowserWebGPU = 0x00000020
-    Primary = 0x0000002D
-    Secondary = 0x00000012
-
-    def asflag(self) -> "InstanceBackendFlags":
-        return InstanceBackendFlags(self)
-
-
-class InstanceFlag(IntEnum):
-    Default = 0x00000000
-    Debug = 0x00000001
-    Validation = 0x00000002
-    DiscardHalLabels = 0x00000004
-
-    def asflag(self) -> "InstanceFlags":
-        return InstanceFlags(self)
 
 
 class Dx12Compiler(IntEnum):
@@ -789,168 +777,233 @@ class NativeTextureFormat(IntEnum):
     NV12 = 0x00030007
 
 
-class BufferUsageFlags:
-    def __init__(self, flags: Union[List["BufferUsage"], int, "BufferUsageFlags"]):
+class BufferUsageFlags(IntEnum):
+    _None = 0x0000000000000000
+    MapRead = 0x0000000000000001
+    MapWrite = 0x0000000000000002
+    CopySrc = 0x0000000000000004
+    CopyDst = 0x0000000000000008
+    Index = 0x0000000000000010
+    Vertex = 0x0000000000000020
+    Uniform = 0x0000000000000040
+    Storage = 0x0000000000000080
+    Indirect = 0x0000000000000100
+    QueryResolve = 0x0000000000000200
+
+    def asflag(self) -> "BufferUsage":
+        return BufferUsage(self)
+
+
+class BufferUsage:
+    def __init__(self, flags: Union[List["BufferUsageFlags"], int, "BufferUsage"]):
         if isinstance(flags, list):
             self.value = sum(set(flags))
         else:
             self.value = int(flags)
 
-    def __or__(self, rhs: Union["BufferUsageFlags", "BufferUsage"]) -> "BufferUsageFlags":
-        return BufferUsageFlags(int(self) | int(rhs))
+    def __or__(self, rhs: Union["BufferUsage", "BufferUsageFlags"]) -> "BufferUsage":
+        return BufferUsage(int(self) | int(rhs))
 
     def __int__(self) -> int:
         return self.value
 
-    def __contains__(self, flag: "BufferUsage") -> bool:
+    def __contains__(self, flag: "BufferUsageFlags") -> bool:
         return self.value & int(flag) > 0
 
-    def __iter__(self) -> Iterator["BufferUsage"]:
+    def __iter__(self) -> Iterator["BufferUsageFlags"]:
         if self.value == 0:
-            yield BufferUsage(0)
+            yield BufferUsageFlags(0)
             return
-        for v in BufferUsage:
+        for v in BufferUsageFlags:
             if self.value & int(v) > 0:
                 yield v
 
     def __str__(self) -> str:
-        return " | ".join("BufferUsage." + v.name for v in self)
+        return " | ".join("BufferUsageFlags." + v.name for v in self)
 
     def __repr__(self) -> str:
         return str(self)
 
 
-class ColorWriteMaskFlags:
-    def __init__(self, flags: Union[List["ColorWriteMask"], int, "ColorWriteMaskFlags"]):
-        if isinstance(flags, list):
-            self.value = sum(set(flags))
-        else:
-            self.value = int(flags)
+class ColorWriteMaskFlags(IntEnum):
+    _None = 0x0000000000000000
+    Red = 0x0000000000000001
+    Green = 0x0000000000000002
+    Blue = 0x0000000000000004
+    Alpha = 0x0000000000000008
+    All = 0x000000000000000F
 
-    def __or__(
-        self, rhs: Union["ColorWriteMaskFlags", "ColorWriteMask"]
-    ) -> "ColorWriteMaskFlags":
-        return ColorWriteMaskFlags(int(self) | int(rhs))
-
-    def __int__(self) -> int:
-        return self.value
-
-    def __contains__(self, flag: "ColorWriteMask") -> bool:
-        return self.value & int(flag) > 0
-
-    def __iter__(self) -> Iterator["ColorWriteMask"]:
-        if self.value == 0:
-            yield ColorWriteMask(0)
-            return
-        for v in ColorWriteMask:
-            if self.value & int(v) > 0:
-                yield v
-
-    def __str__(self) -> str:
-        return " | ".join("ColorWriteMask." + v.name for v in self)
-
-    def __repr__(self) -> str:
-        return str(self)
+    def asflag(self) -> "ColorWriteMask":
+        return ColorWriteMask(self)
 
 
-class MapModeFlags:
-    def __init__(self, flags: Union[List["MapMode"], int, "MapModeFlags"]):
-        if isinstance(flags, list):
-            self.value = sum(set(flags))
-        else:
-            self.value = int(flags)
-
-    def __or__(self, rhs: Union["MapModeFlags", "MapMode"]) -> "MapModeFlags":
-        return MapModeFlags(int(self) | int(rhs))
-
-    def __int__(self) -> int:
-        return self.value
-
-    def __contains__(self, flag: "MapMode") -> bool:
-        return self.value & int(flag) > 0
-
-    def __iter__(self) -> Iterator["MapMode"]:
-        if self.value == 0:
-            yield MapMode(0)
-            return
-        for v in MapMode:
-            if self.value & int(v) > 0:
-                yield v
-
-    def __str__(self) -> str:
-        return " | ".join("MapMode." + v.name for v in self)
-
-    def __repr__(self) -> str:
-        return str(self)
-
-
-class ShaderStageFlags:
-    def __init__(self, flags: Union[List["ShaderStage"], int, "ShaderStageFlags"]):
-        if isinstance(flags, list):
-            self.value = sum(set(flags))
-        else:
-            self.value = int(flags)
-
-    def __or__(self, rhs: Union["ShaderStageFlags", "ShaderStage"]) -> "ShaderStageFlags":
-        return ShaderStageFlags(int(self) | int(rhs))
-
-    def __int__(self) -> int:
-        return self.value
-
-    def __contains__(self, flag: "ShaderStage") -> bool:
-        return self.value & int(flag) > 0
-
-    def __iter__(self) -> Iterator["ShaderStage"]:
-        if self.value == 0:
-            yield ShaderStage(0)
-            return
-        for v in ShaderStage:
-            if self.value & int(v) > 0:
-                yield v
-
-    def __str__(self) -> str:
-        return " | ".join("ShaderStage." + v.name for v in self)
-
-    def __repr__(self) -> str:
-        return str(self)
-
-
-class TextureUsageFlags:
-    def __init__(self, flags: Union[List["TextureUsage"], int, "TextureUsageFlags"]):
+class ColorWriteMask:
+    def __init__(self, flags: Union[List["ColorWriteMaskFlags"], int, "ColorWriteMask"]):
         if isinstance(flags, list):
             self.value = sum(set(flags))
         else:
             self.value = int(flags)
 
     def __or__(
-        self, rhs: Union["TextureUsageFlags", "TextureUsage"]
-    ) -> "TextureUsageFlags":
-        return TextureUsageFlags(int(self) | int(rhs))
+        self, rhs: Union["ColorWriteMask", "ColorWriteMaskFlags"]
+    ) -> "ColorWriteMask":
+        return ColorWriteMask(int(self) | int(rhs))
 
     def __int__(self) -> int:
         return self.value
 
-    def __contains__(self, flag: "TextureUsage") -> bool:
+    def __contains__(self, flag: "ColorWriteMaskFlags") -> bool:
         return self.value & int(flag) > 0
 
-    def __iter__(self) -> Iterator["TextureUsage"]:
+    def __iter__(self) -> Iterator["ColorWriteMaskFlags"]:
         if self.value == 0:
-            yield TextureUsage(0)
+            yield ColorWriteMaskFlags(0)
             return
-        for v in TextureUsage:
+        for v in ColorWriteMaskFlags:
             if self.value & int(v) > 0:
                 yield v
 
     def __str__(self) -> str:
-        return " | ".join("TextureUsage." + v.name for v in self)
+        return " | ".join("ColorWriteMaskFlags." + v.name for v in self)
 
     def __repr__(self) -> str:
         return str(self)
 
 
-class InstanceBackendFlags:
+class MapModeFlags(IntEnum):
+    _None = 0x0000000000000000
+    Read = 0x0000000000000001
+    Write = 0x0000000000000002
+
+    def asflag(self) -> "MapMode":
+        return MapMode(self)
+
+
+class MapMode:
+    def __init__(self, flags: Union[List["MapModeFlags"], int, "MapMode"]):
+        if isinstance(flags, list):
+            self.value = sum(set(flags))
+        else:
+            self.value = int(flags)
+
+    def __or__(self, rhs: Union["MapMode", "MapModeFlags"]) -> "MapMode":
+        return MapMode(int(self) | int(rhs))
+
+    def __int__(self) -> int:
+        return self.value
+
+    def __contains__(self, flag: "MapModeFlags") -> bool:
+        return self.value & int(flag) > 0
+
+    def __iter__(self) -> Iterator["MapModeFlags"]:
+        if self.value == 0:
+            yield MapModeFlags(0)
+            return
+        for v in MapModeFlags:
+            if self.value & int(v) > 0:
+                yield v
+
+    def __str__(self) -> str:
+        return " | ".join("MapModeFlags." + v.name for v in self)
+
+    def __repr__(self) -> str:
+        return str(self)
+
+
+class ShaderStageFlags(IntEnum):
+    _None = 0x0000000000000000
+    Vertex = 0x0000000000000001
+    Fragment = 0x0000000000000002
+    Compute = 0x0000000000000004
+
+    def asflag(self) -> "ShaderStage":
+        return ShaderStage(self)
+
+
+class ShaderStage:
+    def __init__(self, flags: Union[List["ShaderStageFlags"], int, "ShaderStage"]):
+        if isinstance(flags, list):
+            self.value = sum(set(flags))
+        else:
+            self.value = int(flags)
+
+    def __or__(self, rhs: Union["ShaderStage", "ShaderStageFlags"]) -> "ShaderStage":
+        return ShaderStage(int(self) | int(rhs))
+
+    def __int__(self) -> int:
+        return self.value
+
+    def __contains__(self, flag: "ShaderStageFlags") -> bool:
+        return self.value & int(flag) > 0
+
+    def __iter__(self) -> Iterator["ShaderStageFlags"]:
+        if self.value == 0:
+            yield ShaderStageFlags(0)
+            return
+        for v in ShaderStageFlags:
+            if self.value & int(v) > 0:
+                yield v
+
+    def __str__(self) -> str:
+        return " | ".join("ShaderStageFlags." + v.name for v in self)
+
+    def __repr__(self) -> str:
+        return str(self)
+
+
+class TextureUsageFlags(IntEnum):
+    _None = 0x0000000000000000
+    CopySrc = 0x0000000000000001
+    CopyDst = 0x0000000000000002
+    TextureBinding = 0x0000000000000004
+    StorageBinding = 0x0000000000000008
+    RenderAttachment = 0x0000000000000010
+
+    def asflag(self) -> "TextureUsage":
+        return TextureUsage(self)
+
+
+class TextureUsage:
+    def __init__(self, flags: Union[List["TextureUsageFlags"], int, "TextureUsage"]):
+        if isinstance(flags, list):
+            self.value = sum(set(flags))
+        else:
+            self.value = int(flags)
+
+    def __or__(self, rhs: Union["TextureUsage", "TextureUsageFlags"]) -> "TextureUsage":
+        return TextureUsage(int(self) | int(rhs))
+
+    def __int__(self) -> int:
+        return self.value
+
+    def __contains__(self, flag: "TextureUsageFlags") -> bool:
+        return self.value & int(flag) > 0
+
+    def __iter__(self) -> Iterator["TextureUsageFlags"]:
+        if self.value == 0:
+            yield TextureUsageFlags(0)
+            return
+        for v in TextureUsageFlags:
+            if self.value & int(v) > 0:
+                yield v
+
+    def __str__(self) -> str:
+        return " | ".join("TextureUsageFlags." + v.name for v in self)
+
+    def __repr__(self) -> str:
+        return str(self)
+
+
+class InstanceBackendFlags(IntEnum):
+    All = 0x00000000
+
+    def asflag(self) -> "InstanceBackend":
+        return InstanceBackend(self)
+
+
+class InstanceBackend:
     def __init__(
-        self, flags: Union[List["InstanceBackend"], int, "InstanceBackendFlags"]
+        self, flags: Union[List["InstanceBackendFlags"], int, "InstanceBackend"]
     ):
         if isinstance(flags, list):
             self.value = sum(set(flags))
@@ -958,57 +1011,64 @@ class InstanceBackendFlags:
             self.value = int(flags)
 
     def __or__(
-        self, rhs: Union["InstanceBackendFlags", "InstanceBackend"]
-    ) -> "InstanceBackendFlags":
-        return InstanceBackendFlags(int(self) | int(rhs))
+        self, rhs: Union["InstanceBackend", "InstanceBackendFlags"]
+    ) -> "InstanceBackend":
+        return InstanceBackend(int(self) | int(rhs))
 
     def __int__(self) -> int:
         return self.value
 
-    def __contains__(self, flag: "InstanceBackend") -> bool:
+    def __contains__(self, flag: "InstanceBackendFlags") -> bool:
         return self.value & int(flag) > 0
 
-    def __iter__(self) -> Iterator["InstanceBackend"]:
+    def __iter__(self) -> Iterator["InstanceBackendFlags"]:
         if self.value == 0:
-            yield InstanceBackend(0)
+            yield InstanceBackendFlags(0)
             return
-        for v in InstanceBackend:
+        for v in InstanceBackendFlags:
             if self.value & int(v) > 0:
                 yield v
 
     def __str__(self) -> str:
-        return " | ".join("InstanceBackend." + v.name for v in self)
+        return " | ".join("InstanceBackendFlags." + v.name for v in self)
 
     def __repr__(self) -> str:
         return str(self)
 
 
-class InstanceFlags:
-    def __init__(self, flags: Union[List["InstanceFlag"], int, "InstanceFlags"]):
+class InstanceFlagFlags(IntEnum):
+    Default = 0x00000000
+
+    def asflag(self) -> "InstanceFlag":
+        return InstanceFlag(self)
+
+
+class InstanceFlag:
+    def __init__(self, flags: Union[List["InstanceFlagFlags"], int, "InstanceFlag"]):
         if isinstance(flags, list):
             self.value = sum(set(flags))
         else:
             self.value = int(flags)
 
-    def __or__(self, rhs: Union["InstanceFlags", "InstanceFlag"]) -> "InstanceFlags":
-        return InstanceFlags(int(self) | int(rhs))
+    def __or__(self, rhs: Union["InstanceFlag", "InstanceFlagFlags"]) -> "InstanceFlag":
+        return InstanceFlag(int(self) | int(rhs))
 
     def __int__(self) -> int:
         return self.value
 
-    def __contains__(self, flag: "InstanceFlag") -> bool:
+    def __contains__(self, flag: "InstanceFlagFlags") -> bool:
         return self.value & int(flag) > 0
 
-    def __iter__(self) -> Iterator["InstanceFlag"]:
+    def __iter__(self) -> Iterator["InstanceFlagFlags"]:
         if self.value == 0:
-            yield InstanceFlag(0)
+            yield InstanceFlagFlags(0)
             return
-        for v in InstanceFlag:
+        for v in InstanceFlagFlags:
             if self.value & int(v) > 0:
                 yield v
 
     def __str__(self) -> str:
-        return " | ".join("InstanceFlag." + v.name for v in self)
+        return " | ".join("InstanceFlagFlags." + v.name for v in self)
 
     def __repr__(self) -> str:
         return str(self)
@@ -1019,7 +1079,7 @@ class Adapter:
         if cdata != ffi.NULL:
             self._cdata = ffi.gc(cdata, lib.wgpuAdapterRelease)
             if add_ref:
-                lib.wgpuAdapterReference(self._cdata)
+                lib.wgpuAdapterAddRef(self._cdata)
         else:
             self._cdata = ffi.NULL
 
@@ -1045,18 +1105,14 @@ class Adapter:
     def isValid(self) -> None:
         return self._cdata != ffi.NULL
 
-    def enumerateFeatures(self) -> List["FeatureName"]:
-        # Hand-written because of idiosyncratic convention for using this function
-        feature_count = lib.wgpuAdapterEnumerateFeatures(self._cdata, ffi.NULL)
-        feature_list = ffi.new("WGPUFeatureName[]", feature_count)
-        lib.wgpuAdapterEnumerateFeatures(self._cdata, feature_list)
-        return [FeatureName(feature_list[idx]) for idx in range(feature_count)]
+    def getFeatures(self, features: "SupportedFeatures") -> None:
+        return lib.wgpuAdapterGetFeatures(self._cdata, features._cdata)
 
-    def getInfo(self, info: "AdapterInfo") -> None:
-        return lib.wgpuAdapterGetInfo(self._cdata, info._cdata)
+    def getInfo(self, info: "AdapterInfo") -> "Status":
+        return Status(lib.wgpuAdapterGetInfo(self._cdata, info._cdata))
 
-    def getLimits(self, limits: "SupportedLimits") -> bool:
-        return lib.wgpuAdapterGetLimits(self._cdata, limits._cdata)
+    def getLimits(self, limits: "Limits") -> "Status":
+        return Status(lib.wgpuAdapterGetLimits(self._cdata, limits._cdata))
 
     def hasFeature(self, feature: "FeatureName") -> bool:
         return lib.wgpuAdapterHasFeature(self._cdata, int(feature))
@@ -1064,17 +1120,19 @@ class Adapter:
     def requestDevice(
         self,
         descriptor: Optional["DeviceDescriptor"],
-        callback: "AdapterRequestDeviceCallback",
-    ) -> None:
-        return lib.wgpuAdapterRequestDevice(
-            self._cdata,
-            _ffi_unwrap_optional(descriptor),
-            callback._ptr,
-            callback._userdata,
+        callbackInfo: "RequestDeviceCallbackInfo",
+    ) -> "Future":
+        return Future(
+            cdata=lib.wgpuAdapterRequestDevice(
+                self._cdata,
+                _ffi_unwrap_optional(descriptor),
+                _ffi_deref(callbackInfo._cdata),
+            ),
+            parent=None,
         )
 
-    def _reference(self) -> None:
-        return lib.wgpuAdapterReference(self._cdata)
+    def _addRef(self) -> None:
+        return lib.wgpuAdapterAddRef(self._cdata)
 
     def _release(self) -> None:
         return lib.wgpuAdapterRelease(self._cdata)
@@ -1085,7 +1143,7 @@ class BindGroup:
         if cdata != ffi.NULL:
             self._cdata = ffi.gc(cdata, lib.wgpuBindGroupRelease)
             if add_ref:
-                lib.wgpuBindGroupReference(self._cdata)
+                lib.wgpuBindGroupAddRef(self._cdata)
         else:
             self._cdata = ffi.NULL
 
@@ -1111,11 +1169,11 @@ class BindGroup:
     def isValid(self) -> None:
         return self._cdata != ffi.NULL
 
-    def setLabel(self, label: str) -> None:
-        return lib.wgpuBindGroupSetLabel(self._cdata, _ffi_unwrap_str(label))
+    def setLabel(self, label: "StringView") -> None:
+        return lib.wgpuBindGroupSetLabel(self._cdata, _ffi_deref(label._cdata))
 
-    def _reference(self) -> None:
-        return lib.wgpuBindGroupReference(self._cdata)
+    def _addRef(self) -> None:
+        return lib.wgpuBindGroupAddRef(self._cdata)
 
     def _release(self) -> None:
         return lib.wgpuBindGroupRelease(self._cdata)
@@ -1126,7 +1184,7 @@ class BindGroupLayout:
         if cdata != ffi.NULL:
             self._cdata = ffi.gc(cdata, lib.wgpuBindGroupLayoutRelease)
             if add_ref:
-                lib.wgpuBindGroupLayoutReference(self._cdata)
+                lib.wgpuBindGroupLayoutAddRef(self._cdata)
         else:
             self._cdata = ffi.NULL
 
@@ -1152,11 +1210,11 @@ class BindGroupLayout:
     def isValid(self) -> None:
         return self._cdata != ffi.NULL
 
-    def setLabel(self, label: str) -> None:
-        return lib.wgpuBindGroupLayoutSetLabel(self._cdata, _ffi_unwrap_str(label))
+    def setLabel(self, label: "StringView") -> None:
+        return lib.wgpuBindGroupLayoutSetLabel(self._cdata, _ffi_deref(label._cdata))
 
-    def _reference(self) -> None:
-        return lib.wgpuBindGroupLayoutReference(self._cdata)
+    def _addRef(self) -> None:
+        return lib.wgpuBindGroupLayoutAddRef(self._cdata)
 
     def _release(self) -> None:
         return lib.wgpuBindGroupLayoutRelease(self._cdata)
@@ -1167,7 +1225,7 @@ class Buffer:
         if cdata != ffi.NULL:
             self._cdata = ffi.gc(cdata, lib.wgpuBufferRelease)
             if add_ref:
-                lib.wgpuBufferReference(self._cdata)
+                lib.wgpuBufferAddRef(self._cdata)
         else:
             self._cdata = ffi.NULL
 
@@ -1208,28 +1266,31 @@ class Buffer:
     def getSize(self) -> int:
         return lib.wgpuBufferGetSize(self._cdata)
 
-    def getUsage(self) -> "BufferUsageFlags":
-        return BufferUsageFlags(lib.wgpuBufferGetUsage(self._cdata))
+    def getUsage(self) -> "BufferUsage":
+        return BufferUsage(lib.wgpuBufferGetUsage(self._cdata))
 
     def mapAsync(
         self,
-        mode: Union["MapModeFlags", "MapMode", int],
+        mode: Union["MapMode", "MapModeFlags", int],
         offset: int,
         size: int,
-        callback: "BufferMapAsyncCallback",
-    ) -> None:
-        return lib.wgpuBufferMapAsync(
-            self._cdata, int(mode), offset, size, callback._ptr, callback._userdata
+        callbackInfo: "BufferMapCallbackInfo",
+    ) -> "Future":
+        return Future(
+            cdata=lib.wgpuBufferMapAsync(
+                self._cdata, int(mode), offset, size, _ffi_deref(callbackInfo._cdata)
+            ),
+            parent=None,
         )
 
-    def setLabel(self, label: str) -> None:
-        return lib.wgpuBufferSetLabel(self._cdata, _ffi_unwrap_str(label))
+    def setLabel(self, label: "StringView") -> None:
+        return lib.wgpuBufferSetLabel(self._cdata, _ffi_deref(label._cdata))
 
     def unmap(self) -> None:
         return lib.wgpuBufferUnmap(self._cdata)
 
-    def _reference(self) -> None:
-        return lib.wgpuBufferReference(self._cdata)
+    def _addRef(self) -> None:
+        return lib.wgpuBufferAddRef(self._cdata)
 
     def _release(self) -> None:
         return lib.wgpuBufferRelease(self._cdata)
@@ -1240,7 +1301,7 @@ class CommandBuffer:
         if cdata != ffi.NULL:
             self._cdata = ffi.gc(cdata, lib.wgpuCommandBufferRelease)
             if add_ref:
-                lib.wgpuCommandBufferReference(self._cdata)
+                lib.wgpuCommandBufferAddRef(self._cdata)
         else:
             self._cdata = ffi.NULL
 
@@ -1266,11 +1327,11 @@ class CommandBuffer:
     def isValid(self) -> None:
         return self._cdata != ffi.NULL
 
-    def setLabel(self, label: str) -> None:
-        return lib.wgpuCommandBufferSetLabel(self._cdata, _ffi_unwrap_str(label))
+    def setLabel(self, label: "StringView") -> None:
+        return lib.wgpuCommandBufferSetLabel(self._cdata, _ffi_deref(label._cdata))
 
-    def _reference(self) -> None:
-        return lib.wgpuCommandBufferReference(self._cdata)
+    def _addRef(self) -> None:
+        return lib.wgpuCommandBufferAddRef(self._cdata)
 
     def _release(self) -> None:
         return lib.wgpuCommandBufferRelease(self._cdata)
@@ -1281,7 +1342,7 @@ class CommandEncoder:
         if cdata != ffi.NULL:
             self._cdata = ffi.gc(cdata, lib.wgpuCommandEncoderRelease)
             if add_ref:
-                lib.wgpuCommandEncoderReference(self._cdata)
+                lib.wgpuCommandEncoderAddRef(self._cdata)
         else:
             self._cdata = ffi.NULL
 
@@ -1321,7 +1382,7 @@ class CommandEncoder:
         self,
         *,
         nextInChain: Optional["ChainedStruct"] = None,
-        label: Optional[str] = None,
+        label: "StringView",
         timestampWrites: Optional["ComputePassTimestampWrites"] = None,
     ) -> "ComputePassEncoder":
         return self.beginComputePassFromDesc(
@@ -1342,7 +1403,7 @@ class CommandEncoder:
         self,
         *,
         nextInChain: Optional["ChainedStruct"] = None,
-        label: Optional[str] = None,
+        label: "StringView",
         colorAttachments: Union[
             "RenderPassColorAttachmentList", List["RenderPassColorAttachment"]
         ],
@@ -1383,8 +1444,8 @@ class CommandEncoder:
 
     def copyBufferToTexture(
         self,
-        source: "ImageCopyBuffer",
-        destination: "ImageCopyTexture",
+        source: "TexelCopyBufferInfo",
+        destination: "TexelCopyTextureInfo",
         copySize: "Extent3D",
     ) -> None:
         return lib.wgpuCommandEncoderCopyBufferToTexture(
@@ -1393,8 +1454,8 @@ class CommandEncoder:
 
     def copyTextureToBuffer(
         self,
-        source: "ImageCopyTexture",
-        destination: "ImageCopyBuffer",
+        source: "TexelCopyTextureInfo",
+        destination: "TexelCopyBufferInfo",
         copySize: "Extent3D",
     ) -> None:
         return lib.wgpuCommandEncoderCopyTextureToBuffer(
@@ -1403,8 +1464,8 @@ class CommandEncoder:
 
     def copyTextureToTexture(
         self,
-        source: "ImageCopyTexture",
-        destination: "ImageCopyTexture",
+        source: "TexelCopyTextureInfo",
+        destination: "TexelCopyTextureInfo",
         copySize: "Extent3D",
     ) -> None:
         return lib.wgpuCommandEncoderCopyTextureToTexture(
@@ -1420,26 +1481,23 @@ class CommandEncoder:
         )
 
     def finish(
-        self,
-        *,
-        nextInChain: Optional["ChainedStruct"] = None,
-        label: Optional[str] = None,
+        self, *, nextInChain: Optional["ChainedStruct"] = None, label: "StringView"
     ) -> "CommandBuffer":
         return self.finishFromDesc(
             commandBufferDescriptor(nextInChain=nextInChain, label=label)
         )
 
-    def insertDebugMarker(self, markerLabel: str) -> None:
+    def insertDebugMarker(self, markerLabel: "StringView") -> None:
         return lib.wgpuCommandEncoderInsertDebugMarker(
-            self._cdata, _ffi_unwrap_str(markerLabel)
+            self._cdata, _ffi_deref(markerLabel._cdata)
         )
 
     def popDebugGroup(self) -> None:
         return lib.wgpuCommandEncoderPopDebugGroup(self._cdata)
 
-    def pushDebugGroup(self, groupLabel: str) -> None:
+    def pushDebugGroup(self, groupLabel: "StringView") -> None:
         return lib.wgpuCommandEncoderPushDebugGroup(
-            self._cdata, _ffi_unwrap_str(groupLabel)
+            self._cdata, _ffi_deref(groupLabel._cdata)
         )
 
     def resolveQuerySet(
@@ -1459,16 +1517,16 @@ class CommandEncoder:
             destinationOffset,
         )
 
-    def setLabel(self, label: str) -> None:
-        return lib.wgpuCommandEncoderSetLabel(self._cdata, _ffi_unwrap_str(label))
+    def setLabel(self, label: "StringView") -> None:
+        return lib.wgpuCommandEncoderSetLabel(self._cdata, _ffi_deref(label._cdata))
 
     def writeTimestamp(self, querySet: "QuerySet", queryIndex: int) -> None:
         return lib.wgpuCommandEncoderWriteTimestamp(
             self._cdata, querySet._cdata, queryIndex
         )
 
-    def _reference(self) -> None:
-        return lib.wgpuCommandEncoderReference(self._cdata)
+    def _addRef(self) -> None:
+        return lib.wgpuCommandEncoderAddRef(self._cdata)
 
     def _release(self) -> None:
         return lib.wgpuCommandEncoderRelease(self._cdata)
@@ -1479,7 +1537,7 @@ class ComputePassEncoder:
         if cdata != ffi.NULL:
             self._cdata = ffi.gc(cdata, lib.wgpuComputePassEncoderRelease)
             if add_ref:
-                lib.wgpuComputePassEncoderReference(self._cdata)
+                lib.wgpuComputePassEncoderAddRef(self._cdata)
         else:
             self._cdata = ffi.NULL
 
@@ -1524,24 +1582,24 @@ class ComputePassEncoder:
         self.release()
         return ret
 
-    def insertDebugMarker(self, markerLabel: str) -> None:
+    def insertDebugMarker(self, markerLabel: "StringView") -> None:
         return lib.wgpuComputePassEncoderInsertDebugMarker(
-            self._cdata, _ffi_unwrap_str(markerLabel)
+            self._cdata, _ffi_deref(markerLabel._cdata)
         )
 
     def popDebugGroup(self) -> None:
         return lib.wgpuComputePassEncoderPopDebugGroup(self._cdata)
 
-    def pushDebugGroup(self, groupLabel: str) -> None:
+    def pushDebugGroup(self, groupLabel: "StringView") -> None:
         return lib.wgpuComputePassEncoderPushDebugGroup(
-            self._cdata, _ffi_unwrap_str(groupLabel)
+            self._cdata, _ffi_deref(groupLabel._cdata)
         )
 
     def setBindGroup(
         self,
         groupIndex: int,
         group: Optional["BindGroup"],
-        dynamicOffsets: Union["IntList", List[int]],
+        dynamicOffsets: Union["IntList", List["int"]],
     ) -> None:
         if isinstance(dynamicOffsets, list):
             dynamicOffsets_staged = IntList(dynamicOffsets)
@@ -1555,17 +1613,22 @@ class ComputePassEncoder:
             dynamicOffsets_staged._ptr,
         )
 
-    def setLabel(self, label: str) -> None:
-        return lib.wgpuComputePassEncoderSetLabel(self._cdata, _ffi_unwrap_str(label))
+    def setLabel(self, label: "StringView") -> None:
+        return lib.wgpuComputePassEncoderSetLabel(self._cdata, _ffi_deref(label._cdata))
 
     def setPipeline(self, pipeline: "ComputePipeline") -> None:
         return lib.wgpuComputePassEncoderSetPipeline(self._cdata, pipeline._cdata)
 
-    def _reference(self) -> None:
-        return lib.wgpuComputePassEncoderReference(self._cdata)
+    def _addRef(self) -> None:
+        return lib.wgpuComputePassEncoderAddRef(self._cdata)
 
     def _release(self) -> None:
         return lib.wgpuComputePassEncoderRelease(self._cdata)
+
+    def setPushConstants(self, offset: int, sizeBytes: int, data: DataPtr) -> None:
+        return lib.wgpuComputePassEncoderSetPushConstants(
+            self._cdata, offset, sizeBytes, data._ptr
+        )
 
     def beginPipelineStatisticsQuery(self, querySet: "QuerySet", queryIndex: int) -> None:
         return lib.wgpuComputePassEncoderBeginPipelineStatisticsQuery(
@@ -1575,13 +1638,18 @@ class ComputePassEncoder:
     def endPipelineStatisticsQuery(self) -> None:
         return lib.wgpuComputePassEncoderEndPipelineStatisticsQuery(self._cdata)
 
+    def writeTimestamp(self, querySet: "QuerySet", queryIndex: int) -> None:
+        return lib.wgpuComputePassEncoderWriteTimestamp(
+            self._cdata, querySet._cdata, queryIndex
+        )
+
 
 class ComputePipeline:
     def __init__(self, cdata: CData, add_ref: bool = False):
         if cdata != ffi.NULL:
             self._cdata = ffi.gc(cdata, lib.wgpuComputePipelineRelease)
             if add_ref:
-                lib.wgpuComputePipelineReference(self._cdata)
+                lib.wgpuComputePipelineAddRef(self._cdata)
         else:
             self._cdata = ffi.NULL
 
@@ -1613,11 +1681,11 @@ class ComputePipeline:
             add_ref=False,
         )
 
-    def setLabel(self, label: str) -> None:
-        return lib.wgpuComputePipelineSetLabel(self._cdata, _ffi_unwrap_str(label))
+    def setLabel(self, label: "StringView") -> None:
+        return lib.wgpuComputePipelineSetLabel(self._cdata, _ffi_deref(label._cdata))
 
-    def _reference(self) -> None:
-        return lib.wgpuComputePipelineReference(self._cdata)
+    def _addRef(self) -> None:
+        return lib.wgpuComputePipelineAddRef(self._cdata)
 
     def _release(self) -> None:
         return lib.wgpuComputePipelineRelease(self._cdata)
@@ -1628,7 +1696,7 @@ class Device:
         if cdata != ffi.NULL:
             self._cdata = ffi.gc(cdata, lib.wgpuDeviceRelease)
             if add_ref:
-                lib.wgpuDeviceReference(self._cdata)
+                lib.wgpuDeviceAddRef(self._cdata)
         else:
             self._cdata = ffi.NULL
 
@@ -1654,9 +1722,6 @@ class Device:
     def isValid(self) -> None:
         return self._cdata != ffi.NULL
 
-    def getProcAddress(self, procName: str) -> VoidPtr:
-        return VoidPtr(lib.wgpuGetProcAddress(self._cdata, _ffi_unwrap_str(procName)))
-
     def createBindGroupFromDesc(self, descriptor: "BindGroupDescriptor") -> "BindGroup":
         return BindGroup(
             lib.wgpuDeviceCreateBindGroup(self._cdata, descriptor._cdata), add_ref=False
@@ -1666,7 +1731,7 @@ class Device:
         self,
         *,
         nextInChain: Optional["ChainedStruct"] = None,
-        label: Optional[str] = None,
+        label: "StringView",
         layout: "BindGroupLayout",
         entries: Union["BindGroupEntryList", List["BindGroupEntry"]],
     ) -> "BindGroup":
@@ -1688,7 +1753,7 @@ class Device:
         self,
         *,
         nextInChain: Optional["ChainedStruct"] = None,
-        label: Optional[str] = None,
+        label: "StringView",
         entries: Union["BindGroupLayoutEntryList", List["BindGroupLayoutEntry"]],
     ) -> "BindGroupLayout":
         return self.createBindGroupLayoutFromDesc(
@@ -1706,8 +1771,8 @@ class Device:
         self,
         *,
         nextInChain: Optional["ChainedStruct"] = None,
-        label: Optional[str] = None,
-        usage: Union["BufferUsageFlags", "BufferUsage", int],
+        label: "StringView",
+        usage: Union["BufferUsage", "BufferUsageFlags", int],
         size: int,
         mappedAtCreation: bool = False,
     ) -> "Buffer":
@@ -1732,10 +1797,7 @@ class Device:
         )
 
     def createCommandEncoder(
-        self,
-        *,
-        nextInChain: Optional["ChainedStruct"] = None,
-        label: Optional[str] = None,
+        self, *, nextInChain: Optional["ChainedStruct"] = None, label: "StringView"
     ) -> "CommandEncoder":
         return self.createCommandEncoderFromDesc(
             commandEncoderDescriptor(nextInChain=nextInChain, label=label)
@@ -1753,7 +1815,7 @@ class Device:
         self,
         *,
         nextInChain: Optional["ChainedStruct"] = None,
-        label: Optional[str] = None,
+        label: "StringView",
         layout: Optional["PipelineLayout"] = None,
         compute: "ProgrammableStageDescriptor",
     ) -> "ComputePipeline":
@@ -1766,10 +1828,13 @@ class Device:
     def createComputePipelineAsync(
         self,
         descriptor: "ComputePipelineDescriptor",
-        callback: "DeviceCreateComputePipelineAsyncCallback",
-    ) -> None:
-        return lib.wgpuDeviceCreateComputePipelineAsync(
-            self._cdata, descriptor._cdata, callback._ptr, callback._userdata
+        callbackInfo: "CreateComputePipelineAsyncCallbackInfo",
+    ) -> "Future":
+        return Future(
+            cdata=lib.wgpuDeviceCreateComputePipelineAsync(
+                self._cdata, descriptor._cdata, _ffi_deref(callbackInfo._cdata)
+            ),
+            parent=None,
         )
 
     def createPipelineLayoutFromDesc(
@@ -1784,7 +1849,7 @@ class Device:
         self,
         *,
         nextInChain: Optional["ChainedStruct"] = None,
-        label: Optional[str] = None,
+        label: "StringView",
         bindGroupLayouts: Union["BindGroupLayoutList", List["BindGroupLayout"]],
     ) -> "PipelineLayout":
         return self.createPipelineLayoutFromDesc(
@@ -1802,7 +1867,7 @@ class Device:
         self,
         *,
         nextInChain: Optional["ChainedStruct"] = None,
-        label: Optional[str] = None,
+        label: "StringView",
         type: "QueryType",
         count: int,
     ) -> "QuerySet":
@@ -1824,7 +1889,7 @@ class Device:
         self,
         *,
         nextInChain: Optional["ChainedStruct"] = None,
-        label: Optional[str] = None,
+        label: "StringView",
         colorFormats: Union["TextureFormatList", List["TextureFormat"]],
         depthStencilFormat: "TextureFormat",
         sampleCount: int,
@@ -1855,7 +1920,7 @@ class Device:
         self,
         *,
         nextInChain: Optional["ChainedStruct"] = None,
-        label: Optional[str] = None,
+        label: "StringView",
         layout: Optional["PipelineLayout"] = None,
         vertex: "VertexState",
         primitive: "PrimitiveState",
@@ -1879,10 +1944,13 @@ class Device:
     def createRenderPipelineAsync(
         self,
         descriptor: "RenderPipelineDescriptor",
-        callback: "DeviceCreateRenderPipelineAsyncCallback",
-    ) -> None:
-        return lib.wgpuDeviceCreateRenderPipelineAsync(
-            self._cdata, descriptor._cdata, callback._ptr, callback._userdata
+        callbackInfo: "CreateRenderPipelineAsyncCallbackInfo",
+    ) -> "Future":
+        return Future(
+            cdata=lib.wgpuDeviceCreateRenderPipelineAsync(
+                self._cdata, descriptor._cdata, _ffi_deref(callbackInfo._cdata)
+            ),
+            parent=None,
         )
 
     def createSamplerFromDesc(
@@ -1897,7 +1965,7 @@ class Device:
         self,
         *,
         nextInChain: Optional["ChainedStruct"] = None,
-        label: Optional[str] = None,
+        label: "StringView",
         addressModeU: "AddressMode" = AddressMode.ClampToEdge,
         addressModeV: "AddressMode" = AddressMode.ClampToEdge,
         addressModeW: "AddressMode" = AddressMode.ClampToEdge,
@@ -1935,16 +2003,10 @@ class Device:
         )
 
     def createShaderModule(
-        self,
-        *,
-        nextInChain: Optional["ChainedStruct"] = None,
-        label: Optional[str] = None,
-        hints: Union[
-            "ShaderModuleCompilationHintList", List["ShaderModuleCompilationHint"]
-        ],
+        self, *, nextInChain: Optional["ChainedStruct"] = None, label: "StringView"
     ) -> "ShaderModule":
         return self.createShaderModuleFromDesc(
-            shaderModuleDescriptor(nextInChain=nextInChain, label=label, hints=hints)
+            shaderModuleDescriptor(nextInChain=nextInChain, label=label)
         )
 
     def createTextureFromDesc(self, descriptor: "TextureDescriptor") -> "Texture":
@@ -1956,8 +2018,8 @@ class Device:
         self,
         *,
         nextInChain: Optional["ChainedStruct"] = None,
-        label: Optional[str] = None,
-        usage: Union["TextureUsageFlags", "TextureUsage", int],
+        label: "StringView",
+        usage: Union["TextureUsage", "TextureUsageFlags", int],
         dimension: "TextureDimension" = TextureDimension._2D,
         size: "Extent3D",
         format: "TextureFormat",
@@ -1982,15 +2044,17 @@ class Device:
     def destroy(self) -> None:
         return lib.wgpuDeviceDestroy(self._cdata)
 
-    def enumerateFeatures(self) -> List["FeatureName"]:
-        # Hand-written because of idiosyncratic convention for using this function
-        feature_count = lib.wgpuDeviceEnumerateFeatures(self._cdata, ffi.NULL)
-        feature_list = ffi.new("WGPUFeatureName[]", feature_count)
-        lib.wgpuDeviceEnumerateFeatures(self._cdata, feature_list)
-        return [FeatureName(feature_list[idx]) for idx in range(feature_count)]
+    def getAdapterInfo(self) -> "AdapterInfo":
+        return AdapterInfo(cdata=lib.wgpuDeviceGetAdapterInfo(self._cdata), parent=None)
 
-    def getLimits(self, limits: "SupportedLimits") -> bool:
-        return lib.wgpuDeviceGetLimits(self._cdata, limits._cdata)
+    def getFeatures(self, features: "SupportedFeatures") -> None:
+        return lib.wgpuDeviceGetFeatures(self._cdata, features._cdata)
+
+    def getLimits(self, limits: "Limits") -> "Status":
+        return Status(lib.wgpuDeviceGetLimits(self._cdata, limits._cdata))
+
+    def getLostFuture(self) -> "Future":
+        return Future(cdata=lib.wgpuDeviceGetLostFuture(self._cdata), parent=None)
 
     def getQueue(self) -> "Queue":
         return Queue(lib.wgpuDeviceGetQueue(self._cdata), add_ref=False)
@@ -1998,26 +2062,37 @@ class Device:
     def hasFeature(self, feature: "FeatureName") -> bool:
         return lib.wgpuDeviceHasFeature(self._cdata, int(feature))
 
-    def popErrorScope(self, callback: "ErrorCallback") -> None:
-        return lib.wgpuDevicePopErrorScope(self._cdata, callback._ptr, callback._userdata)
+    def popErrorScope(self, callbackInfo: "PopErrorScopeCallbackInfo") -> "Future":
+        return Future(
+            cdata=lib.wgpuDevicePopErrorScope(
+                self._cdata, _ffi_deref(callbackInfo._cdata)
+            ),
+            parent=None,
+        )
 
     def pushErrorScope(self, filter: "ErrorFilter") -> None:
         return lib.wgpuDevicePushErrorScope(self._cdata, int(filter))
 
-    def setLabel(self, label: str) -> None:
-        return lib.wgpuDeviceSetLabel(self._cdata, _ffi_unwrap_str(label))
+    def setLabel(self, label: "StringView") -> None:
+        return lib.wgpuDeviceSetLabel(self._cdata, _ffi_deref(label._cdata))
 
-    def _reference(self) -> None:
-        return lib.wgpuDeviceReference(self._cdata)
+    def _addRef(self) -> None:
+        return lib.wgpuDeviceAddRef(self._cdata)
 
     def _release(self) -> None:
         return lib.wgpuDeviceRelease(self._cdata)
 
-    def poll(
-        self, wait: bool, wrappedSubmissionIndex: Optional["WrappedSubmissionIndex"]
-    ) -> bool:
+    def poll(self, wait: bool, wrappedSubmissionIndex: Optional[int]) -> bool:
         return lib.wgpuDevicePoll(
             self._cdata, wait, _ffi_unwrap_optional(wrappedSubmissionIndex)
+        )
+
+    def createShaderModuleSpirV(
+        self, descriptor: "ShaderModuleDescriptorSpirV"
+    ) -> "ShaderModule":
+        return ShaderModule(
+            lib.wgpuDeviceCreateShaderModuleSpirV(self._cdata, descriptor._cdata),
+            add_ref=False,
         )
 
 
@@ -2026,7 +2101,7 @@ class Instance:
         if cdata != ffi.NULL:
             self._cdata = ffi.gc(cdata, lib.wgpuInstanceRelease)
             if add_ref:
-                lib.wgpuInstanceReference(self._cdata)
+                lib.wgpuInstanceAddRef(self._cdata)
         else:
             self._cdata = ffi.NULL
 
@@ -2058,16 +2133,20 @@ class Instance:
         )
 
     def createSurface(
-        self,
-        *,
-        nextInChain: Optional["ChainedStruct"] = None,
-        label: Optional[str] = None,
+        self, *, nextInChain: Optional["ChainedStruct"] = None, label: "StringView"
     ) -> "Surface":
         return self.createSurfaceFromDesc(
             surfaceDescriptor(nextInChain=nextInChain, label=label)
         )
 
-    def hasWGSLLanguageFeature(self, feature: "WGSLFeatureName") -> bool:
+    def getWGSLLanguageFeatures(
+        self, features: "SupportedWGSLLanguageFeatures"
+    ) -> "Status":
+        return Status(
+            lib.wgpuInstanceGetWGSLLanguageFeatures(self._cdata, features._cdata)
+        )
+
+    def hasWGSLLanguageFeature(self, feature: "WGSLLanguageFeatureName") -> bool:
         return lib.wgpuInstanceHasWGSLLanguageFeature(self._cdata, int(feature))
 
     def processEvents(self) -> None:
@@ -2076,14 +2155,32 @@ class Instance:
     def requestAdapter(
         self,
         options: Optional["RequestAdapterOptions"],
-        callback: "InstanceRequestAdapterCallback",
-    ) -> None:
-        return lib.wgpuInstanceRequestAdapter(
-            self._cdata, _ffi_unwrap_optional(options), callback._ptr, callback._userdata
+        callbackInfo: "RequestAdapterCallbackInfo",
+    ) -> "Future":
+        return Future(
+            cdata=lib.wgpuInstanceRequestAdapter(
+                self._cdata,
+                _ffi_unwrap_optional(options),
+                _ffi_deref(callbackInfo._cdata),
+            ),
+            parent=None,
         )
 
-    def _reference(self) -> None:
-        return lib.wgpuInstanceReference(self._cdata)
+    def waitAny(
+        self, futures: Union["FutureWaitInfoList", List["FutureWaitInfo"]], timeoutNS: int
+    ) -> "WaitStatus":
+        if isinstance(futures, list):
+            futures_staged = FutureWaitInfoList(futures)
+        else:
+            futures_staged = futures
+        return WaitStatus(
+            lib.wgpuInstanceWaitAny(
+                self._cdata, futures_staged._count, futures_staged._ptr, timeoutNS
+            )
+        )
+
+    def _addRef(self) -> None:
+        return lib.wgpuInstanceAddRef(self._cdata)
 
     def _release(self) -> None:
         return lib.wgpuInstanceRelease(self._cdata)
@@ -2104,7 +2201,7 @@ class PipelineLayout:
         if cdata != ffi.NULL:
             self._cdata = ffi.gc(cdata, lib.wgpuPipelineLayoutRelease)
             if add_ref:
-                lib.wgpuPipelineLayoutReference(self._cdata)
+                lib.wgpuPipelineLayoutAddRef(self._cdata)
         else:
             self._cdata = ffi.NULL
 
@@ -2130,11 +2227,11 @@ class PipelineLayout:
     def isValid(self) -> None:
         return self._cdata != ffi.NULL
 
-    def setLabel(self, label: str) -> None:
-        return lib.wgpuPipelineLayoutSetLabel(self._cdata, _ffi_unwrap_str(label))
+    def setLabel(self, label: "StringView") -> None:
+        return lib.wgpuPipelineLayoutSetLabel(self._cdata, _ffi_deref(label._cdata))
 
-    def _reference(self) -> None:
-        return lib.wgpuPipelineLayoutReference(self._cdata)
+    def _addRef(self) -> None:
+        return lib.wgpuPipelineLayoutAddRef(self._cdata)
 
     def _release(self) -> None:
         return lib.wgpuPipelineLayoutRelease(self._cdata)
@@ -2145,7 +2242,7 @@ class QuerySet:
         if cdata != ffi.NULL:
             self._cdata = ffi.gc(cdata, lib.wgpuQuerySetRelease)
             if add_ref:
-                lib.wgpuQuerySetReference(self._cdata)
+                lib.wgpuQuerySetAddRef(self._cdata)
         else:
             self._cdata = ffi.NULL
 
@@ -2180,11 +2277,11 @@ class QuerySet:
     def getType(self) -> "QueryType":
         return QueryType(lib.wgpuQuerySetGetType(self._cdata))
 
-    def setLabel(self, label: str) -> None:
-        return lib.wgpuQuerySetSetLabel(self._cdata, _ffi_unwrap_str(label))
+    def setLabel(self, label: "StringView") -> None:
+        return lib.wgpuQuerySetSetLabel(self._cdata, _ffi_deref(label._cdata))
 
-    def _reference(self) -> None:
-        return lib.wgpuQuerySetReference(self._cdata)
+    def _addRef(self) -> None:
+        return lib.wgpuQuerySetAddRef(self._cdata)
 
     def _release(self) -> None:
         return lib.wgpuQuerySetRelease(self._cdata)
@@ -2195,7 +2292,7 @@ class Queue:
         if cdata != ffi.NULL:
             self._cdata = ffi.gc(cdata, lib.wgpuQueueRelease)
             if add_ref:
-                lib.wgpuQueueReference(self._cdata)
+                lib.wgpuQueueAddRef(self._cdata)
         else:
             self._cdata = ffi.NULL
 
@@ -2221,15 +2318,18 @@ class Queue:
     def isValid(self) -> None:
         return self._cdata != ffi.NULL
 
-    def onSubmittedWorkDone(self, callback: "QueueOnSubmittedWorkDoneCallback") -> None:
-        return lib.wgpuQueueOnSubmittedWorkDone(
-            self._cdata, callback._ptr, callback._userdata
+    def onSubmittedWorkDone(self, callbackInfo: "QueueWorkDoneCallbackInfo") -> "Future":
+        return Future(
+            cdata=lib.wgpuQueueOnSubmittedWorkDone(
+                self._cdata, _ffi_deref(callbackInfo._cdata)
+            ),
+            parent=None,
         )
 
-    def setLabel(self, label: str) -> None:
-        return lib.wgpuQueueSetLabel(self._cdata, _ffi_unwrap_str(label))
+    def setLabel(self, label: "StringView") -> None:
+        return lib.wgpuQueueSetLabel(self._cdata, _ffi_deref(label._cdata))
 
-    def submit(self, commands: Union["CommandBufferList", List[CommandBuffer]]) -> None:
+    def submit(self, commands: Union["CommandBufferList", List["CommandBuffer"]]) -> None:
         if isinstance(commands, list):
             commands_staged = CommandBufferList(commands)
         else:
@@ -2245,9 +2345,9 @@ class Queue:
 
     def writeTexture(
         self,
-        destination: "ImageCopyTexture",
+        destination: "TexelCopyTextureInfo",
         data: DataPtr,
-        dataLayout: "TextureDataLayout",
+        dataLayout: "TexelCopyBufferLayout",
         writeSize: "Extent3D",
     ) -> None:
         return lib.wgpuQueueWriteTexture(
@@ -2259,14 +2359,14 @@ class Queue:
             writeSize._cdata,
         )
 
-    def _reference(self) -> None:
-        return lib.wgpuQueueReference(self._cdata)
+    def _addRef(self) -> None:
+        return lib.wgpuQueueAddRef(self._cdata)
 
     def _release(self) -> None:
         return lib.wgpuQueueRelease(self._cdata)
 
     def submitForIndex(
-        self, commands: Union["CommandBufferList", List[CommandBuffer]]
+        self, commands: Union["CommandBufferList", List["CommandBuffer"]]
     ) -> int:
         if isinstance(commands, list):
             commands_staged = CommandBufferList(commands)
@@ -2282,7 +2382,7 @@ class RenderBundle:
         if cdata != ffi.NULL:
             self._cdata = ffi.gc(cdata, lib.wgpuRenderBundleRelease)
             if add_ref:
-                lib.wgpuRenderBundleReference(self._cdata)
+                lib.wgpuRenderBundleAddRef(self._cdata)
         else:
             self._cdata = ffi.NULL
 
@@ -2308,11 +2408,11 @@ class RenderBundle:
     def isValid(self) -> None:
         return self._cdata != ffi.NULL
 
-    def setLabel(self, label: str) -> None:
-        return lib.wgpuRenderBundleSetLabel(self._cdata, _ffi_unwrap_str(label))
+    def setLabel(self, label: "StringView") -> None:
+        return lib.wgpuRenderBundleSetLabel(self._cdata, _ffi_deref(label._cdata))
 
-    def _reference(self) -> None:
-        return lib.wgpuRenderBundleReference(self._cdata)
+    def _addRef(self) -> None:
+        return lib.wgpuRenderBundleAddRef(self._cdata)
 
     def _release(self) -> None:
         return lib.wgpuRenderBundleRelease(self._cdata)
@@ -2323,7 +2423,7 @@ class RenderBundleEncoder:
         if cdata != ffi.NULL:
             self._cdata = ffi.gc(cdata, lib.wgpuRenderBundleEncoderRelease)
             if add_ref:
-                lib.wgpuRenderBundleEncoderReference(self._cdata)
+                lib.wgpuRenderBundleEncoderAddRef(self._cdata)
         else:
             self._cdata = ffi.NULL
 
@@ -2389,33 +2489,30 @@ class RenderBundleEncoder:
         )
 
     def finish(
-        self,
-        *,
-        nextInChain: Optional["ChainedStruct"] = None,
-        label: Optional[str] = None,
+        self, *, nextInChain: Optional["ChainedStruct"] = None, label: "StringView"
     ) -> "RenderBundle":
         return self.finishFromDesc(
             renderBundleDescriptor(nextInChain=nextInChain, label=label)
         )
 
-    def insertDebugMarker(self, markerLabel: str) -> None:
+    def insertDebugMarker(self, markerLabel: "StringView") -> None:
         return lib.wgpuRenderBundleEncoderInsertDebugMarker(
-            self._cdata, _ffi_unwrap_str(markerLabel)
+            self._cdata, _ffi_deref(markerLabel._cdata)
         )
 
     def popDebugGroup(self) -> None:
         return lib.wgpuRenderBundleEncoderPopDebugGroup(self._cdata)
 
-    def pushDebugGroup(self, groupLabel: str) -> None:
+    def pushDebugGroup(self, groupLabel: "StringView") -> None:
         return lib.wgpuRenderBundleEncoderPushDebugGroup(
-            self._cdata, _ffi_unwrap_str(groupLabel)
+            self._cdata, _ffi_deref(groupLabel._cdata)
         )
 
     def setBindGroup(
         self,
         groupIndex: int,
         group: Optional["BindGroup"],
-        dynamicOffsets: Union["IntList", List[int]],
+        dynamicOffsets: Union["IntList", List["int"]],
     ) -> None:
         if isinstance(dynamicOffsets, list):
             dynamicOffsets_staged = IntList(dynamicOffsets)
@@ -2436,8 +2533,8 @@ class RenderBundleEncoder:
             self._cdata, buffer._cdata, int(format), offset, size
         )
 
-    def setLabel(self, label: str) -> None:
-        return lib.wgpuRenderBundleEncoderSetLabel(self._cdata, _ffi_unwrap_str(label))
+    def setLabel(self, label: "StringView") -> None:
+        return lib.wgpuRenderBundleEncoderSetLabel(self._cdata, _ffi_deref(label._cdata))
 
     def setPipeline(self, pipeline: "RenderPipeline") -> None:
         return lib.wgpuRenderBundleEncoderSetPipeline(self._cdata, pipeline._cdata)
@@ -2449,11 +2546,22 @@ class RenderBundleEncoder:
             self._cdata, slot, _ffi_unwrap_optional(buffer), offset, size
         )
 
-    def _reference(self) -> None:
-        return lib.wgpuRenderBundleEncoderReference(self._cdata)
+    def _addRef(self) -> None:
+        return lib.wgpuRenderBundleEncoderAddRef(self._cdata)
 
     def _release(self) -> None:
         return lib.wgpuRenderBundleEncoderRelease(self._cdata)
+
+    def setPushConstants(
+        self,
+        stages: Union["ShaderStage", "ShaderStageFlags", int],
+        offset: int,
+        sizeBytes: int,
+        data: DataPtr,
+    ) -> None:
+        return lib.wgpuRenderBundleEncoderSetPushConstants(
+            self._cdata, int(stages), offset, sizeBytes, data._ptr
+        )
 
 
 class RenderPassEncoder:
@@ -2461,7 +2569,7 @@ class RenderPassEncoder:
         if cdata != ffi.NULL:
             self._cdata = ffi.gc(cdata, lib.wgpuRenderPassEncoderRelease)
             if add_ref:
-                lib.wgpuRenderPassEncoderReference(self._cdata)
+                lib.wgpuRenderPassEncoderAddRef(self._cdata)
         else:
             self._cdata = ffi.NULL
 
@@ -2528,7 +2636,7 @@ class RenderPassEncoder:
         return lib.wgpuRenderPassEncoderEndOcclusionQuery(self._cdata)
 
     def executeBundles(
-        self, bundles: Union["RenderBundleList", List[RenderBundle]]
+        self, bundles: Union["RenderBundleList", List["RenderBundle"]]
     ) -> None:
         if isinstance(bundles, list):
             bundles_staged = RenderBundleList(bundles)
@@ -2538,24 +2646,24 @@ class RenderPassEncoder:
             self._cdata, bundles_staged._count, bundles_staged._ptr
         )
 
-    def insertDebugMarker(self, markerLabel: str) -> None:
+    def insertDebugMarker(self, markerLabel: "StringView") -> None:
         return lib.wgpuRenderPassEncoderInsertDebugMarker(
-            self._cdata, _ffi_unwrap_str(markerLabel)
+            self._cdata, _ffi_deref(markerLabel._cdata)
         )
 
     def popDebugGroup(self) -> None:
         return lib.wgpuRenderPassEncoderPopDebugGroup(self._cdata)
 
-    def pushDebugGroup(self, groupLabel: str) -> None:
+    def pushDebugGroup(self, groupLabel: "StringView") -> None:
         return lib.wgpuRenderPassEncoderPushDebugGroup(
-            self._cdata, _ffi_unwrap_str(groupLabel)
+            self._cdata, _ffi_deref(groupLabel._cdata)
         )
 
     def setBindGroup(
         self,
         groupIndex: int,
         group: Optional["BindGroup"],
-        dynamicOffsets: Union["IntList", List[int]],
+        dynamicOffsets: Union["IntList", List["int"]],
     ) -> None:
         if isinstance(dynamicOffsets, list):
             dynamicOffsets_staged = IntList(dynamicOffsets)
@@ -2579,8 +2687,8 @@ class RenderPassEncoder:
             self._cdata, buffer._cdata, int(format), offset, size
         )
 
-    def setLabel(self, label: str) -> None:
-        return lib.wgpuRenderPassEncoderSetLabel(self._cdata, _ffi_unwrap_str(label))
+    def setLabel(self, label: "StringView") -> None:
+        return lib.wgpuRenderPassEncoderSetLabel(self._cdata, _ffi_deref(label._cdata))
 
     def setPipeline(self, pipeline: "RenderPipeline") -> None:
         return lib.wgpuRenderPassEncoderSetPipeline(self._cdata, pipeline._cdata)
@@ -2611,15 +2719,15 @@ class RenderPassEncoder:
             self._cdata, x, y, width, height, minDepth, maxDepth
         )
 
-    def _reference(self) -> None:
-        return lib.wgpuRenderPassEncoderReference(self._cdata)
+    def _addRef(self) -> None:
+        return lib.wgpuRenderPassEncoderAddRef(self._cdata)
 
     def _release(self) -> None:
         return lib.wgpuRenderPassEncoderRelease(self._cdata)
 
     def setPushConstants(
         self,
-        stages: Union["ShaderStageFlags", "ShaderStage", int],
+        stages: Union["ShaderStage", "ShaderStageFlags", int],
         offset: int,
         sizeBytes: int,
         data: DataPtr,
@@ -2680,13 +2788,18 @@ class RenderPassEncoder:
     def endPipelineStatisticsQuery(self) -> None:
         return lib.wgpuRenderPassEncoderEndPipelineStatisticsQuery(self._cdata)
 
+    def writeTimestamp(self, querySet: "QuerySet", queryIndex: int) -> None:
+        return lib.wgpuRenderPassEncoderWriteTimestamp(
+            self._cdata, querySet._cdata, queryIndex
+        )
+
 
 class RenderPipeline:
     def __init__(self, cdata: CData, add_ref: bool = False):
         if cdata != ffi.NULL:
             self._cdata = ffi.gc(cdata, lib.wgpuRenderPipelineRelease)
             if add_ref:
-                lib.wgpuRenderPipelineReference(self._cdata)
+                lib.wgpuRenderPipelineAddRef(self._cdata)
         else:
             self._cdata = ffi.NULL
 
@@ -2718,11 +2831,11 @@ class RenderPipeline:
             add_ref=False,
         )
 
-    def setLabel(self, label: str) -> None:
-        return lib.wgpuRenderPipelineSetLabel(self._cdata, _ffi_unwrap_str(label))
+    def setLabel(self, label: "StringView") -> None:
+        return lib.wgpuRenderPipelineSetLabel(self._cdata, _ffi_deref(label._cdata))
 
-    def _reference(self) -> None:
-        return lib.wgpuRenderPipelineReference(self._cdata)
+    def _addRef(self) -> None:
+        return lib.wgpuRenderPipelineAddRef(self._cdata)
 
     def _release(self) -> None:
         return lib.wgpuRenderPipelineRelease(self._cdata)
@@ -2733,7 +2846,7 @@ class Sampler:
         if cdata != ffi.NULL:
             self._cdata = ffi.gc(cdata, lib.wgpuSamplerRelease)
             if add_ref:
-                lib.wgpuSamplerReference(self._cdata)
+                lib.wgpuSamplerAddRef(self._cdata)
         else:
             self._cdata = ffi.NULL
 
@@ -2759,11 +2872,11 @@ class Sampler:
     def isValid(self) -> None:
         return self._cdata != ffi.NULL
 
-    def setLabel(self, label: str) -> None:
-        return lib.wgpuSamplerSetLabel(self._cdata, _ffi_unwrap_str(label))
+    def setLabel(self, label: "StringView") -> None:
+        return lib.wgpuSamplerSetLabel(self._cdata, _ffi_deref(label._cdata))
 
-    def _reference(self) -> None:
-        return lib.wgpuSamplerReference(self._cdata)
+    def _addRef(self) -> None:
+        return lib.wgpuSamplerAddRef(self._cdata)
 
     def _release(self) -> None:
         return lib.wgpuSamplerRelease(self._cdata)
@@ -2774,7 +2887,7 @@ class ShaderModule:
         if cdata != ffi.NULL:
             self._cdata = ffi.gc(cdata, lib.wgpuShaderModuleRelease)
             if add_ref:
-                lib.wgpuShaderModuleReference(self._cdata)
+                lib.wgpuShaderModuleAddRef(self._cdata)
         else:
             self._cdata = ffi.NULL
 
@@ -2800,18 +2913,19 @@ class ShaderModule:
     def isValid(self) -> None:
         return self._cdata != ffi.NULL
 
-    def getCompilationInfo(
-        self, callback: "ShaderModuleGetCompilationInfoCallback"
-    ) -> None:
-        return lib.wgpuShaderModuleGetCompilationInfo(
-            self._cdata, callback._ptr, callback._userdata
+    def getCompilationInfo(self, callbackInfo: "CompilationInfoCallbackInfo") -> "Future":
+        return Future(
+            cdata=lib.wgpuShaderModuleGetCompilationInfo(
+                self._cdata, _ffi_deref(callbackInfo._cdata)
+            ),
+            parent=None,
         )
 
-    def setLabel(self, label: str) -> None:
-        return lib.wgpuShaderModuleSetLabel(self._cdata, _ffi_unwrap_str(label))
+    def setLabel(self, label: "StringView") -> None:
+        return lib.wgpuShaderModuleSetLabel(self._cdata, _ffi_deref(label._cdata))
 
-    def _reference(self) -> None:
-        return lib.wgpuShaderModuleReference(self._cdata)
+    def _addRef(self) -> None:
+        return lib.wgpuShaderModuleAddRef(self._cdata)
 
     def _release(self) -> None:
         return lib.wgpuShaderModuleRelease(self._cdata)
@@ -2822,7 +2936,7 @@ class Surface:
         if cdata != ffi.NULL:
             self._cdata = ffi.gc(cdata, lib.wgpuSurfaceRelease)
             if add_ref:
-                lib.wgpuSurfaceReference(self._cdata)
+                lib.wgpuSurfaceAddRef(self._cdata)
         else:
             self._cdata = ffi.NULL
 
@@ -2857,11 +2971,11 @@ class Surface:
         nextInChain: Optional["ChainedStruct"] = None,
         device: "Device",
         format: "TextureFormat",
-        usage: Union["TextureUsageFlags", "TextureUsage", int],
-        viewFormats: Union["TextureFormatList", List["TextureFormat"]],
-        alphaMode: "CompositeAlphaMode",
+        usage: Union["TextureUsage", "TextureUsageFlags", int],
         width: int,
         height: int,
+        viewFormats: Union["TextureFormatList", List["TextureFormat"]],
+        alphaMode: "CompositeAlphaMode",
         presentMode: "PresentMode",
     ) -> None:
         return self.configureFromDesc(
@@ -2870,10 +2984,10 @@ class Surface:
                 device=device,
                 format=format,
                 usage=usage,
-                viewFormats=viewFormats,
-                alphaMode=alphaMode,
                 width=width,
                 height=height,
+                viewFormats=viewFormats,
+                alphaMode=alphaMode,
                 presentMode=presentMode,
             )
         )
@@ -2899,17 +3013,17 @@ class Surface:
     def getCurrentTexture(self, surfaceTexture: "SurfaceTexture") -> None:
         return lib.wgpuSurfaceGetCurrentTexture(self._cdata, surfaceTexture._cdata)
 
-    def present(self) -> None:
-        return lib.wgpuSurfacePresent(self._cdata)
+    def present(self) -> "Status":
+        return Status(lib.wgpuSurfacePresent(self._cdata))
 
-    def setLabel(self, label: str) -> None:
-        return lib.wgpuSurfaceSetLabel(self._cdata, _ffi_unwrap_str(label))
+    def setLabel(self, label: "StringView") -> None:
+        return lib.wgpuSurfaceSetLabel(self._cdata, _ffi_deref(label._cdata))
 
     def unconfigure(self) -> None:
         return lib.wgpuSurfaceUnconfigure(self._cdata)
 
-    def _reference(self) -> None:
-        return lib.wgpuSurfaceReference(self._cdata)
+    def _addRef(self) -> None:
+        return lib.wgpuSurfaceAddRef(self._cdata)
 
     def _release(self) -> None:
         return lib.wgpuSurfaceRelease(self._cdata)
@@ -2920,7 +3034,7 @@ class Texture:
         if cdata != ffi.NULL:
             self._cdata = ffi.gc(cdata, lib.wgpuTextureRelease)
             if add_ref:
-                lib.wgpuTextureReference(self._cdata)
+                lib.wgpuTextureAddRef(self._cdata)
         else:
             self._cdata = ffi.NULL
 
@@ -2958,7 +3072,7 @@ class Texture:
         self,
         *,
         nextInChain: Optional["ChainedStruct"] = None,
-        label: Optional[str] = None,
+        label: "StringView",
         format: "TextureFormat",
         dimension: "TextureViewDimension",
         baseMipLevel: int = 0,
@@ -2966,6 +3080,7 @@ class Texture:
         baseArrayLayer: int = 0,
         arrayLayerCount: int,
         aspect: "TextureAspect" = TextureAspect.All,
+        usage: Union["TextureUsage", "TextureUsageFlags", int] = 0,
     ) -> "TextureView":
         return self.createViewFromDesc(
             textureViewDescriptor(
@@ -2978,6 +3093,7 @@ class Texture:
                 baseArrayLayer=baseArrayLayer,
                 arrayLayerCount=arrayLayerCount,
                 aspect=aspect,
+                usage=usage,
             )
         )
 
@@ -3002,17 +3118,17 @@ class Texture:
     def getSampleCount(self) -> int:
         return lib.wgpuTextureGetSampleCount(self._cdata)
 
-    def getUsage(self) -> "TextureUsageFlags":
-        return TextureUsageFlags(lib.wgpuTextureGetUsage(self._cdata))
+    def getUsage(self) -> "TextureUsage":
+        return TextureUsage(lib.wgpuTextureGetUsage(self._cdata))
 
     def getWidth(self) -> int:
         return lib.wgpuTextureGetWidth(self._cdata)
 
-    def setLabel(self, label: str) -> None:
-        return lib.wgpuTextureSetLabel(self._cdata, _ffi_unwrap_str(label))
+    def setLabel(self, label: "StringView") -> None:
+        return lib.wgpuTextureSetLabel(self._cdata, _ffi_deref(label._cdata))
 
-    def _reference(self) -> None:
-        return lib.wgpuTextureReference(self._cdata)
+    def _addRef(self) -> None:
+        return lib.wgpuTextureAddRef(self._cdata)
 
     def _release(self) -> None:
         return lib.wgpuTextureRelease(self._cdata)
@@ -3023,7 +3139,7 @@ class TextureView:
         if cdata != ffi.NULL:
             self._cdata = ffi.gc(cdata, lib.wgpuTextureViewRelease)
             if add_ref:
-                lib.wgpuTextureViewReference(self._cdata)
+                lib.wgpuTextureViewAddRef(self._cdata)
         else:
             self._cdata = ffi.NULL
 
@@ -3049,18 +3165,802 @@ class TextureView:
     def isValid(self) -> None:
         return self._cdata != ffi.NULL
 
-    def setLabel(self, label: str) -> None:
-        return lib.wgpuTextureViewSetLabel(self._cdata, _ffi_unwrap_str(label))
+    def setLabel(self, label: "StringView") -> None:
+        return lib.wgpuTextureViewSetLabel(self._cdata, _ffi_deref(label._cdata))
 
-    def _reference(self) -> None:
-        return lib.wgpuTextureViewReference(self._cdata)
+    def _addRef(self) -> None:
+        return lib.wgpuTextureViewAddRef(self._cdata)
 
     def _release(self) -> None:
         return lib.wgpuTextureViewRelease(self._cdata)
 
 
+class StringView:
+    def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
+        self._parent = parent
+        self._cdata = _ffi_init("WGPUStringView *", cdata)
+
+    @property
+    def data(self) -> Optional[str]:
+        return _ffi_string(self._cdata.data)
+
+    @data.setter
+    def data(self, v: Optional[str]) -> None:
+        self._data = v
+        if v is None:
+            self._cdata.data = ffi.NULL
+        else:
+            self._store_data = _ffi_unwrap_str(v)
+            self._cdata.data = self._store_data
+
+    @property
+    def length(self) -> int:
+        return self._cdata.length
+
+    @length.setter
+    def length(self, v: int) -> None:
+        self._cdata.length = v
+
+
+def stringView(*, data: Optional[str] = None, length: int) -> StringView:
+    ret = StringView(cdata=None, parent=None)
+    ret.data = data
+    ret.length = length
+    return ret
+
+
 # ChainedStruct is specially defined elsewhere
 # ChainedStructOut is specially defined elsewhere
+
+
+class BufferMapCallbackInfo:
+    def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
+        self._parent = parent
+        self._cdata = _ffi_init("WGPUBufferMapCallbackInfo *", cdata)
+
+    @property
+    def nextInChain(self) -> Optional["ChainedStruct"]:
+        return self._nextInChain
+
+    @nextInChain.setter
+    def nextInChain(self, v: Optional["ChainedStruct"]) -> None:
+        self._nextInChain = v
+        if v is None:
+            self._cdata.nextInChain = ffi.NULL
+        else:
+            self._cdata.nextInChain = v._cdata
+
+    @property
+    def mode(self) -> "CallbackMode":
+        return CallbackMode(self._cdata.mode)
+
+    @mode.setter
+    def mode(self, v: "CallbackMode") -> None:
+        self._cdata.mode = int(v)
+
+    @property
+    def callback(self) -> "BufferMapCallback":
+        return self._cdata.callback
+
+    @callback.setter
+    def callback(self, v: "BufferMapCallback") -> None:
+        self._callback = v
+        self._cdata.callback = v
+
+    @property
+    def userdata1(self) -> Optional[VoidPtr]:
+        return self._userdata1
+
+    @userdata1.setter
+    def userdata1(self, v: Optional[VoidPtr]) -> None:
+        self._userdata1 = v
+        if v is None:
+            self._cdata.userdata1 = ffi.NULL
+        else:
+            self._cdata.userdata1 = v._ptr
+
+    @property
+    def userdata2(self) -> Optional[VoidPtr]:
+        return self._userdata2
+
+    @userdata2.setter
+    def userdata2(self, v: Optional[VoidPtr]) -> None:
+        self._userdata2 = v
+        if v is None:
+            self._cdata.userdata2 = ffi.NULL
+        else:
+            self._cdata.userdata2 = v._ptr
+
+
+def bufferMapCallbackInfo(
+    *,
+    nextInChain: Optional["ChainedStruct"] = None,
+    mode: "CallbackMode",
+    callback: "BufferMapCallback",
+    userdata1: Optional[VoidPtr] = None,
+    userdata2: Optional[VoidPtr] = None,
+) -> BufferMapCallbackInfo:
+    ret = BufferMapCallbackInfo(cdata=None, parent=None)
+    ret.nextInChain = nextInChain
+    ret.mode = mode
+    ret.callback = callback
+    ret.userdata1 = userdata1
+    ret.userdata2 = userdata2
+    return ret
+
+
+class CompilationInfoCallbackInfo:
+    def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
+        self._parent = parent
+        self._cdata = _ffi_init("WGPUCompilationInfoCallbackInfo *", cdata)
+
+    @property
+    def nextInChain(self) -> Optional["ChainedStruct"]:
+        return self._nextInChain
+
+    @nextInChain.setter
+    def nextInChain(self, v: Optional["ChainedStruct"]) -> None:
+        self._nextInChain = v
+        if v is None:
+            self._cdata.nextInChain = ffi.NULL
+        else:
+            self._cdata.nextInChain = v._cdata
+
+    @property
+    def mode(self) -> "CallbackMode":
+        return CallbackMode(self._cdata.mode)
+
+    @mode.setter
+    def mode(self, v: "CallbackMode") -> None:
+        self._cdata.mode = int(v)
+
+    @property
+    def callback(self) -> "CompilationInfoCallback":
+        return self._cdata.callback
+
+    @callback.setter
+    def callback(self, v: "CompilationInfoCallback") -> None:
+        self._callback = v
+        self._cdata.callback = v
+
+    @property
+    def userdata1(self) -> Optional[VoidPtr]:
+        return self._userdata1
+
+    @userdata1.setter
+    def userdata1(self, v: Optional[VoidPtr]) -> None:
+        self._userdata1 = v
+        if v is None:
+            self._cdata.userdata1 = ffi.NULL
+        else:
+            self._cdata.userdata1 = v._ptr
+
+    @property
+    def userdata2(self) -> Optional[VoidPtr]:
+        return self._userdata2
+
+    @userdata2.setter
+    def userdata2(self, v: Optional[VoidPtr]) -> None:
+        self._userdata2 = v
+        if v is None:
+            self._cdata.userdata2 = ffi.NULL
+        else:
+            self._cdata.userdata2 = v._ptr
+
+
+def compilationInfoCallbackInfo(
+    *,
+    nextInChain: Optional["ChainedStruct"] = None,
+    mode: "CallbackMode",
+    callback: "CompilationInfoCallback",
+    userdata1: Optional[VoidPtr] = None,
+    userdata2: Optional[VoidPtr] = None,
+) -> CompilationInfoCallbackInfo:
+    ret = CompilationInfoCallbackInfo(cdata=None, parent=None)
+    ret.nextInChain = nextInChain
+    ret.mode = mode
+    ret.callback = callback
+    ret.userdata1 = userdata1
+    ret.userdata2 = userdata2
+    return ret
+
+
+class CreateComputePipelineAsyncCallbackInfo:
+    def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
+        self._parent = parent
+        self._cdata = _ffi_init("WGPUCreateComputePipelineAsyncCallbackInfo *", cdata)
+
+    @property
+    def nextInChain(self) -> Optional["ChainedStruct"]:
+        return self._nextInChain
+
+    @nextInChain.setter
+    def nextInChain(self, v: Optional["ChainedStruct"]) -> None:
+        self._nextInChain = v
+        if v is None:
+            self._cdata.nextInChain = ffi.NULL
+        else:
+            self._cdata.nextInChain = v._cdata
+
+    @property
+    def mode(self) -> "CallbackMode":
+        return CallbackMode(self._cdata.mode)
+
+    @mode.setter
+    def mode(self, v: "CallbackMode") -> None:
+        self._cdata.mode = int(v)
+
+    @property
+    def callback(self) -> "CreateComputePipelineAsyncCallback":
+        return self._cdata.callback
+
+    @callback.setter
+    def callback(self, v: "CreateComputePipelineAsyncCallback") -> None:
+        self._callback = v
+        self._cdata.callback = v
+
+    @property
+    def userdata1(self) -> Optional[VoidPtr]:
+        return self._userdata1
+
+    @userdata1.setter
+    def userdata1(self, v: Optional[VoidPtr]) -> None:
+        self._userdata1 = v
+        if v is None:
+            self._cdata.userdata1 = ffi.NULL
+        else:
+            self._cdata.userdata1 = v._ptr
+
+    @property
+    def userdata2(self) -> Optional[VoidPtr]:
+        return self._userdata2
+
+    @userdata2.setter
+    def userdata2(self, v: Optional[VoidPtr]) -> None:
+        self._userdata2 = v
+        if v is None:
+            self._cdata.userdata2 = ffi.NULL
+        else:
+            self._cdata.userdata2 = v._ptr
+
+
+def createComputePipelineAsyncCallbackInfo(
+    *,
+    nextInChain: Optional["ChainedStruct"] = None,
+    mode: "CallbackMode",
+    callback: "CreateComputePipelineAsyncCallback",
+    userdata1: Optional[VoidPtr] = None,
+    userdata2: Optional[VoidPtr] = None,
+) -> CreateComputePipelineAsyncCallbackInfo:
+    ret = CreateComputePipelineAsyncCallbackInfo(cdata=None, parent=None)
+    ret.nextInChain = nextInChain
+    ret.mode = mode
+    ret.callback = callback
+    ret.userdata1 = userdata1
+    ret.userdata2 = userdata2
+    return ret
+
+
+class CreateRenderPipelineAsyncCallbackInfo:
+    def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
+        self._parent = parent
+        self._cdata = _ffi_init("WGPUCreateRenderPipelineAsyncCallbackInfo *", cdata)
+
+    @property
+    def nextInChain(self) -> Optional["ChainedStruct"]:
+        return self._nextInChain
+
+    @nextInChain.setter
+    def nextInChain(self, v: Optional["ChainedStruct"]) -> None:
+        self._nextInChain = v
+        if v is None:
+            self._cdata.nextInChain = ffi.NULL
+        else:
+            self._cdata.nextInChain = v._cdata
+
+    @property
+    def mode(self) -> "CallbackMode":
+        return CallbackMode(self._cdata.mode)
+
+    @mode.setter
+    def mode(self, v: "CallbackMode") -> None:
+        self._cdata.mode = int(v)
+
+    @property
+    def callback(self) -> "CreateRenderPipelineAsyncCallback":
+        return self._cdata.callback
+
+    @callback.setter
+    def callback(self, v: "CreateRenderPipelineAsyncCallback") -> None:
+        self._callback = v
+        self._cdata.callback = v
+
+    @property
+    def userdata1(self) -> Optional[VoidPtr]:
+        return self._userdata1
+
+    @userdata1.setter
+    def userdata1(self, v: Optional[VoidPtr]) -> None:
+        self._userdata1 = v
+        if v is None:
+            self._cdata.userdata1 = ffi.NULL
+        else:
+            self._cdata.userdata1 = v._ptr
+
+    @property
+    def userdata2(self) -> Optional[VoidPtr]:
+        return self._userdata2
+
+    @userdata2.setter
+    def userdata2(self, v: Optional[VoidPtr]) -> None:
+        self._userdata2 = v
+        if v is None:
+            self._cdata.userdata2 = ffi.NULL
+        else:
+            self._cdata.userdata2 = v._ptr
+
+
+def createRenderPipelineAsyncCallbackInfo(
+    *,
+    nextInChain: Optional["ChainedStruct"] = None,
+    mode: "CallbackMode",
+    callback: "CreateRenderPipelineAsyncCallback",
+    userdata1: Optional[VoidPtr] = None,
+    userdata2: Optional[VoidPtr] = None,
+) -> CreateRenderPipelineAsyncCallbackInfo:
+    ret = CreateRenderPipelineAsyncCallbackInfo(cdata=None, parent=None)
+    ret.nextInChain = nextInChain
+    ret.mode = mode
+    ret.callback = callback
+    ret.userdata1 = userdata1
+    ret.userdata2 = userdata2
+    return ret
+
+
+class DeviceLostCallbackInfo:
+    def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
+        self._parent = parent
+        self._cdata = _ffi_init("WGPUDeviceLostCallbackInfo *", cdata)
+
+    @property
+    def nextInChain(self) -> Optional["ChainedStruct"]:
+        return self._nextInChain
+
+    @nextInChain.setter
+    def nextInChain(self, v: Optional["ChainedStruct"]) -> None:
+        self._nextInChain = v
+        if v is None:
+            self._cdata.nextInChain = ffi.NULL
+        else:
+            self._cdata.nextInChain = v._cdata
+
+    @property
+    def mode(self) -> "CallbackMode":
+        return CallbackMode(self._cdata.mode)
+
+    @mode.setter
+    def mode(self, v: "CallbackMode") -> None:
+        self._cdata.mode = int(v)
+
+    @property
+    def callback(self) -> "DeviceLostCallback":
+        return self._cdata.callback
+
+    @callback.setter
+    def callback(self, v: "DeviceLostCallback") -> None:
+        self._callback = v
+        self._cdata.callback = v
+
+    @property
+    def userdata1(self) -> Optional[VoidPtr]:
+        return self._userdata1
+
+    @userdata1.setter
+    def userdata1(self, v: Optional[VoidPtr]) -> None:
+        self._userdata1 = v
+        if v is None:
+            self._cdata.userdata1 = ffi.NULL
+        else:
+            self._cdata.userdata1 = v._ptr
+
+    @property
+    def userdata2(self) -> Optional[VoidPtr]:
+        return self._userdata2
+
+    @userdata2.setter
+    def userdata2(self, v: Optional[VoidPtr]) -> None:
+        self._userdata2 = v
+        if v is None:
+            self._cdata.userdata2 = ffi.NULL
+        else:
+            self._cdata.userdata2 = v._ptr
+
+
+def deviceLostCallbackInfo(
+    *,
+    nextInChain: Optional["ChainedStruct"] = None,
+    mode: "CallbackMode",
+    callback: "DeviceLostCallback",
+    userdata1: Optional[VoidPtr] = None,
+    userdata2: Optional[VoidPtr] = None,
+) -> DeviceLostCallbackInfo:
+    ret = DeviceLostCallbackInfo(cdata=None, parent=None)
+    ret.nextInChain = nextInChain
+    ret.mode = mode
+    ret.callback = callback
+    ret.userdata1 = userdata1
+    ret.userdata2 = userdata2
+    return ret
+
+
+class PopErrorScopeCallbackInfo:
+    def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
+        self._parent = parent
+        self._cdata = _ffi_init("WGPUPopErrorScopeCallbackInfo *", cdata)
+
+    @property
+    def nextInChain(self) -> Optional["ChainedStruct"]:
+        return self._nextInChain
+
+    @nextInChain.setter
+    def nextInChain(self, v: Optional["ChainedStruct"]) -> None:
+        self._nextInChain = v
+        if v is None:
+            self._cdata.nextInChain = ffi.NULL
+        else:
+            self._cdata.nextInChain = v._cdata
+
+    @property
+    def mode(self) -> "CallbackMode":
+        return CallbackMode(self._cdata.mode)
+
+    @mode.setter
+    def mode(self, v: "CallbackMode") -> None:
+        self._cdata.mode = int(v)
+
+    @property
+    def callback(self) -> "PopErrorScopeCallback":
+        return self._cdata.callback
+
+    @callback.setter
+    def callback(self, v: "PopErrorScopeCallback") -> None:
+        self._callback = v
+        self._cdata.callback = v
+
+    @property
+    def userdata1(self) -> Optional[VoidPtr]:
+        return self._userdata1
+
+    @userdata1.setter
+    def userdata1(self, v: Optional[VoidPtr]) -> None:
+        self._userdata1 = v
+        if v is None:
+            self._cdata.userdata1 = ffi.NULL
+        else:
+            self._cdata.userdata1 = v._ptr
+
+    @property
+    def userdata2(self) -> Optional[VoidPtr]:
+        return self._userdata2
+
+    @userdata2.setter
+    def userdata2(self, v: Optional[VoidPtr]) -> None:
+        self._userdata2 = v
+        if v is None:
+            self._cdata.userdata2 = ffi.NULL
+        else:
+            self._cdata.userdata2 = v._ptr
+
+
+def popErrorScopeCallbackInfo(
+    *,
+    nextInChain: Optional["ChainedStruct"] = None,
+    mode: "CallbackMode",
+    callback: "PopErrorScopeCallback",
+    userdata1: Optional[VoidPtr] = None,
+    userdata2: Optional[VoidPtr] = None,
+) -> PopErrorScopeCallbackInfo:
+    ret = PopErrorScopeCallbackInfo(cdata=None, parent=None)
+    ret.nextInChain = nextInChain
+    ret.mode = mode
+    ret.callback = callback
+    ret.userdata1 = userdata1
+    ret.userdata2 = userdata2
+    return ret
+
+
+class QueueWorkDoneCallbackInfo:
+    def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
+        self._parent = parent
+        self._cdata = _ffi_init("WGPUQueueWorkDoneCallbackInfo *", cdata)
+
+    @property
+    def nextInChain(self) -> Optional["ChainedStruct"]:
+        return self._nextInChain
+
+    @nextInChain.setter
+    def nextInChain(self, v: Optional["ChainedStruct"]) -> None:
+        self._nextInChain = v
+        if v is None:
+            self._cdata.nextInChain = ffi.NULL
+        else:
+            self._cdata.nextInChain = v._cdata
+
+    @property
+    def mode(self) -> "CallbackMode":
+        return CallbackMode(self._cdata.mode)
+
+    @mode.setter
+    def mode(self, v: "CallbackMode") -> None:
+        self._cdata.mode = int(v)
+
+    @property
+    def callback(self) -> "QueueWorkDoneCallback":
+        return self._cdata.callback
+
+    @callback.setter
+    def callback(self, v: "QueueWorkDoneCallback") -> None:
+        self._callback = v
+        self._cdata.callback = v
+
+    @property
+    def userdata1(self) -> Optional[VoidPtr]:
+        return self._userdata1
+
+    @userdata1.setter
+    def userdata1(self, v: Optional[VoidPtr]) -> None:
+        self._userdata1 = v
+        if v is None:
+            self._cdata.userdata1 = ffi.NULL
+        else:
+            self._cdata.userdata1 = v._ptr
+
+    @property
+    def userdata2(self) -> Optional[VoidPtr]:
+        return self._userdata2
+
+    @userdata2.setter
+    def userdata2(self, v: Optional[VoidPtr]) -> None:
+        self._userdata2 = v
+        if v is None:
+            self._cdata.userdata2 = ffi.NULL
+        else:
+            self._cdata.userdata2 = v._ptr
+
+
+def queueWorkDoneCallbackInfo(
+    *,
+    nextInChain: Optional["ChainedStruct"] = None,
+    mode: "CallbackMode",
+    callback: "QueueWorkDoneCallback",
+    userdata1: Optional[VoidPtr] = None,
+    userdata2: Optional[VoidPtr] = None,
+) -> QueueWorkDoneCallbackInfo:
+    ret = QueueWorkDoneCallbackInfo(cdata=None, parent=None)
+    ret.nextInChain = nextInChain
+    ret.mode = mode
+    ret.callback = callback
+    ret.userdata1 = userdata1
+    ret.userdata2 = userdata2
+    return ret
+
+
+class RequestAdapterCallbackInfo:
+    def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
+        self._parent = parent
+        self._cdata = _ffi_init("WGPURequestAdapterCallbackInfo *", cdata)
+
+    @property
+    def nextInChain(self) -> Optional["ChainedStruct"]:
+        return self._nextInChain
+
+    @nextInChain.setter
+    def nextInChain(self, v: Optional["ChainedStruct"]) -> None:
+        self._nextInChain = v
+        if v is None:
+            self._cdata.nextInChain = ffi.NULL
+        else:
+            self._cdata.nextInChain = v._cdata
+
+    @property
+    def mode(self) -> "CallbackMode":
+        return CallbackMode(self._cdata.mode)
+
+    @mode.setter
+    def mode(self, v: "CallbackMode") -> None:
+        self._cdata.mode = int(v)
+
+    @property
+    def callback(self) -> "RequestAdapterCallback":
+        return self._cdata.callback
+
+    @callback.setter
+    def callback(self, v: "RequestAdapterCallback") -> None:
+        self._callback = v
+        self._cdata.callback = v
+
+    @property
+    def userdata1(self) -> Optional[VoidPtr]:
+        return self._userdata1
+
+    @userdata1.setter
+    def userdata1(self, v: Optional[VoidPtr]) -> None:
+        self._userdata1 = v
+        if v is None:
+            self._cdata.userdata1 = ffi.NULL
+        else:
+            self._cdata.userdata1 = v._ptr
+
+    @property
+    def userdata2(self) -> Optional[VoidPtr]:
+        return self._userdata2
+
+    @userdata2.setter
+    def userdata2(self, v: Optional[VoidPtr]) -> None:
+        self._userdata2 = v
+        if v is None:
+            self._cdata.userdata2 = ffi.NULL
+        else:
+            self._cdata.userdata2 = v._ptr
+
+
+def requestAdapterCallbackInfo(
+    *,
+    nextInChain: Optional["ChainedStruct"] = None,
+    mode: "CallbackMode",
+    callback: "RequestAdapterCallback",
+    userdata1: Optional[VoidPtr] = None,
+    userdata2: Optional[VoidPtr] = None,
+) -> RequestAdapterCallbackInfo:
+    ret = RequestAdapterCallbackInfo(cdata=None, parent=None)
+    ret.nextInChain = nextInChain
+    ret.mode = mode
+    ret.callback = callback
+    ret.userdata1 = userdata1
+    ret.userdata2 = userdata2
+    return ret
+
+
+class RequestDeviceCallbackInfo:
+    def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
+        self._parent = parent
+        self._cdata = _ffi_init("WGPURequestDeviceCallbackInfo *", cdata)
+
+    @property
+    def nextInChain(self) -> Optional["ChainedStruct"]:
+        return self._nextInChain
+
+    @nextInChain.setter
+    def nextInChain(self, v: Optional["ChainedStruct"]) -> None:
+        self._nextInChain = v
+        if v is None:
+            self._cdata.nextInChain = ffi.NULL
+        else:
+            self._cdata.nextInChain = v._cdata
+
+    @property
+    def mode(self) -> "CallbackMode":
+        return CallbackMode(self._cdata.mode)
+
+    @mode.setter
+    def mode(self, v: "CallbackMode") -> None:
+        self._cdata.mode = int(v)
+
+    @property
+    def callback(self) -> "RequestDeviceCallback":
+        return self._cdata.callback
+
+    @callback.setter
+    def callback(self, v: "RequestDeviceCallback") -> None:
+        self._callback = v
+        self._cdata.callback = v
+
+    @property
+    def userdata1(self) -> Optional[VoidPtr]:
+        return self._userdata1
+
+    @userdata1.setter
+    def userdata1(self, v: Optional[VoidPtr]) -> None:
+        self._userdata1 = v
+        if v is None:
+            self._cdata.userdata1 = ffi.NULL
+        else:
+            self._cdata.userdata1 = v._ptr
+
+    @property
+    def userdata2(self) -> Optional[VoidPtr]:
+        return self._userdata2
+
+    @userdata2.setter
+    def userdata2(self, v: Optional[VoidPtr]) -> None:
+        self._userdata2 = v
+        if v is None:
+            self._cdata.userdata2 = ffi.NULL
+        else:
+            self._cdata.userdata2 = v._ptr
+
+
+def requestDeviceCallbackInfo(
+    *,
+    nextInChain: Optional["ChainedStruct"] = None,
+    mode: "CallbackMode",
+    callback: "RequestDeviceCallback",
+    userdata1: Optional[VoidPtr] = None,
+    userdata2: Optional[VoidPtr] = None,
+) -> RequestDeviceCallbackInfo:
+    ret = RequestDeviceCallbackInfo(cdata=None, parent=None)
+    ret.nextInChain = nextInChain
+    ret.mode = mode
+    ret.callback = callback
+    ret.userdata1 = userdata1
+    ret.userdata2 = userdata2
+    return ret
+
+
+class UncapturedErrorCallbackInfo:
+    def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
+        self._parent = parent
+        self._cdata = _ffi_init("WGPUUncapturedErrorCallbackInfo *", cdata)
+
+    @property
+    def nextInChain(self) -> Optional["ChainedStruct"]:
+        return self._nextInChain
+
+    @nextInChain.setter
+    def nextInChain(self, v: Optional["ChainedStruct"]) -> None:
+        self._nextInChain = v
+        if v is None:
+            self._cdata.nextInChain = ffi.NULL
+        else:
+            self._cdata.nextInChain = v._cdata
+
+    @property
+    def callback(self) -> "UncapturedErrorCallback":
+        return self._cdata.callback
+
+    @callback.setter
+    def callback(self, v: "UncapturedErrorCallback") -> None:
+        self._callback = v
+        self._cdata.callback = v
+
+    @property
+    def userdata1(self) -> Optional[VoidPtr]:
+        return self._userdata1
+
+    @userdata1.setter
+    def userdata1(self, v: Optional[VoidPtr]) -> None:
+        self._userdata1 = v
+        if v is None:
+            self._cdata.userdata1 = ffi.NULL
+        else:
+            self._cdata.userdata1 = v._ptr
+
+    @property
+    def userdata2(self) -> Optional[VoidPtr]:
+        return self._userdata2
+
+    @userdata2.setter
+    def userdata2(self, v: Optional[VoidPtr]) -> None:
+        self._userdata2 = v
+        if v is None:
+            self._cdata.userdata2 = ffi.NULL
+        else:
+            self._cdata.userdata2 = v._ptr
+
+
+def uncapturedErrorCallbackInfo(
+    *,
+    nextInChain: Optional["ChainedStruct"] = None,
+    callback: "UncapturedErrorCallback",
+    userdata1: Optional[VoidPtr] = None,
+    userdata2: Optional[VoidPtr] = None,
+) -> UncapturedErrorCallbackInfo:
+    ret = UncapturedErrorCallbackInfo(cdata=None, parent=None)
+    ret.nextInChain = nextInChain
+    ret.callback = callback
+    ret.userdata1 = userdata1
+    ret.userdata2 = userdata2
+    return ret
 
 
 class AdapterInfo:
@@ -3081,44 +3981,36 @@ class AdapterInfo:
             self._cdata.nextInChain = v._cdata
 
     @property
-    def vendor(self) -> str:
-        return _ffi_string(self._cdata.vendor)
+    def vendor(self) -> "StringView":
+        return StringView(cdata=self._cdata.vendor, parent=self)
 
     @vendor.setter
-    def vendor(self, v: str) -> None:
-        self._vendor = v
-        self._store_vendor = _ffi_unwrap_str(v)
-        self._cdata.vendor = self._store_vendor
+    def vendor(self, v: "StringView") -> None:
+        self._cdata.vendor = _ffi_deref(v._cdata)
 
     @property
-    def architecture(self) -> str:
-        return _ffi_string(self._cdata.architecture)
+    def architecture(self) -> "StringView":
+        return StringView(cdata=self._cdata.architecture, parent=self)
 
     @architecture.setter
-    def architecture(self, v: str) -> None:
-        self._architecture = v
-        self._store_architecture = _ffi_unwrap_str(v)
-        self._cdata.architecture = self._store_architecture
+    def architecture(self, v: "StringView") -> None:
+        self._cdata.architecture = _ffi_deref(v._cdata)
 
     @property
-    def device(self) -> str:
-        return _ffi_string(self._cdata.device)
+    def device(self) -> "StringView":
+        return StringView(cdata=self._cdata.device, parent=self)
 
     @device.setter
-    def device(self, v: str) -> None:
-        self._device = v
-        self._store_device = _ffi_unwrap_str(v)
-        self._cdata.device = self._store_device
+    def device(self, v: "StringView") -> None:
+        self._cdata.device = _ffi_deref(v._cdata)
 
     @property
-    def description(self) -> str:
-        return _ffi_string(self._cdata.description)
+    def description(self) -> "StringView":
+        return StringView(cdata=self._cdata.description, parent=self)
 
     @description.setter
-    def description(self, v: str) -> None:
-        self._description = v
-        self._store_description = _ffi_unwrap_str(v)
-        self._cdata.description = self._store_description
+    def description(self, v: "StringView") -> None:
+        self._cdata.description = _ffi_deref(v._cdata)
 
     @property
     def backendType(self) -> "BackendType":
@@ -3156,10 +4048,10 @@ class AdapterInfo:
 def adapterInfo(
     *,
     nextInChain: Optional["ChainedStructOut"] = None,
-    vendor: str,
-    architecture: str,
-    device: str,
-    description: str,
+    vendor: "StringView",
+    architecture: "StringView",
+    device: "StringView",
+    description: "StringView",
     backendType: "BackendType",
     adapterType: "AdapterType",
     vendorID: int,
@@ -3395,24 +4287,19 @@ class BufferDescriptor:
             self._cdata.nextInChain = v._cdata
 
     @property
-    def label(self) -> Optional[str]:
-        return _ffi_string(self._cdata.label)
+    def label(self) -> "StringView":
+        return StringView(cdata=self._cdata.label, parent=self)
 
     @label.setter
-    def label(self, v: Optional[str]) -> None:
-        self._label = v
-        if v is None:
-            self._cdata.label = ffi.NULL
-        else:
-            self._store_label = _ffi_unwrap_str(v)
-            self._cdata.label = self._store_label
+    def label(self, v: "StringView") -> None:
+        self._cdata.label = _ffi_deref(v._cdata)
 
     @property
-    def usage(self) -> "BufferUsageFlags":
-        return BufferUsageFlags(self._cdata.usage)
+    def usage(self) -> "BufferUsage":
+        return BufferUsage(self._cdata.usage)
 
     @usage.setter
-    def usage(self, v: Union["BufferUsageFlags", "BufferUsage", int]) -> None:
+    def usage(self, v: Union["BufferUsage", "BufferUsageFlags", int]) -> None:
         self._cdata.usage = int(v)
 
     @property
@@ -3435,8 +4322,8 @@ class BufferDescriptor:
 def bufferDescriptor(
     *,
     nextInChain: Optional["ChainedStruct"] = None,
-    label: Optional[str] = None,
-    usage: Union["BufferUsageFlags", "BufferUsage", int],
+    label: "StringView",
+    usage: Union["BufferUsage", "BufferUsageFlags", int],
     size: int,
     mappedAtCreation: bool = False,
 ) -> BufferDescriptor:
@@ -3514,21 +4401,16 @@ class CommandBufferDescriptor:
             self._cdata.nextInChain = v._cdata
 
     @property
-    def label(self) -> Optional[str]:
-        return _ffi_string(self._cdata.label)
+    def label(self) -> "StringView":
+        return StringView(cdata=self._cdata.label, parent=self)
 
     @label.setter
-    def label(self, v: Optional[str]) -> None:
-        self._label = v
-        if v is None:
-            self._cdata.label = ffi.NULL
-        else:
-            self._store_label = _ffi_unwrap_str(v)
-            self._cdata.label = self._store_label
+    def label(self, v: "StringView") -> None:
+        self._cdata.label = _ffi_deref(v._cdata)
 
 
 def commandBufferDescriptor(
-    *, nextInChain: Optional["ChainedStruct"] = None, label: Optional[str] = None
+    *, nextInChain: Optional["ChainedStruct"] = None, label: "StringView"
 ) -> CommandBufferDescriptor:
     ret = CommandBufferDescriptor(cdata=None, parent=None)
     ret.nextInChain = nextInChain
@@ -3554,21 +4436,16 @@ class CommandEncoderDescriptor:
             self._cdata.nextInChain = v._cdata
 
     @property
-    def label(self) -> Optional[str]:
-        return _ffi_string(self._cdata.label)
+    def label(self) -> "StringView":
+        return StringView(cdata=self._cdata.label, parent=self)
 
     @label.setter
-    def label(self, v: Optional[str]) -> None:
-        self._label = v
-        if v is None:
-            self._cdata.label = ffi.NULL
-        else:
-            self._store_label = _ffi_unwrap_str(v)
-            self._cdata.label = self._store_label
+    def label(self, v: "StringView") -> None:
+        self._cdata.label = _ffi_deref(v._cdata)
 
 
 def commandEncoderDescriptor(
-    *, nextInChain: Optional["ChainedStruct"] = None, label: Optional[str] = None
+    *, nextInChain: Optional["ChainedStruct"] = None, label: "StringView"
 ) -> CommandEncoderDescriptor:
     ret = CommandEncoderDescriptor(cdata=None, parent=None)
     ret.nextInChain = nextInChain
@@ -3594,17 +4471,12 @@ class CompilationMessage:
             self._cdata.nextInChain = v._cdata
 
     @property
-    def message(self) -> Optional[str]:
-        return _ffi_string(self._cdata.message)
+    def message(self) -> "StringView":
+        return StringView(cdata=self._cdata.message, parent=self)
 
     @message.setter
-    def message(self, v: Optional[str]) -> None:
-        self._message = v
-        if v is None:
-            self._cdata.message = ffi.NULL
-        else:
-            self._store_message = _ffi_unwrap_str(v)
-            self._cdata.message = self._store_message
+    def message(self, v: "StringView") -> None:
+        self._cdata.message = _ffi_deref(v._cdata)
 
     @property
     def type(self) -> "CompilationMessageType":
@@ -3646,43 +4518,16 @@ class CompilationMessage:
     def length(self, v: int) -> None:
         self._cdata.length = v
 
-    @property
-    def utf16LinePos(self) -> int:
-        return self._cdata.utf16LinePos
-
-    @utf16LinePos.setter
-    def utf16LinePos(self, v: int) -> None:
-        self._cdata.utf16LinePos = v
-
-    @property
-    def utf16Offset(self) -> int:
-        return self._cdata.utf16Offset
-
-    @utf16Offset.setter
-    def utf16Offset(self, v: int) -> None:
-        self._cdata.utf16Offset = v
-
-    @property
-    def utf16Length(self) -> int:
-        return self._cdata.utf16Length
-
-    @utf16Length.setter
-    def utf16Length(self, v: int) -> None:
-        self._cdata.utf16Length = v
-
 
 def compilationMessage(
     *,
     nextInChain: Optional["ChainedStruct"] = None,
-    message: Optional[str] = None,
+    message: "StringView",
     type: "CompilationMessageType",
     lineNum: int,
     linePos: int,
     offset: int,
     length: int,
-    utf16LinePos: int,
-    utf16Offset: int,
-    utf16Length: int,
 ) -> CompilationMessage:
     ret = CompilationMessage(cdata=None, parent=None)
     ret.nextInChain = nextInChain
@@ -3692,9 +4537,6 @@ def compilationMessage(
     ret.linePos = linePos
     ret.offset = offset
     ret.length = length
-    ret.utf16LinePos = utf16LinePos
-    ret.utf16Offset = utf16Offset
-    ret.utf16Length = utf16Length
     return ret
 
 
@@ -3757,14 +4599,12 @@ class ConstantEntry:
             self._cdata.nextInChain = v._cdata
 
     @property
-    def key(self) -> str:
-        return _ffi_string(self._cdata.key)
+    def key(self) -> "StringView":
+        return StringView(cdata=self._cdata.key, parent=self)
 
     @key.setter
-    def key(self, v: str) -> None:
-        self._key = v
-        self._store_key = _ffi_unwrap_str(v)
-        self._cdata.key = self._store_key
+    def key(self, v: "StringView") -> None:
+        self._cdata.key = _ffi_deref(v._cdata)
 
     @property
     def value(self) -> float:
@@ -3776,7 +4616,7 @@ class ConstantEntry:
 
 
 def constantEntry(
-    *, nextInChain: Optional["ChainedStruct"] = None, key: str, value: float
+    *, nextInChain: Optional["ChainedStruct"] = None, key: "StringView", value: float
 ) -> ConstantEntry:
     ret = ConstantEntry(cdata=None, parent=None)
     ret.nextInChain = nextInChain
@@ -3823,29 +4663,70 @@ def extent3D(*, width: int, height: int, depthOrArrayLayers: int) -> Extent3D:
     return ret
 
 
-class InstanceDescriptor:
+class Future:
     def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
         self._parent = parent
-        self._cdata = _ffi_init("WGPUInstanceDescriptor *", cdata)
+        self._cdata = _ffi_init("WGPUFuture *", cdata)
 
     @property
-    def nextInChain(self) -> Optional["ChainedStruct"]:
+    def id(self) -> int:
+        return self._cdata.id
+
+    @id.setter
+    def id(self, v: int) -> None:
+        self._cdata.id = v
+
+
+def future(*, id: int) -> Future:
+    ret = Future(cdata=None, parent=None)
+    ret.id = id
+    return ret
+
+
+class InstanceCapabilities:
+    def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
+        self._parent = parent
+        self._cdata = _ffi_init("WGPUInstanceCapabilities *", cdata)
+
+    @property
+    def nextInChain(self) -> Optional["ChainedStructOut"]:
         return self._nextInChain
 
     @nextInChain.setter
-    def nextInChain(self, v: Optional["ChainedStruct"]) -> None:
+    def nextInChain(self, v: Optional["ChainedStructOut"]) -> None:
         self._nextInChain = v
         if v is None:
             self._cdata.nextInChain = ffi.NULL
         else:
             self._cdata.nextInChain = v._cdata
 
+    @property
+    def timedWaitAnyEnable(self) -> bool:
+        return self._cdata.timedWaitAnyEnable
 
-def instanceDescriptor(
-    *, nextInChain: Optional["ChainedStruct"] = None
-) -> InstanceDescriptor:
-    ret = InstanceDescriptor(cdata=None, parent=None)
+    @timedWaitAnyEnable.setter
+    def timedWaitAnyEnable(self, v: bool) -> None:
+        self._cdata.timedWaitAnyEnable = v
+
+    @property
+    def timedWaitAnyMaxCount(self) -> int:
+        return self._cdata.timedWaitAnyMaxCount
+
+    @timedWaitAnyMaxCount.setter
+    def timedWaitAnyMaxCount(self, v: int) -> None:
+        self._cdata.timedWaitAnyMaxCount = v
+
+
+def instanceCapabilities(
+    *,
+    nextInChain: Optional["ChainedStructOut"] = None,
+    timedWaitAnyEnable: bool,
+    timedWaitAnyMaxCount: int,
+) -> InstanceCapabilities:
+    ret = InstanceCapabilities(cdata=None, parent=None)
     ret.nextInChain = nextInChain
+    ret.timedWaitAnyEnable = timedWaitAnyEnable
+    ret.timedWaitAnyMaxCount = timedWaitAnyMaxCount
     return ret
 
 
@@ -3853,6 +4734,18 @@ class Limits:
     def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
         self._parent = parent
         self._cdata = _ffi_init("WGPULimits *", cdata)
+
+    @property
+    def nextInChain(self) -> Optional["ChainedStructOut"]:
+        return self._nextInChain
+
+    @nextInChain.setter
+    def nextInChain(self, v: Optional["ChainedStructOut"]) -> None:
+        self._nextInChain = v
+        if v is None:
+            self._cdata.nextInChain = ffi.NULL
+        else:
+            self._cdata.nextInChain = v._cdata
 
     @property
     def maxTextureDimension1D(self) -> int:
@@ -4031,14 +4924,6 @@ class Limits:
         self._cdata.maxVertexBufferArrayStride = v
 
     @property
-    def maxInterStageShaderComponents(self) -> int:
-        return self._cdata.maxInterStageShaderComponents
-
-    @maxInterStageShaderComponents.setter
-    def maxInterStageShaderComponents(self, v: int) -> None:
-        self._cdata.maxInterStageShaderComponents = v
-
-    @property
     def maxInterStageShaderVariables(self) -> int:
         return self._cdata.maxInterStageShaderVariables
 
@@ -4113,6 +4998,7 @@ class Limits:
 
 def limits(
     *,
+    nextInChain: Optional["ChainedStructOut"] = None,
     maxTextureDimension1D: int,
     maxTextureDimension2D: int,
     maxTextureDimension3D: int,
@@ -4135,7 +5021,6 @@ def limits(
     maxBufferSize: int,
     maxVertexAttributes: int,
     maxVertexBufferArrayStride: int,
-    maxInterStageShaderComponents: int,
     maxInterStageShaderVariables: int,
     maxColorAttachments: int,
     maxColorAttachmentBytesPerSample: int,
@@ -4147,6 +5032,7 @@ def limits(
     maxComputeWorkgroupsPerDimension: int,
 ) -> Limits:
     ret = Limits(cdata=None, parent=None)
+    ret.nextInChain = nextInChain
     ret.maxTextureDimension1D = maxTextureDimension1D
     ret.maxTextureDimension2D = maxTextureDimension2D
     ret.maxTextureDimension3D = maxTextureDimension3D
@@ -4173,7 +5059,6 @@ def limits(
     ret.maxBufferSize = maxBufferSize
     ret.maxVertexAttributes = maxVertexAttributes
     ret.maxVertexBufferArrayStride = maxVertexBufferArrayStride
-    ret.maxInterStageShaderComponents = maxInterStageShaderComponents
     ret.maxInterStageShaderVariables = maxInterStageShaderVariables
     ret.maxColorAttachments = maxColorAttachments
     ret.maxColorAttachmentBytesPerSample = maxColorAttachmentBytesPerSample
@@ -4299,17 +5184,12 @@ class PipelineLayoutDescriptor:
             self._cdata.nextInChain = v._cdata
 
     @property
-    def label(self) -> Optional[str]:
-        return _ffi_string(self._cdata.label)
+    def label(self) -> "StringView":
+        return StringView(cdata=self._cdata.label, parent=self)
 
     @label.setter
-    def label(self, v: Optional[str]) -> None:
-        self._label = v
-        if v is None:
-            self._cdata.label = ffi.NULL
-        else:
-            self._store_label = _ffi_unwrap_str(v)
-            self._cdata.label = self._store_label
+    def label(self, v: "StringView") -> None:
+        self._cdata.label = _ffi_deref(v._cdata)
 
     @property
     def bindGroupLayouts(self) -> "BindGroupLayoutList":
@@ -4331,38 +5211,13 @@ class PipelineLayoutDescriptor:
 def pipelineLayoutDescriptor(
     *,
     nextInChain: Optional["ChainedStruct"] = None,
-    label: Optional[str] = None,
+    label: "StringView",
     bindGroupLayouts: Union["BindGroupLayoutList", List["BindGroupLayout"]],
 ) -> PipelineLayoutDescriptor:
     ret = PipelineLayoutDescriptor(cdata=None, parent=None)
     ret.nextInChain = nextInChain
     ret.label = label
     ret.bindGroupLayouts = bindGroupLayouts
-    return ret
-
-
-class PrimitiveDepthClipControl(Chainable):
-    def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
-        self._parent = parent
-        self._cdata = _ffi_init("WGPUPrimitiveDepthClipControl *", cdata)
-        self._cdata.chain.sType = SType.PrimitiveDepthClipControl
-
-    @property
-    def unclippedDepth(self) -> bool:
-        return self._cdata.unclippedDepth
-
-    @unclippedDepth.setter
-    def unclippedDepth(self, v: bool) -> None:
-        self._cdata.unclippedDepth = v
-
-    @property
-    def _chain(self) -> Any:
-        return self._cdata.chain
-
-
-def primitiveDepthClipControl(*, unclippedDepth: bool) -> PrimitiveDepthClipControl:
-    ret = PrimitiveDepthClipControl(cdata=None, parent=None)
-    ret.unclippedDepth = unclippedDepth
     return ret
 
 
@@ -4415,6 +5270,14 @@ class PrimitiveState:
     def cullMode(self, v: "CullMode") -> None:
         self._cdata.cullMode = int(v)
 
+    @property
+    def unclippedDepth(self) -> bool:
+        return self._cdata.unclippedDepth
+
+    @unclippedDepth.setter
+    def unclippedDepth(self, v: bool) -> None:
+        self._cdata.unclippedDepth = v
+
 
 def primitiveState(
     *,
@@ -4423,6 +5286,7 @@ def primitiveState(
     stripIndexFormat: "IndexFormat",
     frontFace: "FrontFace" = FrontFace.CCW,
     cullMode: "CullMode" = CullMode._None,
+    unclippedDepth: bool = False,
 ) -> PrimitiveState:
     ret = PrimitiveState(cdata=None, parent=None)
     ret.nextInChain = nextInChain
@@ -4430,6 +5294,7 @@ def primitiveState(
     ret.stripIndexFormat = stripIndexFormat
     ret.frontFace = frontFace
     ret.cullMode = cullMode
+    ret.unclippedDepth = unclippedDepth
     return ret
 
 
@@ -4451,17 +5316,12 @@ class QuerySetDescriptor:
             self._cdata.nextInChain = v._cdata
 
     @property
-    def label(self) -> Optional[str]:
-        return _ffi_string(self._cdata.label)
+    def label(self) -> "StringView":
+        return StringView(cdata=self._cdata.label, parent=self)
 
     @label.setter
-    def label(self, v: Optional[str]) -> None:
-        self._label = v
-        if v is None:
-            self._cdata.label = ffi.NULL
-        else:
-            self._store_label = _ffi_unwrap_str(v)
-            self._cdata.label = self._store_label
+    def label(self, v: "StringView") -> None:
+        self._cdata.label = _ffi_deref(v._cdata)
 
     @property
     def type(self) -> "QueryType":
@@ -4483,7 +5343,7 @@ class QuerySetDescriptor:
 def querySetDescriptor(
     *,
     nextInChain: Optional["ChainedStruct"] = None,
-    label: Optional[str] = None,
+    label: "StringView",
     type: "QueryType",
     count: int,
 ) -> QuerySetDescriptor:
@@ -4513,21 +5373,16 @@ class QueueDescriptor:
             self._cdata.nextInChain = v._cdata
 
     @property
-    def label(self) -> Optional[str]:
-        return _ffi_string(self._cdata.label)
+    def label(self) -> "StringView":
+        return StringView(cdata=self._cdata.label, parent=self)
 
     @label.setter
-    def label(self, v: Optional[str]) -> None:
-        self._label = v
-        if v is None:
-            self._cdata.label = ffi.NULL
-        else:
-            self._store_label = _ffi_unwrap_str(v)
-            self._cdata.label = self._store_label
+    def label(self, v: "StringView") -> None:
+        self._cdata.label = _ffi_deref(v._cdata)
 
 
 def queueDescriptor(
-    *, nextInChain: Optional["ChainedStruct"] = None, label: Optional[str] = None
+    *, nextInChain: Optional["ChainedStruct"] = None, label: "StringView"
 ) -> QueueDescriptor:
     ret = QueueDescriptor(cdata=None, parent=None)
     ret.nextInChain = nextInChain
@@ -4553,21 +5408,16 @@ class RenderBundleDescriptor:
             self._cdata.nextInChain = v._cdata
 
     @property
-    def label(self) -> Optional[str]:
-        return _ffi_string(self._cdata.label)
+    def label(self) -> "StringView":
+        return StringView(cdata=self._cdata.label, parent=self)
 
     @label.setter
-    def label(self, v: Optional[str]) -> None:
-        self._label = v
-        if v is None:
-            self._cdata.label = ffi.NULL
-        else:
-            self._store_label = _ffi_unwrap_str(v)
-            self._cdata.label = self._store_label
+    def label(self, v: "StringView") -> None:
+        self._cdata.label = _ffi_deref(v._cdata)
 
 
 def renderBundleDescriptor(
-    *, nextInChain: Optional["ChainedStruct"] = None, label: Optional[str] = None
+    *, nextInChain: Optional["ChainedStruct"] = None, label: "StringView"
 ) -> RenderBundleDescriptor:
     ret = RenderBundleDescriptor(cdata=None, parent=None)
     ret.nextInChain = nextInChain
@@ -4593,17 +5443,12 @@ class RenderBundleEncoderDescriptor:
             self._cdata.nextInChain = v._cdata
 
     @property
-    def label(self) -> Optional[str]:
-        return _ffi_string(self._cdata.label)
+    def label(self) -> "StringView":
+        return StringView(cdata=self._cdata.label, parent=self)
 
     @label.setter
-    def label(self, v: Optional[str]) -> None:
-        self._label = v
-        if v is None:
-            self._cdata.label = ffi.NULL
-        else:
-            self._store_label = _ffi_unwrap_str(v)
-            self._cdata.label = self._store_label
+    def label(self, v: "StringView") -> None:
+        self._cdata.label = _ffi_deref(v._cdata)
 
     @property
     def colorFormats(self) -> "TextureFormatList":
@@ -4655,7 +5500,7 @@ class RenderBundleEncoderDescriptor:
 def renderBundleEncoderDescriptor(
     *,
     nextInChain: Optional["ChainedStruct"] = None,
-    label: Optional[str] = None,
+    label: "StringView",
     colorFormats: Union["TextureFormatList", List["TextureFormat"]],
     depthStencilFormat: "TextureFormat",
     sampleCount: int,
@@ -4777,11 +5622,11 @@ def renderPassDepthStencilAttachment(
     return ret
 
 
-class RenderPassDescriptorMaxDrawCount(Chainable):
+class RenderPassMaxDrawCount(Chainable):
     def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
         self._parent = parent
-        self._cdata = _ffi_init("WGPURenderPassDescriptorMaxDrawCount *", cdata)
-        self._cdata.chain.sType = SType.RenderPassDescriptorMaxDrawCount
+        self._cdata = _ffi_init("WGPURenderPassMaxDrawCount *", cdata)
+        self._cdata.chain.sType = SType.RenderPassMaxDrawCount
 
     @property
     def maxDrawCount(self) -> int:
@@ -4796,10 +5641,8 @@ class RenderPassDescriptorMaxDrawCount(Chainable):
         return self._cdata.chain
 
 
-def renderPassDescriptorMaxDrawCount(
-    *, maxDrawCount: int
-) -> RenderPassDescriptorMaxDrawCount:
-    ret = RenderPassDescriptorMaxDrawCount(cdata=None, parent=None)
+def renderPassMaxDrawCount(*, maxDrawCount: int) -> RenderPassMaxDrawCount:
+    ret = RenderPassMaxDrawCount(cdata=None, parent=None)
     ret.maxDrawCount = maxDrawCount
     return ret
 
@@ -4863,6 +5706,38 @@ class RequestAdapterOptions:
             self._cdata.nextInChain = v._cdata
 
     @property
+    def featureLevel(self) -> "FeatureLevel":
+        return FeatureLevel(self._cdata.featureLevel)
+
+    @featureLevel.setter
+    def featureLevel(self, v: "FeatureLevel") -> None:
+        self._cdata.featureLevel = int(v)
+
+    @property
+    def powerPreference(self) -> "PowerPreference":
+        return PowerPreference(self._cdata.powerPreference)
+
+    @powerPreference.setter
+    def powerPreference(self, v: "PowerPreference") -> None:
+        self._cdata.powerPreference = int(v)
+
+    @property
+    def forceFallbackAdapter(self) -> bool:
+        return self._cdata.forceFallbackAdapter
+
+    @forceFallbackAdapter.setter
+    def forceFallbackAdapter(self, v: bool) -> None:
+        self._cdata.forceFallbackAdapter = v
+
+    @property
+    def backendType(self) -> "BackendType":
+        return BackendType(self._cdata.backendType)
+
+    @backendType.setter
+    def backendType(self, v: "BackendType") -> None:
+        self._cdata.backendType = int(v)
+
+    @property
     def compatibleSurface(self) -> Optional["Surface"]:
         return Surface(self._cdata.compatibleSurface, add_ref=True)
 
@@ -4874,45 +5749,23 @@ class RequestAdapterOptions:
         else:
             self._cdata.compatibleSurface = v._cdata
 
-    @property
-    def powerPreference(self) -> "PowerPreference":
-        return PowerPreference(self._cdata.powerPreference)
-
-    @powerPreference.setter
-    def powerPreference(self, v: "PowerPreference") -> None:
-        self._cdata.powerPreference = int(v)
-
-    @property
-    def backendType(self) -> "BackendType":
-        return BackendType(self._cdata.backendType)
-
-    @backendType.setter
-    def backendType(self, v: "BackendType") -> None:
-        self._cdata.backendType = int(v)
-
-    @property
-    def forceFallbackAdapter(self) -> bool:
-        return self._cdata.forceFallbackAdapter
-
-    @forceFallbackAdapter.setter
-    def forceFallbackAdapter(self, v: bool) -> None:
-        self._cdata.forceFallbackAdapter = v
-
 
 def requestAdapterOptions(
     *,
     nextInChain: Optional["ChainedStruct"] = None,
-    compatibleSurface: Optional["Surface"] = None,
+    featureLevel: "FeatureLevel" = FeatureLevel.Core,
     powerPreference: "PowerPreference",
-    backendType: "BackendType",
     forceFallbackAdapter: bool = False,
+    backendType: "BackendType",
+    compatibleSurface: Optional["Surface"] = None,
 ) -> RequestAdapterOptions:
     ret = RequestAdapterOptions(cdata=None, parent=None)
     ret.nextInChain = nextInChain
-    ret.compatibleSurface = compatibleSurface
+    ret.featureLevel = featureLevel
     ret.powerPreference = powerPreference
-    ret.backendType = backendType
     ret.forceFallbackAdapter = forceFallbackAdapter
+    ret.backendType = backendType
+    ret.compatibleSurface = compatibleSurface
     return ret
 
 
@@ -4969,17 +5822,12 @@ class SamplerDescriptor:
             self._cdata.nextInChain = v._cdata
 
     @property
-    def label(self) -> Optional[str]:
-        return _ffi_string(self._cdata.label)
+    def label(self) -> "StringView":
+        return StringView(cdata=self._cdata.label, parent=self)
 
     @label.setter
-    def label(self, v: Optional[str]) -> None:
-        self._label = v
-        if v is None:
-            self._cdata.label = ffi.NULL
-        else:
-            self._store_label = _ffi_unwrap_str(v)
-            self._cdata.label = self._store_label
+    def label(self, v: "StringView") -> None:
+        self._cdata.label = _ffi_deref(v._cdata)
 
     @property
     def addressModeU(self) -> "AddressMode":
@@ -5065,7 +5913,7 @@ class SamplerDescriptor:
 def samplerDescriptor(
     *,
     nextInChain: Optional["ChainedStruct"] = None,
-    label: Optional[str] = None,
+    label: "StringView",
     addressModeU: "AddressMode" = AddressMode.ClampToEdge,
     addressModeV: "AddressMode" = AddressMode.ClampToEdge,
     addressModeW: "AddressMode" = AddressMode.ClampToEdge,
@@ -5093,10 +5941,10 @@ def samplerDescriptor(
     return ret
 
 
-class ShaderModuleCompilationHint:
+class ShaderModuleDescriptor:
     def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
         self._parent = parent
-        self._cdata = _ffi_init("WGPUShaderModuleCompilationHint *", cdata)
+        self._cdata = _ffi_init("WGPUShaderModuleDescriptor *", cdata)
 
     @property
     def nextInChain(self) -> Optional["ChainedStruct"]:
@@ -5111,43 +5959,28 @@ class ShaderModuleCompilationHint:
             self._cdata.nextInChain = v._cdata
 
     @property
-    def entryPoint(self) -> str:
-        return _ffi_string(self._cdata.entryPoint)
+    def label(self) -> "StringView":
+        return StringView(cdata=self._cdata.label, parent=self)
 
-    @entryPoint.setter
-    def entryPoint(self, v: str) -> None:
-        self._entryPoint = v
-        self._store_entryPoint = _ffi_unwrap_str(v)
-        self._cdata.entryPoint = self._store_entryPoint
-
-    @property
-    def layout(self) -> "PipelineLayout":
-        return PipelineLayout(self._cdata.layout, add_ref=True)
-
-    @layout.setter
-    def layout(self, v: "PipelineLayout") -> None:
-        self._layout = v
-        self._cdata.layout = v._cdata
+    @label.setter
+    def label(self, v: "StringView") -> None:
+        self._cdata.label = _ffi_deref(v._cdata)
 
 
-def shaderModuleCompilationHint(
-    *,
-    nextInChain: Optional["ChainedStruct"] = None,
-    entryPoint: str,
-    layout: "PipelineLayout",
-) -> ShaderModuleCompilationHint:
-    ret = ShaderModuleCompilationHint(cdata=None, parent=None)
+def shaderModuleDescriptor(
+    *, nextInChain: Optional["ChainedStruct"] = None, label: "StringView"
+) -> ShaderModuleDescriptor:
+    ret = ShaderModuleDescriptor(cdata=None, parent=None)
     ret.nextInChain = nextInChain
-    ret.entryPoint = entryPoint
-    ret.layout = layout
+    ret.label = label
     return ret
 
 
-class ShaderModuleSPIRVDescriptor(Chainable):
+class ShaderSourceSPIRV(Chainable):
     def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
         self._parent = parent
-        self._cdata = _ffi_init("WGPUShaderModuleSPIRVDescriptor *", cdata)
-        self._cdata.chain.sType = SType.ShaderModuleSPIRVDescriptor
+        self._cdata = _ffi_init("WGPUShaderSourceSPIRV *", cdata)
+        self._cdata.chain.sType = SType.ShaderSourceSPIRV
 
     @property
     def codeSize(self) -> int:
@@ -5171,38 +6004,34 @@ class ShaderModuleSPIRVDescriptor(Chainable):
         return self._cdata.chain
 
 
-def shaderModuleSPIRVDescriptor(
-    *, codeSize: int, code: int
-) -> ShaderModuleSPIRVDescriptor:
-    ret = ShaderModuleSPIRVDescriptor(cdata=None, parent=None)
+def shaderSourceSPIRV(*, codeSize: int, code: int) -> ShaderSourceSPIRV:
+    ret = ShaderSourceSPIRV(cdata=None, parent=None)
     ret.codeSize = codeSize
     ret.code = code
     return ret
 
 
-class ShaderModuleWGSLDescriptor(Chainable):
+class ShaderSourceWGSL(Chainable):
     def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
         self._parent = parent
-        self._cdata = _ffi_init("WGPUShaderModuleWGSLDescriptor *", cdata)
-        self._cdata.chain.sType = SType.ShaderModuleWGSLDescriptor
+        self._cdata = _ffi_init("WGPUShaderSourceWGSL *", cdata)
+        self._cdata.chain.sType = SType.ShaderSourceWGSL
 
     @property
-    def code(self) -> str:
-        return _ffi_string(self._cdata.code)
+    def code(self) -> "StringView":
+        return StringView(cdata=self._cdata.code, parent=self)
 
     @code.setter
-    def code(self, v: str) -> None:
-        self._code = v
-        self._store_code = _ffi_unwrap_str(v)
-        self._cdata.code = self._store_code
+    def code(self, v: "StringView") -> None:
+        self._cdata.code = _ffi_deref(v._cdata)
 
     @property
     def _chain(self) -> Any:
         return self._cdata.chain
 
 
-def shaderModuleWGSLDescriptor(*, code: str) -> ShaderModuleWGSLDescriptor:
-    ret = ShaderModuleWGSLDescriptor(cdata=None, parent=None)
+def shaderSourceWGSL(*, code: "StringView") -> ShaderSourceWGSL:
+    ret = ShaderSourceWGSL(cdata=None, parent=None)
     ret.code = code
     return ret
 
@@ -5317,6 +6146,64 @@ def storageTextureBindingLayout(
     return ret
 
 
+class SupportedFeatures:
+    def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
+        self._parent = parent
+        self._cdata = _ffi_init("WGPUSupportedFeatures *", cdata)
+
+    @property
+    def features(self) -> "FeatureNameList":
+        return self._features
+
+    @features.setter
+    def features(self, v: Union["FeatureNameList", List["FeatureName"]]) -> None:
+        if isinstance(v, list):
+            v2 = FeatureNameList(v)
+        else:
+            v2 = v
+        self._features = v2
+        self._cdata.featureCount = v2._count
+        self._cdata.features = v2._ptr
+
+
+def supportedFeatures(
+    *, features: Union["FeatureNameList", List["FeatureName"]]
+) -> SupportedFeatures:
+    ret = SupportedFeatures(cdata=None, parent=None)
+    ret.features = features
+    return ret
+
+
+class SupportedWGSLLanguageFeatures:
+    def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
+        self._parent = parent
+        self._cdata = _ffi_init("WGPUSupportedWGSLLanguageFeatures *", cdata)
+
+    @property
+    def features(self) -> "WGSLLanguageFeatureNameList":
+        return self._features
+
+    @features.setter
+    def features(
+        self, v: Union["WGSLLanguageFeatureNameList", List["WGSLLanguageFeatureName"]]
+    ) -> None:
+        if isinstance(v, list):
+            v2 = WGSLLanguageFeatureNameList(v)
+        else:
+            v2 = v
+        self._features = v2
+        self._cdata.featureCount = v2._count
+        self._cdata.features = v2._ptr
+
+
+def supportedWGSLLanguageFeatures(
+    *, features: Union["WGSLLanguageFeatureNameList", List["WGSLLanguageFeatureName"]]
+) -> SupportedWGSLLanguageFeatures:
+    ret = SupportedWGSLLanguageFeatures(cdata=None, parent=None)
+    ret.features = features
+    return ret
+
+
 class SurfaceCapabilities:
     def __init__(
         self,
@@ -5364,12 +6251,28 @@ class SurfaceConfiguration:
         self._cdata.format = int(v)
 
     @property
-    def usage(self) -> "TextureUsageFlags":
-        return TextureUsageFlags(self._cdata.usage)
+    def usage(self) -> "TextureUsage":
+        return TextureUsage(self._cdata.usage)
 
     @usage.setter
-    def usage(self, v: Union["TextureUsageFlags", "TextureUsage", int]) -> None:
+    def usage(self, v: Union["TextureUsage", "TextureUsageFlags", int]) -> None:
         self._cdata.usage = int(v)
+
+    @property
+    def width(self) -> int:
+        return self._cdata.width
+
+    @width.setter
+    def width(self, v: int) -> None:
+        self._cdata.width = v
+
+    @property
+    def height(self) -> int:
+        return self._cdata.height
+
+    @height.setter
+    def height(self, v: int) -> None:
+        self._cdata.height = v
 
     @property
     def viewFormats(self) -> "TextureFormatList":
@@ -5394,22 +6297,6 @@ class SurfaceConfiguration:
         self._cdata.alphaMode = int(v)
 
     @property
-    def width(self) -> int:
-        return self._cdata.width
-
-    @width.setter
-    def width(self, v: int) -> None:
-        self._cdata.width = v
-
-    @property
-    def height(self) -> int:
-        return self._cdata.height
-
-    @height.setter
-    def height(self, v: int) -> None:
-        self._cdata.height = v
-
-    @property
     def presentMode(self) -> "PresentMode":
         return PresentMode(self._cdata.presentMode)
 
@@ -5423,11 +6310,11 @@ def surfaceConfiguration(
     nextInChain: Optional["ChainedStruct"] = None,
     device: "Device",
     format: "TextureFormat",
-    usage: Union["TextureUsageFlags", "TextureUsage", int],
-    viewFormats: Union["TextureFormatList", List["TextureFormat"]],
-    alphaMode: "CompositeAlphaMode",
+    usage: Union["TextureUsage", "TextureUsageFlags", int],
     width: int,
     height: int,
+    viewFormats: Union["TextureFormatList", List["TextureFormat"]],
+    alphaMode: "CompositeAlphaMode",
     presentMode: "PresentMode",
 ) -> SurfaceConfiguration:
     ret = SurfaceConfiguration(cdata=None, parent=None)
@@ -5435,10 +6322,10 @@ def surfaceConfiguration(
     ret.device = device
     ret.format = format
     ret.usage = usage
-    ret.viewFormats = viewFormats
-    ret.alphaMode = alphaMode
     ret.width = width
     ret.height = height
+    ret.viewFormats = viewFormats
+    ret.alphaMode = alphaMode
     ret.presentMode = presentMode
     return ret
 
@@ -5461,21 +6348,16 @@ class SurfaceDescriptor:
             self._cdata.nextInChain = v._cdata
 
     @property
-    def label(self) -> Optional[str]:
-        return _ffi_string(self._cdata.label)
+    def label(self) -> "StringView":
+        return StringView(cdata=self._cdata.label, parent=self)
 
     @label.setter
-    def label(self, v: Optional[str]) -> None:
-        self._label = v
-        if v is None:
-            self._cdata.label = ffi.NULL
-        else:
-            self._store_label = _ffi_unwrap_str(v)
-            self._cdata.label = self._store_label
+    def label(self, v: "StringView") -> None:
+        self._cdata.label = _ffi_deref(v._cdata)
 
 
 def surfaceDescriptor(
-    *, nextInChain: Optional["ChainedStruct"] = None, label: Optional[str] = None
+    *, nextInChain: Optional["ChainedStruct"] = None, label: "StringView"
 ) -> SurfaceDescriptor:
     ret = SurfaceDescriptor(cdata=None, parent=None)
     ret.nextInChain = nextInChain
@@ -5483,11 +6365,11 @@ def surfaceDescriptor(
     return ret
 
 
-class SurfaceDescriptorFromAndroidNativeWindow(Chainable):
+class SurfaceSourceAndroidNativeWindow(Chainable):
     def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
         self._parent = parent
-        self._cdata = _ffi_init("WGPUSurfaceDescriptorFromAndroidNativeWindow *", cdata)
-        self._cdata.chain.sType = SType.SurfaceDescriptorFromAndroidNativeWindow
+        self._cdata = _ffi_init("WGPUSurfaceSourceAndroidNativeWindow *", cdata)
+        self._cdata.chain.sType = SType.SurfaceSourceAndroidNativeWindow
 
     @property
     def window(self) -> VoidPtr:
@@ -5503,48 +6385,19 @@ class SurfaceDescriptorFromAndroidNativeWindow(Chainable):
         return self._cdata.chain
 
 
-def surfaceDescriptorFromAndroidNativeWindow(
+def surfaceSourceAndroidNativeWindow(
     *, window: VoidPtr
-) -> SurfaceDescriptorFromAndroidNativeWindow:
-    ret = SurfaceDescriptorFromAndroidNativeWindow(cdata=None, parent=None)
+) -> SurfaceSourceAndroidNativeWindow:
+    ret = SurfaceSourceAndroidNativeWindow(cdata=None, parent=None)
     ret.window = window
     return ret
 
 
-class SurfaceDescriptorFromCanvasHTMLSelector(Chainable):
+class SurfaceSourceMetalLayer(Chainable):
     def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
         self._parent = parent
-        self._cdata = _ffi_init("WGPUSurfaceDescriptorFromCanvasHTMLSelector *", cdata)
-        self._cdata.chain.sType = SType.SurfaceDescriptorFromCanvasHTMLSelector
-
-    @property
-    def selector(self) -> str:
-        return _ffi_string(self._cdata.selector)
-
-    @selector.setter
-    def selector(self, v: str) -> None:
-        self._selector = v
-        self._store_selector = _ffi_unwrap_str(v)
-        self._cdata.selector = self._store_selector
-
-    @property
-    def _chain(self) -> Any:
-        return self._cdata.chain
-
-
-def surfaceDescriptorFromCanvasHTMLSelector(
-    *, selector: str
-) -> SurfaceDescriptorFromCanvasHTMLSelector:
-    ret = SurfaceDescriptorFromCanvasHTMLSelector(cdata=None, parent=None)
-    ret.selector = selector
-    return ret
-
-
-class SurfaceDescriptorFromMetalLayer(Chainable):
-    def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
-        self._parent = parent
-        self._cdata = _ffi_init("WGPUSurfaceDescriptorFromMetalLayer *", cdata)
-        self._cdata.chain.sType = SType.SurfaceDescriptorFromMetalLayer
+        self._cdata = _ffi_init("WGPUSurfaceSourceMetalLayer *", cdata)
+        self._cdata.chain.sType = SType.SurfaceSourceMetalLayer
 
     @property
     def layer(self) -> VoidPtr:
@@ -5560,17 +6413,17 @@ class SurfaceDescriptorFromMetalLayer(Chainable):
         return self._cdata.chain
 
 
-def surfaceDescriptorFromMetalLayer(*, layer: VoidPtr) -> SurfaceDescriptorFromMetalLayer:
-    ret = SurfaceDescriptorFromMetalLayer(cdata=None, parent=None)
+def surfaceSourceMetalLayer(*, layer: VoidPtr) -> SurfaceSourceMetalLayer:
+    ret = SurfaceSourceMetalLayer(cdata=None, parent=None)
     ret.layer = layer
     return ret
 
 
-class SurfaceDescriptorFromWaylandSurface(Chainable):
+class SurfaceSourceWaylandSurface(Chainable):
     def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
         self._parent = parent
-        self._cdata = _ffi_init("WGPUSurfaceDescriptorFromWaylandSurface *", cdata)
-        self._cdata.chain.sType = SType.SurfaceDescriptorFromWaylandSurface
+        self._cdata = _ffi_init("WGPUSurfaceSourceWaylandSurface *", cdata)
+        self._cdata.chain.sType = SType.SurfaceSourceWaylandSurface
 
     @property
     def display(self) -> VoidPtr:
@@ -5595,20 +6448,20 @@ class SurfaceDescriptorFromWaylandSurface(Chainable):
         return self._cdata.chain
 
 
-def surfaceDescriptorFromWaylandSurface(
+def surfaceSourceWaylandSurface(
     *, display: VoidPtr, surface: VoidPtr
-) -> SurfaceDescriptorFromWaylandSurface:
-    ret = SurfaceDescriptorFromWaylandSurface(cdata=None, parent=None)
+) -> SurfaceSourceWaylandSurface:
+    ret = SurfaceSourceWaylandSurface(cdata=None, parent=None)
     ret.display = display
     ret.surface = surface
     return ret
 
 
-class SurfaceDescriptorFromWindowsHWND(Chainable):
+class SurfaceSourceWindowsHWND(Chainable):
     def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
         self._parent = parent
-        self._cdata = _ffi_init("WGPUSurfaceDescriptorFromWindowsHWND *", cdata)
-        self._cdata.chain.sType = SType.SurfaceDescriptorFromWindowsHWND
+        self._cdata = _ffi_init("WGPUSurfaceSourceWindowsHWND *", cdata)
+        self._cdata.chain.sType = SType.SurfaceSourceWindowsHWND
 
     @property
     def hinstance(self) -> VoidPtr:
@@ -5633,20 +6486,20 @@ class SurfaceDescriptorFromWindowsHWND(Chainable):
         return self._cdata.chain
 
 
-def surfaceDescriptorFromWindowsHWND(
+def surfaceSourceWindowsHWND(
     *, hinstance: VoidPtr, hwnd: VoidPtr
-) -> SurfaceDescriptorFromWindowsHWND:
-    ret = SurfaceDescriptorFromWindowsHWND(cdata=None, parent=None)
+) -> SurfaceSourceWindowsHWND:
+    ret = SurfaceSourceWindowsHWND(cdata=None, parent=None)
     ret.hinstance = hinstance
     ret.hwnd = hwnd
     return ret
 
 
-class SurfaceDescriptorFromXcbWindow(Chainable):
+class SurfaceSourceXCBWindow(Chainable):
     def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
         self._parent = parent
-        self._cdata = _ffi_init("WGPUSurfaceDescriptorFromXcbWindow *", cdata)
-        self._cdata.chain.sType = SType.SurfaceDescriptorFromXcbWindow
+        self._cdata = _ffi_init("WGPUSurfaceSourceXCBWindow *", cdata)
+        self._cdata.chain.sType = SType.SurfaceSourceXCBWindow
 
     @property
     def connection(self) -> VoidPtr:
@@ -5670,20 +6523,18 @@ class SurfaceDescriptorFromXcbWindow(Chainable):
         return self._cdata.chain
 
 
-def surfaceDescriptorFromXcbWindow(
-    *, connection: VoidPtr, window: int
-) -> SurfaceDescriptorFromXcbWindow:
-    ret = SurfaceDescriptorFromXcbWindow(cdata=None, parent=None)
+def surfaceSourceXCBWindow(*, connection: VoidPtr, window: int) -> SurfaceSourceXCBWindow:
+    ret = SurfaceSourceXCBWindow(cdata=None, parent=None)
     ret.connection = connection
     ret.window = window
     return ret
 
 
-class SurfaceDescriptorFromXlibWindow(Chainable):
+class SurfaceSourceXlibWindow(Chainable):
     def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
         self._parent = parent
-        self._cdata = _ffi_init("WGPUSurfaceDescriptorFromXlibWindow *", cdata)
-        self._cdata.chain.sType = SType.SurfaceDescriptorFromXlibWindow
+        self._cdata = _ffi_init("WGPUSurfaceSourceXlibWindow *", cdata)
+        self._cdata.chain.sType = SType.SurfaceSourceXlibWindow
 
     @property
     def display(self) -> VoidPtr:
@@ -5707,10 +6558,8 @@ class SurfaceDescriptorFromXlibWindow(Chainable):
         return self._cdata.chain
 
 
-def surfaceDescriptorFromXlibWindow(
-    *, display: VoidPtr, window: int
-) -> SurfaceDescriptorFromXlibWindow:
-    ret = SurfaceDescriptorFromXlibWindow(cdata=None, parent=None)
+def surfaceSourceXlibWindow(*, display: VoidPtr, window: int) -> SurfaceSourceXlibWindow:
+    ret = SurfaceSourceXlibWindow(cdata=None, parent=None)
     ret.display = display
     ret.window = window
     return ret
@@ -5722,6 +6571,18 @@ class SurfaceTexture:
         self._cdata = _ffi_init("WGPUSurfaceTexture *", cdata)
 
     @property
+    def nextInChain(self) -> Optional["ChainedStructOut"]:
+        return self._nextInChain
+
+    @nextInChain.setter
+    def nextInChain(self, v: Optional["ChainedStructOut"]) -> None:
+        self._nextInChain = v
+        if v is None:
+            self._cdata.nextInChain = ffi.NULL
+        else:
+            self._cdata.nextInChain = v._cdata
+
+    @property
     def texture(self) -> "Texture":
         return Texture(self._cdata.texture, add_ref=True)
 
@@ -5729,14 +6590,6 @@ class SurfaceTexture:
     def texture(self, v: "Texture") -> None:
         self._texture = v
         self._cdata.texture = v._cdata
-
-    @property
-    def suboptimal(self) -> bool:
-        return self._cdata.suboptimal
-
-    @suboptimal.setter
-    def suboptimal(self, v: bool) -> None:
-        self._cdata.suboptimal = v
 
     @property
     def status(self) -> "SurfaceGetCurrentTextureStatus":
@@ -5748,12 +6601,55 @@ class SurfaceTexture:
 
 
 def surfaceTexture(
-    *, texture: "Texture", suboptimal: bool, status: "SurfaceGetCurrentTextureStatus"
+    *,
+    nextInChain: Optional["ChainedStructOut"] = None,
+    texture: "Texture",
+    status: "SurfaceGetCurrentTextureStatus",
 ) -> SurfaceTexture:
     ret = SurfaceTexture(cdata=None, parent=None)
+    ret.nextInChain = nextInChain
     ret.texture = texture
-    ret.suboptimal = suboptimal
     ret.status = status
+    return ret
+
+
+class TexelCopyBufferLayout:
+    def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
+        self._parent = parent
+        self._cdata = _ffi_init("WGPUTexelCopyBufferLayout *", cdata)
+
+    @property
+    def offset(self) -> int:
+        return self._cdata.offset
+
+    @offset.setter
+    def offset(self, v: int) -> None:
+        self._cdata.offset = v
+
+    @property
+    def bytesPerRow(self) -> int:
+        return self._cdata.bytesPerRow
+
+    @bytesPerRow.setter
+    def bytesPerRow(self, v: int) -> None:
+        self._cdata.bytesPerRow = v
+
+    @property
+    def rowsPerImage(self) -> int:
+        return self._cdata.rowsPerImage
+
+    @rowsPerImage.setter
+    def rowsPerImage(self, v: int) -> None:
+        self._cdata.rowsPerImage = v
+
+
+def texelCopyBufferLayout(
+    *, offset: int, bytesPerRow: int, rowsPerImage: int
+) -> TexelCopyBufferLayout:
+    ret = TexelCopyBufferLayout(cdata=None, parent=None)
+    ret.offset = offset
+    ret.bytesPerRow = bytesPerRow
+    ret.rowsPerImage = rowsPerImage
     return ret
 
 
@@ -5814,63 +6710,6 @@ def textureBindingLayout(
     return ret
 
 
-class TextureDataLayout:
-    def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
-        self._parent = parent
-        self._cdata = _ffi_init("WGPUTextureDataLayout *", cdata)
-
-    @property
-    def nextInChain(self) -> Optional["ChainedStruct"]:
-        return self._nextInChain
-
-    @nextInChain.setter
-    def nextInChain(self, v: Optional["ChainedStruct"]) -> None:
-        self._nextInChain = v
-        if v is None:
-            self._cdata.nextInChain = ffi.NULL
-        else:
-            self._cdata.nextInChain = v._cdata
-
-    @property
-    def offset(self) -> int:
-        return self._cdata.offset
-
-    @offset.setter
-    def offset(self, v: int) -> None:
-        self._cdata.offset = v
-
-    @property
-    def bytesPerRow(self) -> int:
-        return self._cdata.bytesPerRow
-
-    @bytesPerRow.setter
-    def bytesPerRow(self, v: int) -> None:
-        self._cdata.bytesPerRow = v
-
-    @property
-    def rowsPerImage(self) -> int:
-        return self._cdata.rowsPerImage
-
-    @rowsPerImage.setter
-    def rowsPerImage(self, v: int) -> None:
-        self._cdata.rowsPerImage = v
-
-
-def textureDataLayout(
-    *,
-    nextInChain: Optional["ChainedStruct"] = None,
-    offset: int,
-    bytesPerRow: int,
-    rowsPerImage: int,
-) -> TextureDataLayout:
-    ret = TextureDataLayout(cdata=None, parent=None)
-    ret.nextInChain = nextInChain
-    ret.offset = offset
-    ret.bytesPerRow = bytesPerRow
-    ret.rowsPerImage = rowsPerImage
-    return ret
-
-
 class TextureViewDescriptor:
     def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
         self._parent = parent
@@ -5889,17 +6728,12 @@ class TextureViewDescriptor:
             self._cdata.nextInChain = v._cdata
 
     @property
-    def label(self) -> Optional[str]:
-        return _ffi_string(self._cdata.label)
+    def label(self) -> "StringView":
+        return StringView(cdata=self._cdata.label, parent=self)
 
     @label.setter
-    def label(self, v: Optional[str]) -> None:
-        self._label = v
-        if v is None:
-            self._cdata.label = ffi.NULL
-        else:
-            self._store_label = _ffi_unwrap_str(v)
-            self._cdata.label = self._store_label
+    def label(self, v: "StringView") -> None:
+        self._cdata.label = _ffi_deref(v._cdata)
 
     @property
     def format(self) -> "TextureFormat":
@@ -5957,11 +6791,19 @@ class TextureViewDescriptor:
     def aspect(self, v: "TextureAspect") -> None:
         self._cdata.aspect = int(v)
 
+    @property
+    def usage(self) -> "TextureUsage":
+        return TextureUsage(self._cdata.usage)
+
+    @usage.setter
+    def usage(self, v: Union["TextureUsage", "TextureUsageFlags", int]) -> None:
+        self._cdata.usage = int(v)
+
 
 def textureViewDescriptor(
     *,
     nextInChain: Optional["ChainedStruct"] = None,
-    label: Optional[str] = None,
+    label: "StringView",
     format: "TextureFormat",
     dimension: "TextureViewDimension",
     baseMipLevel: int = 0,
@@ -5969,6 +6811,7 @@ def textureViewDescriptor(
     baseArrayLayer: int = 0,
     arrayLayerCount: int,
     aspect: "TextureAspect" = TextureAspect.All,
+    usage: Union["TextureUsage", "TextureUsageFlags", int] = 0,
 ) -> TextureViewDescriptor:
     ret = TextureViewDescriptor(cdata=None, parent=None)
     ret.nextInChain = nextInChain
@@ -5980,43 +6823,7 @@ def textureViewDescriptor(
     ret.baseArrayLayer = baseArrayLayer
     ret.arrayLayerCount = arrayLayerCount
     ret.aspect = aspect
-    return ret
-
-
-class UncapturedErrorCallbackInfo:
-    def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
-        self._parent = parent
-        self._cdata = _ffi_init("WGPUUncapturedErrorCallbackInfo *", cdata)
-
-    @property
-    def nextInChain(self) -> Optional["ChainedStruct"]:
-        return self._nextInChain
-
-    @nextInChain.setter
-    def nextInChain(self, v: Optional["ChainedStruct"]) -> None:
-        self._nextInChain = v
-        if v is None:
-            self._cdata.nextInChain = ffi.NULL
-        else:
-            self._cdata.nextInChain = v._cdata
-
-    @property
-    def callback(self) -> "ErrorCallback":
-        return self._callback
-
-    @callback.setter
-    def callback(self, v: "ErrorCallback") -> None:
-        self._callback = v
-        self._cdata.callback = v._ptr
-        self._cdata.userdata = v._userdata
-
-
-def uncapturedErrorCallbackInfo(
-    *, nextInChain: Optional["ChainedStruct"] = None, callback: "ErrorCallback"
-) -> UncapturedErrorCallbackInfo:
-    ret = UncapturedErrorCallbackInfo(cdata=None, parent=None)
-    ret.nextInChain = nextInChain
-    ret.callback = callback
+    ret.usage = usage
     return ret
 
 
@@ -6078,17 +6885,12 @@ class BindGroupDescriptor:
             self._cdata.nextInChain = v._cdata
 
     @property
-    def label(self) -> Optional[str]:
-        return _ffi_string(self._cdata.label)
+    def label(self) -> "StringView":
+        return StringView(cdata=self._cdata.label, parent=self)
 
     @label.setter
-    def label(self, v: Optional[str]) -> None:
-        self._label = v
-        if v is None:
-            self._cdata.label = ffi.NULL
-        else:
-            self._store_label = _ffi_unwrap_str(v)
-            self._cdata.label = self._store_label
+    def label(self, v: "StringView") -> None:
+        self._cdata.label = _ffi_deref(v._cdata)
 
     @property
     def layout(self) -> "BindGroupLayout":
@@ -6117,7 +6919,7 @@ class BindGroupDescriptor:
 def bindGroupDescriptor(
     *,
     nextInChain: Optional["ChainedStruct"] = None,
-    label: Optional[str] = None,
+    label: "StringView",
     layout: "BindGroupLayout",
     entries: Union["BindGroupEntryList", List["BindGroupEntry"]],
 ) -> BindGroupDescriptor:
@@ -6155,11 +6957,11 @@ class BindGroupLayoutEntry:
         self._cdata.binding = v
 
     @property
-    def visibility(self) -> "ShaderStageFlags":
-        return ShaderStageFlags(self._cdata.visibility)
+    def visibility(self) -> "ShaderStage":
+        return ShaderStage(self._cdata.visibility)
 
     @visibility.setter
-    def visibility(self, v: Union["ShaderStageFlags", "ShaderStage", int]) -> None:
+    def visibility(self, v: Union["ShaderStage", "ShaderStageFlags", int]) -> None:
         self._cdata.visibility = int(v)
 
     @property
@@ -6199,7 +7001,7 @@ def bindGroupLayoutEntry(
     *,
     nextInChain: Optional["ChainedStruct"] = None,
     binding: int,
-    visibility: Union["ShaderStageFlags", "ShaderStage", int],
+    visibility: Union["ShaderStage", "ShaderStageFlags", int],
     buffer: "BufferBindingLayout",
     sampler: "SamplerBindingLayout",
     texture: "TextureBindingLayout",
@@ -6308,17 +7110,12 @@ class ComputePassDescriptor:
             self._cdata.nextInChain = v._cdata
 
     @property
-    def label(self) -> Optional[str]:
-        return _ffi_string(self._cdata.label)
+    def label(self) -> "StringView":
+        return StringView(cdata=self._cdata.label, parent=self)
 
     @label.setter
-    def label(self, v: Optional[str]) -> None:
-        self._label = v
-        if v is None:
-            self._cdata.label = ffi.NULL
-        else:
-            self._store_label = _ffi_unwrap_str(v)
-            self._cdata.label = self._store_label
+    def label(self, v: "StringView") -> None:
+        self._cdata.label = _ffi_deref(v._cdata)
 
     @property
     def timestampWrites(self) -> Optional["ComputePassTimestampWrites"]:
@@ -6336,7 +7133,7 @@ class ComputePassDescriptor:
 def computePassDescriptor(
     *,
     nextInChain: Optional["ChainedStruct"] = None,
-    label: Optional[str] = None,
+    label: "StringView",
     timestampWrites: Optional["ComputePassTimestampWrites"] = None,
 ) -> ComputePassDescriptor:
     ret = ComputePassDescriptor(cdata=None, parent=None)
@@ -6372,12 +7169,12 @@ class DepthStencilState:
         self._cdata.format = int(v)
 
     @property
-    def depthWriteEnabled(self) -> bool:
-        return self._cdata.depthWriteEnabled
+    def depthWriteEnabled(self) -> "OptionalBool":
+        return OptionalBool(self._cdata.depthWriteEnabled)
 
     @depthWriteEnabled.setter
-    def depthWriteEnabled(self, v: bool) -> None:
-        self._cdata.depthWriteEnabled = v
+    def depthWriteEnabled(self, v: "OptionalBool") -> None:
+        self._cdata.depthWriteEnabled = int(v)
 
     @property
     def depthCompare(self) -> "CompareFunction":
@@ -6448,7 +7245,7 @@ def depthStencilState(
     *,
     nextInChain: Optional["ChainedStruct"] = None,
     format: "TextureFormat",
-    depthWriteEnabled: bool,
+    depthWriteEnabled: "OptionalBool",
     depthCompare: "CompareFunction",
     stencilFront: "StencilFaceState",
     stencilBack: "StencilFaceState",
@@ -6473,10 +7270,10 @@ def depthStencilState(
     return ret
 
 
-class ImageCopyBuffer:
+class DeviceDescriptor:
     def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
         self._parent = parent
-        self._cdata = _ffi_init("WGPUImageCopyBuffer *", cdata)
+        self._cdata = _ffi_init("WGPUDeviceDescriptor *", cdata)
 
     @property
     def nextInChain(self) -> Optional["ChainedStruct"]:
@@ -6491,40 +7288,122 @@ class ImageCopyBuffer:
             self._cdata.nextInChain = v._cdata
 
     @property
-    def layout(self) -> "TextureDataLayout":
-        return TextureDataLayout(cdata=self._cdata.layout, parent=self)
+    def label(self) -> "StringView":
+        return StringView(cdata=self._cdata.label, parent=self)
 
-    @layout.setter
-    def layout(self, v: "TextureDataLayout") -> None:
-        self._cdata.layout = _ffi_deref(v._cdata)
+    @label.setter
+    def label(self, v: "StringView") -> None:
+        self._cdata.label = _ffi_deref(v._cdata)
 
     @property
-    def buffer(self) -> "Buffer":
-        return Buffer(self._cdata.buffer, add_ref=True)
+    def requiredFeatures(self) -> "FeatureNameList":
+        return self._requiredFeatures
 
-    @buffer.setter
-    def buffer(self, v: "Buffer") -> None:
-        self._buffer = v
-        self._cdata.buffer = v._cdata
+    @requiredFeatures.setter
+    def requiredFeatures(self, v: Union["FeatureNameList", List["FeatureName"]]) -> None:
+        if isinstance(v, list):
+            v2 = FeatureNameList(v)
+        else:
+            v2 = v
+        self._requiredFeatures = v2
+        self._cdata.requiredFeatureCount = v2._count
+        self._cdata.requiredFeatures = v2._ptr
+
+    @property
+    def requiredLimits(self) -> Optional["Limits"]:
+        return Limits(cdata=self._cdata.requiredLimits, parent=self)
+
+    @requiredLimits.setter
+    def requiredLimits(self, v: Optional["Limits"]) -> None:
+        self._requiredLimits = v
+        if v is None:
+            self._cdata.requiredLimits = ffi.NULL
+        else:
+            self._cdata.requiredLimits = v._cdata
+
+    @property
+    def defaultQueue(self) -> "QueueDescriptor":
+        return QueueDescriptor(cdata=self._cdata.defaultQueue, parent=self)
+
+    @defaultQueue.setter
+    def defaultQueue(self, v: "QueueDescriptor") -> None:
+        self._cdata.defaultQueue = _ffi_deref(v._cdata)
+
+    @property
+    def deviceLostCallbackInfo(self) -> "DeviceLostCallbackInfo":
+        return DeviceLostCallbackInfo(
+            cdata=self._cdata.deviceLostCallbackInfo, parent=self
+        )
+
+    @deviceLostCallbackInfo.setter
+    def deviceLostCallbackInfo(self, v: "DeviceLostCallbackInfo") -> None:
+        self._cdata.deviceLostCallbackInfo = _ffi_deref(v._cdata)
+
+    @property
+    def uncapturedErrorCallbackInfo(self) -> "UncapturedErrorCallbackInfo":
+        return UncapturedErrorCallbackInfo(
+            cdata=self._cdata.uncapturedErrorCallbackInfo, parent=self
+        )
+
+    @uncapturedErrorCallbackInfo.setter
+    def uncapturedErrorCallbackInfo(self, v: "UncapturedErrorCallbackInfo") -> None:
+        self._cdata.uncapturedErrorCallbackInfo = _ffi_deref(v._cdata)
 
 
-def imageCopyBuffer(
+def deviceDescriptor(
     *,
     nextInChain: Optional["ChainedStruct"] = None,
-    layout: "TextureDataLayout",
-    buffer: "Buffer",
-) -> ImageCopyBuffer:
-    ret = ImageCopyBuffer(cdata=None, parent=None)
+    label: "StringView",
+    requiredFeatures: Union["FeatureNameList", List["FeatureName"]],
+    requiredLimits: Optional["Limits"] = None,
+    defaultQueue: "QueueDescriptor",
+    deviceLostCallbackInfo: "DeviceLostCallbackInfo",
+    uncapturedErrorCallbackInfo: "UncapturedErrorCallbackInfo",
+) -> DeviceDescriptor:
+    ret = DeviceDescriptor(cdata=None, parent=None)
     ret.nextInChain = nextInChain
-    ret.layout = layout
-    ret.buffer = buffer
+    ret.label = label
+    ret.requiredFeatures = requiredFeatures
+    ret.requiredLimits = requiredLimits
+    ret.defaultQueue = defaultQueue
+    ret.deviceLostCallbackInfo = deviceLostCallbackInfo
+    ret.uncapturedErrorCallbackInfo = uncapturedErrorCallbackInfo
     return ret
 
 
-class ImageCopyTexture:
+class FutureWaitInfo:
     def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
         self._parent = parent
-        self._cdata = _ffi_init("WGPUImageCopyTexture *", cdata)
+        self._cdata = _ffi_init("WGPUFutureWaitInfo *", cdata)
+
+    @property
+    def future(self) -> "Future":
+        return Future(cdata=self._cdata.future, parent=self)
+
+    @future.setter
+    def future(self, v: "Future") -> None:
+        self._cdata.future = _ffi_deref(v._cdata)
+
+    @property
+    def completed(self) -> bool:
+        return self._cdata.completed
+
+    @completed.setter
+    def completed(self, v: bool) -> None:
+        self._cdata.completed = v
+
+
+def futureWaitInfo(*, future: "Future", completed: bool) -> FutureWaitInfo:
+    ret = FutureWaitInfo(cdata=None, parent=None)
+    ret.future = future
+    ret.completed = completed
+    return ret
+
+
+class InstanceDescriptor:
+    def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
+        self._parent = parent
+        self._cdata = _ffi_init("WGPUInstanceDescriptor *", cdata)
 
     @property
     def nextInChain(self) -> Optional["ChainedStruct"]:
@@ -6539,53 +7418,20 @@ class ImageCopyTexture:
             self._cdata.nextInChain = v._cdata
 
     @property
-    def texture(self) -> "Texture":
-        return Texture(self._cdata.texture, add_ref=True)
+    def features(self) -> "InstanceCapabilities":
+        return InstanceCapabilities(cdata=self._cdata.features, parent=self)
 
-    @texture.setter
-    def texture(self, v: "Texture") -> None:
-        self._texture = v
-        self._cdata.texture = v._cdata
-
-    @property
-    def mipLevel(self) -> int:
-        return self._cdata.mipLevel
-
-    @mipLevel.setter
-    def mipLevel(self, v: int) -> None:
-        self._cdata.mipLevel = v
-
-    @property
-    def origin(self) -> "Origin3D":
-        return Origin3D(cdata=self._cdata.origin, parent=self)
-
-    @origin.setter
-    def origin(self, v: "Origin3D") -> None:
-        self._cdata.origin = _ffi_deref(v._cdata)
-
-    @property
-    def aspect(self) -> "TextureAspect":
-        return TextureAspect(self._cdata.aspect)
-
-    @aspect.setter
-    def aspect(self, v: "TextureAspect") -> None:
-        self._cdata.aspect = int(v)
+    @features.setter
+    def features(self, v: "InstanceCapabilities") -> None:
+        self._cdata.features = _ffi_deref(v._cdata)
 
 
-def imageCopyTexture(
-    *,
-    nextInChain: Optional["ChainedStruct"] = None,
-    texture: "Texture",
-    mipLevel: int,
-    origin: "Origin3D",
-    aspect: "TextureAspect",
-) -> ImageCopyTexture:
-    ret = ImageCopyTexture(cdata=None, parent=None)
+def instanceDescriptor(
+    *, nextInChain: Optional["ChainedStruct"] = None, features: "InstanceCapabilities"
+) -> InstanceDescriptor:
+    ret = InstanceDescriptor(cdata=None, parent=None)
     ret.nextInChain = nextInChain
-    ret.texture = texture
-    ret.mipLevel = mipLevel
-    ret.origin = origin
-    ret.aspect = aspect
+    ret.features = features
     return ret
 
 
@@ -6616,17 +7462,12 @@ class ProgrammableStageDescriptor:
         self._cdata.module = v._cdata
 
     @property
-    def entryPoint(self) -> Optional[str]:
-        return _ffi_string(self._cdata.entryPoint)
+    def entryPoint(self) -> "StringView":
+        return StringView(cdata=self._cdata.entryPoint, parent=self)
 
     @entryPoint.setter
-    def entryPoint(self, v: Optional[str]) -> None:
-        self._entryPoint = v
-        if v is None:
-            self._cdata.entryPoint = ffi.NULL
-        else:
-            self._store_entryPoint = _ffi_unwrap_str(v)
-            self._cdata.entryPoint = self._store_entryPoint
+    def entryPoint(self, v: "StringView") -> None:
+        self._cdata.entryPoint = _ffi_deref(v._cdata)
 
     @property
     def constants(self) -> "ConstantEntryList":
@@ -6647,7 +7488,7 @@ def programmableStageDescriptor(
     *,
     nextInChain: Optional["ChainedStruct"] = None,
     module: "ShaderModule",
-    entryPoint: Optional[str] = None,
+    entryPoint: "StringView",
     constants: Union["ConstantEntryList", List["ConstantEntry"]],
 ) -> ProgrammableStageDescriptor:
     ret = ProgrammableStageDescriptor(cdata=None, parent=None)
@@ -6753,134 +7594,85 @@ def renderPassColorAttachment(
     return ret
 
 
-class RequiredLimits:
+class TexelCopyBufferInfo:
     def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
         self._parent = parent
-        self._cdata = _ffi_init("WGPURequiredLimits *", cdata)
+        self._cdata = _ffi_init("WGPUTexelCopyBufferInfo *", cdata)
 
     @property
-    def nextInChain(self) -> Optional["ChainedStruct"]:
-        return self._nextInChain
+    def layout(self) -> "TexelCopyBufferLayout":
+        return TexelCopyBufferLayout(cdata=self._cdata.layout, parent=self)
 
-    @nextInChain.setter
-    def nextInChain(self, v: Optional["ChainedStruct"]) -> None:
-        self._nextInChain = v
-        if v is None:
-            self._cdata.nextInChain = ffi.NULL
-        else:
-            self._cdata.nextInChain = v._cdata
+    @layout.setter
+    def layout(self, v: "TexelCopyBufferLayout") -> None:
+        self._cdata.layout = _ffi_deref(v._cdata)
 
     @property
-    def limits(self) -> "Limits":
-        return Limits(cdata=self._cdata.limits, parent=self)
+    def buffer(self) -> "Buffer":
+        return Buffer(self._cdata.buffer, add_ref=True)
 
-    @limits.setter
-    def limits(self, v: "Limits") -> None:
-        self._cdata.limits = _ffi_deref(v._cdata)
+    @buffer.setter
+    def buffer(self, v: "Buffer") -> None:
+        self._buffer = v
+        self._cdata.buffer = v._cdata
 
 
-def requiredLimits(
-    *, nextInChain: Optional["ChainedStruct"] = None, limits: "Limits"
-) -> RequiredLimits:
-    ret = RequiredLimits(cdata=None, parent=None)
-    ret.nextInChain = nextInChain
-    ret.limits = limits
+def texelCopyBufferInfo(
+    *, layout: "TexelCopyBufferLayout", buffer: "Buffer"
+) -> TexelCopyBufferInfo:
+    ret = TexelCopyBufferInfo(cdata=None, parent=None)
+    ret.layout = layout
+    ret.buffer = buffer
     return ret
 
 
-class ShaderModuleDescriptor:
+class TexelCopyTextureInfo:
     def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
         self._parent = parent
-        self._cdata = _ffi_init("WGPUShaderModuleDescriptor *", cdata)
+        self._cdata = _ffi_init("WGPUTexelCopyTextureInfo *", cdata)
 
     @property
-    def nextInChain(self) -> Optional["ChainedStruct"]:
-        return self._nextInChain
+    def texture(self) -> "Texture":
+        return Texture(self._cdata.texture, add_ref=True)
 
-    @nextInChain.setter
-    def nextInChain(self, v: Optional["ChainedStruct"]) -> None:
-        self._nextInChain = v
-        if v is None:
-            self._cdata.nextInChain = ffi.NULL
-        else:
-            self._cdata.nextInChain = v._cdata
+    @texture.setter
+    def texture(self, v: "Texture") -> None:
+        self._texture = v
+        self._cdata.texture = v._cdata
 
     @property
-    def label(self) -> Optional[str]:
-        return _ffi_string(self._cdata.label)
+    def mipLevel(self) -> int:
+        return self._cdata.mipLevel
 
-    @label.setter
-    def label(self, v: Optional[str]) -> None:
-        self._label = v
-        if v is None:
-            self._cdata.label = ffi.NULL
-        else:
-            self._store_label = _ffi_unwrap_str(v)
-            self._cdata.label = self._store_label
+    @mipLevel.setter
+    def mipLevel(self, v: int) -> None:
+        self._cdata.mipLevel = v
 
     @property
-    def hints(self) -> "ShaderModuleCompilationHintList":
-        return self._hints
+    def origin(self) -> "Origin3D":
+        return Origin3D(cdata=self._cdata.origin, parent=self)
 
-    @hints.setter
-    def hints(
-        self,
-        v: Union["ShaderModuleCompilationHintList", List["ShaderModuleCompilationHint"]],
-    ) -> None:
-        if isinstance(v, list):
-            v2 = ShaderModuleCompilationHintList(v)
-        else:
-            v2 = v
-        self._hints = v2
-        self._cdata.hintCount = v2._count
-        self._cdata.hints = v2._ptr
-
-
-def shaderModuleDescriptor(
-    *,
-    nextInChain: Optional["ChainedStruct"] = None,
-    label: Optional[str] = None,
-    hints: Union["ShaderModuleCompilationHintList", List["ShaderModuleCompilationHint"]],
-) -> ShaderModuleDescriptor:
-    ret = ShaderModuleDescriptor(cdata=None, parent=None)
-    ret.nextInChain = nextInChain
-    ret.label = label
-    ret.hints = hints
-    return ret
-
-
-class SupportedLimits:
-    def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
-        self._parent = parent
-        self._cdata = _ffi_init("WGPUSupportedLimits *", cdata)
+    @origin.setter
+    def origin(self, v: "Origin3D") -> None:
+        self._cdata.origin = _ffi_deref(v._cdata)
 
     @property
-    def nextInChain(self) -> Optional["ChainedStructOut"]:
-        return self._nextInChain
+    def aspect(self) -> "TextureAspect":
+        return TextureAspect(self._cdata.aspect)
 
-    @nextInChain.setter
-    def nextInChain(self, v: Optional["ChainedStructOut"]) -> None:
-        self._nextInChain = v
-        if v is None:
-            self._cdata.nextInChain = ffi.NULL
-        else:
-            self._cdata.nextInChain = v._cdata
-
-    @property
-    def limits(self) -> "Limits":
-        return Limits(cdata=self._cdata.limits, parent=self)
-
-    @limits.setter
-    def limits(self, v: "Limits") -> None:
-        self._cdata.limits = _ffi_deref(v._cdata)
+    @aspect.setter
+    def aspect(self, v: "TextureAspect") -> None:
+        self._cdata.aspect = int(v)
 
 
-def supportedLimits(
-    *, nextInChain: Optional["ChainedStructOut"] = None, limits: "Limits"
-) -> SupportedLimits:
-    ret = SupportedLimits(cdata=None, parent=None)
-    ret.nextInChain = nextInChain
-    ret.limits = limits
+def texelCopyTextureInfo(
+    *, texture: "Texture", mipLevel: int, origin: "Origin3D", aspect: "TextureAspect"
+) -> TexelCopyTextureInfo:
+    ret = TexelCopyTextureInfo(cdata=None, parent=None)
+    ret.texture = texture
+    ret.mipLevel = mipLevel
+    ret.origin = origin
+    ret.aspect = aspect
     return ret
 
 
@@ -6902,24 +7694,19 @@ class TextureDescriptor:
             self._cdata.nextInChain = v._cdata
 
     @property
-    def label(self) -> Optional[str]:
-        return _ffi_string(self._cdata.label)
+    def label(self) -> "StringView":
+        return StringView(cdata=self._cdata.label, parent=self)
 
     @label.setter
-    def label(self, v: Optional[str]) -> None:
-        self._label = v
-        if v is None:
-            self._cdata.label = ffi.NULL
-        else:
-            self._store_label = _ffi_unwrap_str(v)
-            self._cdata.label = self._store_label
+    def label(self, v: "StringView") -> None:
+        self._cdata.label = _ffi_deref(v._cdata)
 
     @property
-    def usage(self) -> "TextureUsageFlags":
-        return TextureUsageFlags(self._cdata.usage)
+    def usage(self) -> "TextureUsage":
+        return TextureUsage(self._cdata.usage)
 
     @usage.setter
-    def usage(self, v: Union["TextureUsageFlags", "TextureUsage", int]) -> None:
+    def usage(self, v: Union["TextureUsage", "TextureUsageFlags", int]) -> None:
         self._cdata.usage = int(v)
 
     @property
@@ -6980,8 +7767,8 @@ class TextureDescriptor:
 def textureDescriptor(
     *,
     nextInChain: Optional["ChainedStruct"] = None,
-    label: Optional[str] = None,
-    usage: Union["TextureUsageFlags", "TextureUsage", int],
+    label: "StringView",
+    usage: Union["TextureUsage", "TextureUsageFlags", int],
     dimension: "TextureDimension" = TextureDimension._2D,
     size: "Extent3D",
     format: "TextureFormat",
@@ -7008,20 +7795,20 @@ class VertexBufferLayout:
         self._cdata = _ffi_init("WGPUVertexBufferLayout *", cdata)
 
     @property
-    def arrayStride(self) -> int:
-        return self._cdata.arrayStride
-
-    @arrayStride.setter
-    def arrayStride(self, v: int) -> None:
-        self._cdata.arrayStride = v
-
-    @property
     def stepMode(self) -> "VertexStepMode":
         return VertexStepMode(self._cdata.stepMode)
 
     @stepMode.setter
     def stepMode(self, v: "VertexStepMode") -> None:
         self._cdata.stepMode = int(v)
+
+    @property
+    def arrayStride(self) -> int:
+        return self._cdata.arrayStride
+
+    @arrayStride.setter
+    def arrayStride(self, v: int) -> None:
+        self._cdata.arrayStride = v
 
     @property
     def attributes(self) -> "VertexAttributeList":
@@ -7042,13 +7829,13 @@ class VertexBufferLayout:
 
 def vertexBufferLayout(
     *,
-    arrayStride: int,
     stepMode: "VertexStepMode" = VertexStepMode.Vertex,
+    arrayStride: int,
     attributes: Union["VertexAttributeList", List["VertexAttribute"]],
 ) -> VertexBufferLayout:
     ret = VertexBufferLayout(cdata=None, parent=None)
-    ret.arrayStride = arrayStride
     ret.stepMode = stepMode
+    ret.arrayStride = arrayStride
     ret.attributes = attributes
     return ret
 
@@ -7071,17 +7858,12 @@ class BindGroupLayoutDescriptor:
             self._cdata.nextInChain = v._cdata
 
     @property
-    def label(self) -> Optional[str]:
-        return _ffi_string(self._cdata.label)
+    def label(self) -> "StringView":
+        return StringView(cdata=self._cdata.label, parent=self)
 
     @label.setter
-    def label(self, v: Optional[str]) -> None:
-        self._label = v
-        if v is None:
-            self._cdata.label = ffi.NULL
-        else:
-            self._store_label = _ffi_unwrap_str(v)
-            self._cdata.label = self._store_label
+    def label(self, v: "StringView") -> None:
+        self._cdata.label = _ffi_deref(v._cdata)
 
     @property
     def entries(self) -> "BindGroupLayoutEntryList":
@@ -7103,7 +7885,7 @@ class BindGroupLayoutDescriptor:
 def bindGroupLayoutDescriptor(
     *,
     nextInChain: Optional["ChainedStruct"] = None,
-    label: Optional[str] = None,
+    label: "StringView",
     entries: Union["BindGroupLayoutEntryList", List["BindGroupLayoutEntry"]],
 ) -> BindGroupLayoutDescriptor:
     ret = BindGroupLayoutDescriptor(cdata=None, parent=None)
@@ -7151,11 +7933,11 @@ class ColorTargetState:
             self._cdata.blend = v._cdata
 
     @property
-    def writeMask(self) -> "ColorWriteMaskFlags":
-        return ColorWriteMaskFlags(self._cdata.writeMask)
+    def writeMask(self) -> "ColorWriteMask":
+        return ColorWriteMask(self._cdata.writeMask)
 
     @writeMask.setter
-    def writeMask(self, v: Union["ColorWriteMaskFlags", "ColorWriteMask", int]) -> None:
+    def writeMask(self, v: Union["ColorWriteMask", "ColorWriteMaskFlags", int]) -> None:
         self._cdata.writeMask = int(v)
 
 
@@ -7164,7 +7946,7 @@ def colorTargetState(
     nextInChain: Optional["ChainedStruct"] = None,
     format: "TextureFormat",
     blend: Optional["BlendState"] = None,
-    writeMask: Union["ColorWriteMaskFlags", "ColorWriteMask", int],
+    writeMask: Union["ColorWriteMask", "ColorWriteMaskFlags", int] = 0xF,
 ) -> ColorTargetState:
     ret = ColorTargetState(cdata=None, parent=None)
     ret.nextInChain = nextInChain
@@ -7192,17 +7974,12 @@ class ComputePipelineDescriptor:
             self._cdata.nextInChain = v._cdata
 
     @property
-    def label(self) -> Optional[str]:
-        return _ffi_string(self._cdata.label)
+    def label(self) -> "StringView":
+        return StringView(cdata=self._cdata.label, parent=self)
 
     @label.setter
-    def label(self, v: Optional[str]) -> None:
-        self._label = v
-        if v is None:
-            self._cdata.label = ffi.NULL
-        else:
-            self._store_label = _ffi_unwrap_str(v)
-            self._cdata.label = self._store_label
+    def label(self, v: "StringView") -> None:
+        self._cdata.label = _ffi_deref(v._cdata)
 
     @property
     def layout(self) -> Optional["PipelineLayout"]:
@@ -7228,7 +8005,7 @@ class ComputePipelineDescriptor:
 def computePipelineDescriptor(
     *,
     nextInChain: Optional["ChainedStruct"] = None,
-    label: Optional[str] = None,
+    label: "StringView",
     layout: Optional["PipelineLayout"] = None,
     compute: "ProgrammableStageDescriptor",
 ) -> ComputePipelineDescriptor:
@@ -7237,112 +8014,6 @@ def computePipelineDescriptor(
     ret.label = label
     ret.layout = layout
     ret.compute = compute
-    return ret
-
-
-class DeviceDescriptor:
-    def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
-        self._parent = parent
-        self._cdata = _ffi_init("WGPUDeviceDescriptor *", cdata)
-
-    @property
-    def nextInChain(self) -> Optional["ChainedStruct"]:
-        return self._nextInChain
-
-    @nextInChain.setter
-    def nextInChain(self, v: Optional["ChainedStruct"]) -> None:
-        self._nextInChain = v
-        if v is None:
-            self._cdata.nextInChain = ffi.NULL
-        else:
-            self._cdata.nextInChain = v._cdata
-
-    @property
-    def label(self) -> Optional[str]:
-        return _ffi_string(self._cdata.label)
-
-    @label.setter
-    def label(self, v: Optional[str]) -> None:
-        self._label = v
-        if v is None:
-            self._cdata.label = ffi.NULL
-        else:
-            self._store_label = _ffi_unwrap_str(v)
-            self._cdata.label = self._store_label
-
-    @property
-    def requiredFeatures(self) -> "FeatureNameList":
-        return self._requiredFeatures
-
-    @requiredFeatures.setter
-    def requiredFeatures(self, v: Union["FeatureNameList", List["FeatureName"]]) -> None:
-        if isinstance(v, list):
-            v2 = FeatureNameList(v)
-        else:
-            v2 = v
-        self._requiredFeatures = v2
-        self._cdata.requiredFeatureCount = v2._count
-        self._cdata.requiredFeatures = v2._ptr
-
-    @property
-    def requiredLimits(self) -> Optional["RequiredLimits"]:
-        return RequiredLimits(cdata=self._cdata.requiredLimits, parent=self)
-
-    @requiredLimits.setter
-    def requiredLimits(self, v: Optional["RequiredLimits"]) -> None:
-        self._requiredLimits = v
-        if v is None:
-            self._cdata.requiredLimits = ffi.NULL
-        else:
-            self._cdata.requiredLimits = v._cdata
-
-    @property
-    def defaultQueue(self) -> "QueueDescriptor":
-        return QueueDescriptor(cdata=self._cdata.defaultQueue, parent=self)
-
-    @defaultQueue.setter
-    def defaultQueue(self, v: "QueueDescriptor") -> None:
-        self._cdata.defaultQueue = _ffi_deref(v._cdata)
-
-    @property
-    def deviceLostCallback(self) -> "DeviceLostCallback":
-        return self._deviceLostCallback
-
-    @deviceLostCallback.setter
-    def deviceLostCallback(self, v: "DeviceLostCallback") -> None:
-        self._deviceLostCallback = v
-        self._cdata.deviceLostCallback = v._ptr
-        self._cdata.deviceLostUserdata = v._userdata
-
-    @property
-    def uncapturedErrorCallbackInfo(self) -> "UncapturedErrorCallbackInfo":
-        return UncapturedErrorCallbackInfo(
-            cdata=self._cdata.uncapturedErrorCallbackInfo, parent=self
-        )
-
-    @uncapturedErrorCallbackInfo.setter
-    def uncapturedErrorCallbackInfo(self, v: "UncapturedErrorCallbackInfo") -> None:
-        self._cdata.uncapturedErrorCallbackInfo = _ffi_deref(v._cdata)
-
-
-def deviceDescriptor(
-    *,
-    nextInChain: Optional["ChainedStruct"] = None,
-    label: Optional[str] = None,
-    requiredFeatures: Union["FeatureNameList", List["FeatureName"]],
-    requiredLimits: Optional["RequiredLimits"] = None,
-    defaultQueue: "QueueDescriptor",
-    deviceLostCallback: "DeviceLostCallback",
-    uncapturedErrorCallbackInfo: "UncapturedErrorCallbackInfo",
-) -> DeviceDescriptor:
-    ret = DeviceDescriptor(cdata=None, parent=None)
-    ret.nextInChain = nextInChain
-    ret.label = label
-    ret.requiredFeatures = requiredFeatures
-    ret.requiredLimits = requiredLimits
-    ret.defaultQueue = defaultQueue
-    ret.deviceLostCallback = deviceLostCallback
-    ret.uncapturedErrorCallbackInfo = uncapturedErrorCallbackInfo
     return ret
 
 
@@ -7364,17 +8035,12 @@ class RenderPassDescriptor:
             self._cdata.nextInChain = v._cdata
 
     @property
-    def label(self) -> Optional[str]:
-        return _ffi_string(self._cdata.label)
+    def label(self) -> "StringView":
+        return StringView(cdata=self._cdata.label, parent=self)
 
     @label.setter
-    def label(self, v: Optional[str]) -> None:
-        self._label = v
-        if v is None:
-            self._cdata.label = ffi.NULL
-        else:
-            self._store_label = _ffi_unwrap_str(v)
-            self._cdata.label = self._store_label
+    def label(self, v: "StringView") -> None:
+        self._cdata.label = _ffi_deref(v._cdata)
 
     @property
     def colorAttachments(self) -> "RenderPassColorAttachmentList":
@@ -7436,7 +8102,7 @@ class RenderPassDescriptor:
 def renderPassDescriptor(
     *,
     nextInChain: Optional["ChainedStruct"] = None,
-    label: Optional[str] = None,
+    label: "StringView",
     colorAttachments: Union[
         "RenderPassColorAttachmentList", List["RenderPassColorAttachment"]
     ],
@@ -7481,17 +8147,12 @@ class VertexState:
         self._cdata.module = v._cdata
 
     @property
-    def entryPoint(self) -> Optional[str]:
-        return _ffi_string(self._cdata.entryPoint)
+    def entryPoint(self) -> "StringView":
+        return StringView(cdata=self._cdata.entryPoint, parent=self)
 
     @entryPoint.setter
-    def entryPoint(self, v: Optional[str]) -> None:
-        self._entryPoint = v
-        if v is None:
-            self._cdata.entryPoint = ffi.NULL
-        else:
-            self._store_entryPoint = _ffi_unwrap_str(v)
-            self._cdata.entryPoint = self._store_entryPoint
+    def entryPoint(self, v: "StringView") -> None:
+        self._cdata.entryPoint = _ffi_deref(v._cdata)
 
     @property
     def constants(self) -> "ConstantEntryList":
@@ -7528,7 +8189,7 @@ def vertexState(
     *,
     nextInChain: Optional["ChainedStruct"] = None,
     module: "ShaderModule",
-    entryPoint: Optional[str] = None,
+    entryPoint: "StringView",
     constants: Union["ConstantEntryList", List["ConstantEntry"]],
     buffers: Union["VertexBufferLayoutList", List["VertexBufferLayout"]],
 ) -> VertexState:
@@ -7568,17 +8229,12 @@ class FragmentState:
         self._cdata.module = v._cdata
 
     @property
-    def entryPoint(self) -> Optional[str]:
-        return _ffi_string(self._cdata.entryPoint)
+    def entryPoint(self) -> "StringView":
+        return StringView(cdata=self._cdata.entryPoint, parent=self)
 
     @entryPoint.setter
-    def entryPoint(self, v: Optional[str]) -> None:
-        self._entryPoint = v
-        if v is None:
-            self._cdata.entryPoint = ffi.NULL
-        else:
-            self._store_entryPoint = _ffi_unwrap_str(v)
-            self._cdata.entryPoint = self._store_entryPoint
+    def entryPoint(self, v: "StringView") -> None:
+        self._cdata.entryPoint = _ffi_deref(v._cdata)
 
     @property
     def constants(self) -> "ConstantEntryList":
@@ -7613,7 +8269,7 @@ def fragmentState(
     *,
     nextInChain: Optional["ChainedStruct"] = None,
     module: "ShaderModule",
-    entryPoint: Optional[str] = None,
+    entryPoint: "StringView",
     constants: Union["ConstantEntryList", List["ConstantEntry"]],
     targets: Union["ColorTargetStateList", List["ColorTargetState"]],
 ) -> FragmentState:
@@ -7644,17 +8300,12 @@ class RenderPipelineDescriptor:
             self._cdata.nextInChain = v._cdata
 
     @property
-    def label(self) -> Optional[str]:
-        return _ffi_string(self._cdata.label)
+    def label(self) -> "StringView":
+        return StringView(cdata=self._cdata.label, parent=self)
 
     @label.setter
-    def label(self, v: Optional[str]) -> None:
-        self._label = v
-        if v is None:
-            self._cdata.label = ffi.NULL
-        else:
-            self._store_label = _ffi_unwrap_str(v)
-            self._cdata.label = self._store_label
+    def label(self, v: "StringView") -> None:
+        self._cdata.label = _ffi_deref(v._cdata)
 
     @property
     def layout(self) -> Optional["PipelineLayout"]:
@@ -7720,7 +8371,7 @@ class RenderPipelineDescriptor:
 def renderPipelineDescriptor(
     *,
     nextInChain: Optional["ChainedStruct"] = None,
-    label: Optional[str] = None,
+    label: "StringView",
     layout: Optional["PipelineLayout"] = None,
     vertex: "VertexState",
     primitive: "PrimitiveState",
@@ -7747,19 +8398,19 @@ class InstanceExtras(Chainable):
         self._cdata.chain.sType = SType.InstanceExtras
 
     @property
-    def backends(self) -> "InstanceBackendFlags":
-        return InstanceBackendFlags(self._cdata.backends)
+    def backends(self) -> "InstanceBackend":
+        return InstanceBackend(self._cdata.backends)
 
     @backends.setter
-    def backends(self, v: Union["InstanceBackendFlags", "InstanceBackend", int]) -> None:
+    def backends(self, v: Union["InstanceBackend", "InstanceBackendFlags", int]) -> None:
         self._cdata.backends = int(v)
 
     @property
-    def flags(self) -> "InstanceFlags":
-        return InstanceFlags(self._cdata.flags)
+    def flags(self) -> "InstanceFlag":
+        return InstanceFlag(self._cdata.flags)
 
     @flags.setter
-    def flags(self, v: Union["InstanceFlags", "InstanceFlag", int]) -> None:
+    def flags(self, v: Union["InstanceFlag", "InstanceFlagFlags", int]) -> None:
         self._cdata.flags = int(v)
 
     @property
@@ -7779,24 +8430,20 @@ class InstanceExtras(Chainable):
         self._cdata.gles3MinorVersion = int(v)
 
     @property
-    def dxilPath(self) -> str:
-        return _ffi_string(self._cdata.dxilPath)
+    def dxilPath(self) -> "StringView":
+        return StringView(cdata=self._cdata.dxilPath, parent=self)
 
     @dxilPath.setter
-    def dxilPath(self, v: str) -> None:
-        self._dxilPath = v
-        self._store_dxilPath = _ffi_unwrap_str(v)
-        self._cdata.dxilPath = self._store_dxilPath
+    def dxilPath(self, v: "StringView") -> None:
+        self._cdata.dxilPath = _ffi_deref(v._cdata)
 
     @property
-    def dxcPath(self) -> str:
-        return _ffi_string(self._cdata.dxcPath)
+    def dxcPath(self) -> "StringView":
+        return StringView(cdata=self._cdata.dxcPath, parent=self)
 
     @dxcPath.setter
-    def dxcPath(self, v: str) -> None:
-        self._dxcPath = v
-        self._store_dxcPath = _ffi_unwrap_str(v)
-        self._cdata.dxcPath = self._store_dxcPath
+    def dxcPath(self, v: "StringView") -> None:
+        self._cdata.dxcPath = _ffi_deref(v._cdata)
 
     @property
     def _chain(self) -> Any:
@@ -7805,12 +8452,12 @@ class InstanceExtras(Chainable):
 
 def instanceExtras(
     *,
-    backends: Union["InstanceBackendFlags", "InstanceBackend", int],
-    flags: Union["InstanceFlags", "InstanceFlag", int],
+    backends: Union["InstanceBackend", "InstanceBackendFlags", int],
+    flags: Union["InstanceFlag", "InstanceFlagFlags", int],
     dx12ShaderCompiler: "Dx12Compiler",
     gles3MinorVersion: "Gles3MinorVersion",
-    dxilPath: str,
-    dxcPath: str,
+    dxilPath: "StringView",
+    dxcPath: "StringView",
 ) -> InstanceExtras:
     ret = InstanceExtras(cdata=None, parent=None)
     ret.backends = backends
@@ -7829,30 +8476,29 @@ class DeviceExtras(Chainable):
         self._cdata.chain.sType = SType.DeviceExtras
 
     @property
-    def tracePath(self) -> str:
-        return _ffi_string(self._cdata.tracePath)
+    def tracePath(self) -> "StringView":
+        return StringView(cdata=self._cdata.tracePath, parent=self)
 
     @tracePath.setter
-    def tracePath(self, v: str) -> None:
-        self._tracePath = v
-        self._store_tracePath = _ffi_unwrap_str(v)
-        self._cdata.tracePath = self._store_tracePath
+    def tracePath(self, v: "StringView") -> None:
+        self._cdata.tracePath = _ffi_deref(v._cdata)
 
     @property
     def _chain(self) -> Any:
         return self._cdata.chain
 
 
-def deviceExtras(*, tracePath: str) -> DeviceExtras:
+def deviceExtras(*, tracePath: "StringView") -> DeviceExtras:
     ret = DeviceExtras(cdata=None, parent=None)
     ret.tracePath = tracePath
     return ret
 
 
-class NativeLimits:
+class NativeLimits(Chainable):
     def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
         self._parent = parent
         self._cdata = _ffi_init("WGPUNativeLimits *", cdata)
+        self._cdata.chain.sType = SType.NativeLimits
 
     @property
     def maxPushConstantSize(self) -> int:
@@ -7870,61 +8516,15 @@ class NativeLimits:
     def maxNonSamplerBindings(self, v: int) -> None:
         self._cdata.maxNonSamplerBindings = v
 
+    @property
+    def _chain(self) -> Any:
+        return self._cdata.chain
+
 
 def nativeLimits(*, maxPushConstantSize: int, maxNonSamplerBindings: int) -> NativeLimits:
     ret = NativeLimits(cdata=None, parent=None)
     ret.maxPushConstantSize = maxPushConstantSize
     ret.maxNonSamplerBindings = maxNonSamplerBindings
-    return ret
-
-
-class RequiredLimitsExtras(Chainable):
-    def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
-        self._parent = parent
-        self._cdata = _ffi_init("WGPURequiredLimitsExtras *", cdata)
-        self._cdata.chain.sType = SType.RequiredLimitsExtras
-
-    @property
-    def limits(self) -> "NativeLimits":
-        return NativeLimits(cdata=self._cdata.limits, parent=self)
-
-    @limits.setter
-    def limits(self, v: "NativeLimits") -> None:
-        self._cdata.limits = _ffi_deref(v._cdata)
-
-    @property
-    def _chain(self) -> Any:
-        return self._cdata.chain
-
-
-def requiredLimitsExtras(*, limits: "NativeLimits") -> RequiredLimitsExtras:
-    ret = RequiredLimitsExtras(cdata=None, parent=None)
-    ret.limits = limits
-    return ret
-
-
-class SupportedLimitsExtras(Chainable):
-    def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
-        self._parent = parent
-        self._cdata = _ffi_init("WGPUSupportedLimitsExtras *", cdata)
-        self._cdata.chain.sType = SType.SupportedLimitsExtras
-
-    @property
-    def limits(self) -> "NativeLimits":
-        return NativeLimits(cdata=self._cdata.limits, parent=self)
-
-    @limits.setter
-    def limits(self, v: "NativeLimits") -> None:
-        self._cdata.limits = _ffi_deref(v._cdata)
-
-    @property
-    def _chain(self) -> Any:
-        return self._cdata.chain
-
-
-def supportedLimitsExtras(*, limits: "NativeLimits") -> SupportedLimitsExtras:
-    ret = SupportedLimitsExtras(cdata=None, parent=None)
-    ret.limits = limits
     return ret
 
 
@@ -7934,11 +8534,11 @@ class PushConstantRange:
         self._cdata = _ffi_init("WGPUPushConstantRange *", cdata)
 
     @property
-    def stages(self) -> "ShaderStageFlags":
-        return ShaderStageFlags(self._cdata.stages)
+    def stages(self) -> "ShaderStage":
+        return ShaderStage(self._cdata.stages)
 
     @stages.setter
-    def stages(self, v: Union["ShaderStageFlags", "ShaderStage", int]) -> None:
+    def stages(self, v: Union["ShaderStage", "ShaderStageFlags", int]) -> None:
         self._cdata.stages = int(v)
 
     @property
@@ -7959,7 +8559,7 @@ class PushConstantRange:
 
 
 def pushConstantRange(
-    *, stages: Union["ShaderStageFlags", "ShaderStage", int], start: int, end: int
+    *, stages: Union["ShaderStage", "ShaderStageFlags", int], start: int, end: int
 ) -> PushConstantRange:
     ret = PushConstantRange(cdata=None, parent=None)
     ret.stages = stages
@@ -8003,65 +8603,29 @@ def pipelineLayoutExtras(
     return ret
 
 
-class WrappedSubmissionIndex:
-    def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
-        self._parent = parent
-        self._cdata = _ffi_init("WGPUWrappedSubmissionIndex *", cdata)
-
-    @property
-    def queue(self) -> "Queue":
-        return Queue(self._cdata.queue, add_ref=True)
-
-    @queue.setter
-    def queue(self, v: "Queue") -> None:
-        self._queue = v
-        self._cdata.queue = v._cdata
-
-    @property
-    def submissionIndex(self) -> int:
-        return self._cdata.submissionIndex
-
-    @submissionIndex.setter
-    def submissionIndex(self, v: int) -> None:
-        self._cdata.submissionIndex = v
-
-
-def wrappedSubmissionIndex(
-    *, queue: "Queue", submissionIndex: int
-) -> WrappedSubmissionIndex:
-    ret = WrappedSubmissionIndex(cdata=None, parent=None)
-    ret.queue = queue
-    ret.submissionIndex = submissionIndex
-    return ret
-
-
 class ShaderDefine:
     def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
         self._parent = parent
         self._cdata = _ffi_init("WGPUShaderDefine *", cdata)
 
     @property
-    def name(self) -> str:
-        return _ffi_string(self._cdata.name)
+    def name(self) -> "StringView":
+        return StringView(cdata=self._cdata.name, parent=self)
 
     @name.setter
-    def name(self, v: str) -> None:
-        self._name = v
-        self._store_name = _ffi_unwrap_str(v)
-        self._cdata.name = self._store_name
+    def name(self, v: "StringView") -> None:
+        self._cdata.name = _ffi_deref(v._cdata)
 
     @property
-    def value(self) -> str:
-        return _ffi_string(self._cdata.value)
+    def value(self) -> "StringView":
+        return StringView(cdata=self._cdata.value, parent=self)
 
     @value.setter
-    def value(self, v: str) -> None:
-        self._value = v
-        self._store_value = _ffi_unwrap_str(v)
-        self._cdata.value = self._store_value
+    def value(self, v: "StringView") -> None:
+        self._cdata.value = _ffi_deref(v._cdata)
 
 
-def shaderDefine(*, name: str, value: str) -> ShaderDefine:
+def shaderDefine(*, name: "StringView", value: "StringView") -> ShaderDefine:
     ret = ShaderDefine(cdata=None, parent=None)
     ret.name = name
     ret.value = value
@@ -8079,18 +8643,16 @@ class ShaderModuleGLSLDescriptor(Chainable):
         return ShaderStage(self._cdata.stage)
 
     @stage.setter
-    def stage(self, v: "ShaderStage") -> None:
+    def stage(self, v: Union["ShaderStage", "ShaderStageFlags", int]) -> None:
         self._cdata.stage = int(v)
 
     @property
-    def code(self) -> str:
-        return _ffi_string(self._cdata.code)
+    def code(self) -> "StringView":
+        return StringView(cdata=self._cdata.code, parent=self)
 
     @code.setter
-    def code(self, v: str) -> None:
-        self._code = v
-        self._store_code = _ffi_unwrap_str(v)
-        self._cdata.code = self._store_code
+    def code(self, v: "StringView") -> None:
+        self._cdata.code = _ffi_deref(v._cdata)
 
     @property
     def defineCount(self) -> int:
@@ -8115,13 +8677,58 @@ class ShaderModuleGLSLDescriptor(Chainable):
 
 
 def shaderModuleGLSLDescriptor(
-    *, stage: "ShaderStage", code: str, defineCount: int, defines: "ShaderDefine"
+    *,
+    stage: Union["ShaderStage", "ShaderStageFlags", int],
+    code: "StringView",
+    defineCount: int,
+    defines: "ShaderDefine",
 ) -> ShaderModuleGLSLDescriptor:
     ret = ShaderModuleGLSLDescriptor(cdata=None, parent=None)
     ret.stage = stage
     ret.code = code
     ret.defineCount = defineCount
     ret.defines = defines
+    return ret
+
+
+class ShaderModuleDescriptorSpirV:
+    def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
+        self._parent = parent
+        self._cdata = _ffi_init("WGPUShaderModuleDescriptorSpirV *", cdata)
+
+    @property
+    def label(self) -> "StringView":
+        return StringView(cdata=self._cdata.label, parent=self)
+
+    @label.setter
+    def label(self, v: "StringView") -> None:
+        self._cdata.label = _ffi_deref(v._cdata)
+
+    @property
+    def sourceSize(self) -> int:
+        return self._cdata.sourceSize
+
+    @sourceSize.setter
+    def sourceSize(self, v: int) -> None:
+        self._cdata.sourceSize = v
+
+    @property
+    def source(self) -> int:
+        return self._source
+
+    @source.setter
+    def source(self, v: int) -> None:
+        self._source = v
+        self._cdata.source = v
+
+
+def shaderModuleDescriptorSpirV(
+    *, label: "StringView", sourceSize: int, source: int
+) -> ShaderModuleDescriptorSpirV:
+    ret = ShaderModuleDescriptorSpirV(cdata=None, parent=None)
+    ret.label = label
+    ret.sourceSize = sourceSize
+    ret.source = source
     return ret
 
 
@@ -8155,14 +8762,6 @@ class RegistryReport:
         self._cdata.numReleasedFromUser = v
 
     @property
-    def numError(self) -> int:
-        return self._cdata.numError
-
-    @numError.setter
-    def numError(self, v: int) -> None:
-        self._cdata.numError = v
-
-    @property
     def elementSize(self) -> int:
         return self._cdata.elementSize
 
@@ -8172,18 +8771,12 @@ class RegistryReport:
 
 
 def registryReport(
-    *,
-    numAllocated: int,
-    numKeptFromUser: int,
-    numReleasedFromUser: int,
-    numError: int,
-    elementSize: int,
+    *, numAllocated: int, numKeptFromUser: int, numReleasedFromUser: int, elementSize: int
 ) -> RegistryReport:
     ret = RegistryReport(cdata=None, parent=None)
     ret.numAllocated = numAllocated
     ret.numKeptFromUser = numKeptFromUser
     ret.numReleasedFromUser = numReleasedFromUser
-    ret.numError = numError
     ret.elementSize = elementSize
     return ret
 
@@ -8282,6 +8875,14 @@ class HubReport:
         self._cdata.computePipelines = _ffi_deref(v._cdata)
 
     @property
+    def pipelineCaches(self) -> "RegistryReport":
+        return RegistryReport(cdata=self._cdata.pipelineCaches, parent=self)
+
+    @pipelineCaches.setter
+    def pipelineCaches(self, v: "RegistryReport") -> None:
+        self._cdata.pipelineCaches = _ffi_deref(v._cdata)
+
+    @property
     def querySets(self) -> "RegistryReport":
         return RegistryReport(cdata=self._cdata.querySets, parent=self)
 
@@ -8335,6 +8936,7 @@ def hubReport(
     renderBundles: "RegistryReport",
     renderPipelines: "RegistryReport",
     computePipelines: "RegistryReport",
+    pipelineCaches: "RegistryReport",
     querySets: "RegistryReport",
     buffers: "RegistryReport",
     textures: "RegistryReport",
@@ -8353,6 +8955,7 @@ def hubReport(
     ret.renderBundles = renderBundles
     ret.renderPipelines = renderPipelines
     ret.computePipelines = computePipelines
+    ret.pipelineCaches = pipelineCaches
     ret.querySets = querySets
     ret.buffers = buffers
     ret.textures = textures
@@ -8375,62 +8978,18 @@ class GlobalReport:
         self._cdata.surfaces = _ffi_deref(v._cdata)
 
     @property
-    def backendType(self) -> "BackendType":
-        return BackendType(self._cdata.backendType)
+    def hub(self) -> "HubReport":
+        return HubReport(cdata=self._cdata.hub, parent=self)
 
-    @backendType.setter
-    def backendType(self, v: "BackendType") -> None:
-        self._cdata.backendType = int(v)
-
-    @property
-    def vulkan(self) -> "HubReport":
-        return HubReport(cdata=self._cdata.vulkan, parent=self)
-
-    @vulkan.setter
-    def vulkan(self, v: "HubReport") -> None:
-        self._cdata.vulkan = _ffi_deref(v._cdata)
-
-    @property
-    def metal(self) -> "HubReport":
-        return HubReport(cdata=self._cdata.metal, parent=self)
-
-    @metal.setter
-    def metal(self, v: "HubReport") -> None:
-        self._cdata.metal = _ffi_deref(v._cdata)
-
-    @property
-    def dx12(self) -> "HubReport":
-        return HubReport(cdata=self._cdata.dx12, parent=self)
-
-    @dx12.setter
-    def dx12(self, v: "HubReport") -> None:
-        self._cdata.dx12 = _ffi_deref(v._cdata)
-
-    @property
-    def gl(self) -> "HubReport":
-        return HubReport(cdata=self._cdata.gl, parent=self)
-
-    @gl.setter
-    def gl(self, v: "HubReport") -> None:
-        self._cdata.gl = _ffi_deref(v._cdata)
+    @hub.setter
+    def hub(self, v: "HubReport") -> None:
+        self._cdata.hub = _ffi_deref(v._cdata)
 
 
-def globalReport(
-    *,
-    surfaces: "RegistryReport",
-    backendType: "BackendType",
-    vulkan: "HubReport",
-    metal: "HubReport",
-    dx12: "HubReport",
-    gl: "HubReport",
-) -> GlobalReport:
+def globalReport(*, surfaces: "RegistryReport", hub: "HubReport") -> GlobalReport:
     ret = GlobalReport(cdata=None, parent=None)
     ret.surfaces = surfaces
-    ret.backendType = backendType
-    ret.vulkan = vulkan
-    ret.metal = metal
-    ret.dx12 = dx12
-    ret.gl = gl
+    ret.hub = hub
     return ret
 
 
@@ -8452,18 +9011,18 @@ class InstanceEnumerateAdapterOptions:
             self._cdata.nextInChain = v._cdata
 
     @property
-    def backends(self) -> "InstanceBackendFlags":
-        return InstanceBackendFlags(self._cdata.backends)
+    def backends(self) -> "InstanceBackend":
+        return InstanceBackend(self._cdata.backends)
 
     @backends.setter
-    def backends(self, v: Union["InstanceBackendFlags", "InstanceBackend", int]) -> None:
+    def backends(self, v: Union["InstanceBackend", "InstanceBackendFlags", int]) -> None:
         self._cdata.backends = int(v)
 
 
 def instanceEnumerateAdapterOptions(
     *,
     nextInChain: Optional["ChainedStruct"] = None,
-    backends: Union["InstanceBackendFlags", "InstanceBackend", int],
+    backends: Union["InstanceBackend", "InstanceBackendFlags", int],
 ) -> InstanceEnumerateAdapterOptions:
     ret = InstanceEnumerateAdapterOptions(cdata=None, parent=None)
     ret.nextInChain = nextInChain
@@ -8632,12 +9191,36 @@ def createInstanceFromDesc(descriptor: Optional["InstanceDescriptor"]) -> "Insta
     )
 
 
-def createInstance(*, nextInChain: Optional["ChainedStruct"] = None) -> "Instance":
-    return createInstanceFromDesc(instanceDescriptor(nextInChain=nextInChain))
+def createInstance(
+    *, nextInChain: Optional["ChainedStruct"] = None, features: "InstanceCapabilities"
+) -> "Instance":
+    return createInstanceFromDesc(
+        instanceDescriptor(nextInChain=nextInChain, features=features)
+    )
+
+
+def getInstanceCapabilities(capabilities: "InstanceCapabilities") -> "Status":
+    return Status(lib.wgpuGetInstanceCapabilities(capabilities._cdata))
+
+
+def getProcAddress(procName: "StringView") -> VoidPtr:
+    return VoidPtr(lib.wgpuGetProcAddress(_ffi_deref(procName._cdata)))
 
 
 def adapterInfoFreeMembers(adapterInfo: "AdapterInfo") -> None:
     return lib.wgpuAdapterInfoFreeMembers(_ffi_deref(adapterInfo._cdata))
+
+
+def supportedFeaturesFreeMembers(supportedFeatures: "SupportedFeatures") -> None:
+    return lib.wgpuSupportedFeaturesFreeMembers(_ffi_deref(supportedFeatures._cdata))
+
+
+def supportedWGSLLanguageFeaturesFreeMembers(
+    supportedWGSLLanguageFeatures: "SupportedWGSLLanguageFeatures",
+) -> None:
+    return lib.wgpuSupportedWGSLLanguageFeaturesFreeMembers(
+        _ffi_deref(supportedWGSLLanguageFeatures._cdata)
+    )
 
 
 # FreeMembers: Not needed
@@ -8658,19 +9241,154 @@ def getVersion() -> int:
 
 # Util wrapper types
 
+_callback_map_BufferMapCallback = CBMap()
+
+
+@ffi.def_extern()
+def _raw_callback_BufferMapCallback(status, message, userdata1, userdata2):  # noqa
+    idx = _cast_userdata(userdata)
+    cb = _callback_map_BufferMapCallback.get(idx)
+    if cb is not None:
+        cb(
+            MapAsyncStatus(status),
+            StringView(cdata=message, parent=None),
+            DataPtr(userdata1, size),
+        )
+
+
+class BufferMapCallback:
+    def __init__(
+        self, callback: Callable[["MapAsyncStatus", "StringView", DataPtr], None]
+    ):
+        self.index = _callback_map_BufferMapCallback.add(callback)
+        # Yes, we're just storing ints into pointers.
+        self._userdata = ffi.cast("void *", self.index)
+        self._ptr = lib._raw_callback_BufferMapCallback
+
+    def remove(self) -> None:
+        _callback_map_BufferMapCallback.remove(self.index)
+
+
+_callback_map_CompilationInfoCallback = CBMap()
+
+
+@ffi.def_extern()
+def _raw_callback_CompilationInfoCallback(status, compilationInfo, userdata1, userdata2):  # noqa
+    idx = _cast_userdata(userdata)
+    cb = _callback_map_CompilationInfoCallback.get(idx)
+    if cb is not None:
+        cb(
+            CompilationInfoRequestStatus(status),
+            CompilationInfo(cdata=compilationInfo, parent=None),
+            DataPtr(userdata1, size),
+        )
+
+
+class CompilationInfoCallback:
+    def __init__(
+        self,
+        callback: Callable[
+            ["CompilationInfoRequestStatus", "CompilationInfo", DataPtr], None
+        ],
+    ):
+        self.index = _callback_map_CompilationInfoCallback.add(callback)
+        # Yes, we're just storing ints into pointers.
+        self._userdata = ffi.cast("void *", self.index)
+        self._ptr = lib._raw_callback_CompilationInfoCallback
+
+    def remove(self) -> None:
+        _callback_map_CompilationInfoCallback.remove(self.index)
+
+
+_callback_map_CreateComputePipelineAsyncCallback = CBMap()
+
+
+@ffi.def_extern()
+def _raw_callback_CreateComputePipelineAsyncCallback(
+    status, pipeline, message, userdata1, userdata2
+):
+    idx = _cast_userdata(userdata)
+    cb = _callback_map_CreateComputePipelineAsyncCallback.get(idx)
+    if cb is not None:
+        cb(
+            CreatePipelineAsyncStatus(status),
+            ComputePipeline(pipeline, add_ref=False),
+            StringView(cdata=message, parent=None),
+            DataPtr(userdata1, size),
+        )
+
+
+class CreateComputePipelineAsyncCallback:
+    def __init__(
+        self,
+        callback: Callable[
+            ["CreatePipelineAsyncStatus", "ComputePipeline", "StringView", DataPtr], None
+        ],
+    ):
+        self.index = _callback_map_CreateComputePipelineAsyncCallback.add(callback)
+        # Yes, we're just storing ints into pointers.
+        self._userdata = ffi.cast("void *", self.index)
+        self._ptr = lib._raw_callback_CreateComputePipelineAsyncCallback
+
+    def remove(self) -> None:
+        _callback_map_CreateComputePipelineAsyncCallback.remove(self.index)
+
+
+_callback_map_CreateRenderPipelineAsyncCallback = CBMap()
+
+
+@ffi.def_extern()
+def _raw_callback_CreateRenderPipelineAsyncCallback(
+    status, pipeline, message, userdata1, userdata2
+):
+    idx = _cast_userdata(userdata)
+    cb = _callback_map_CreateRenderPipelineAsyncCallback.get(idx)
+    if cb is not None:
+        cb(
+            CreatePipelineAsyncStatus(status),
+            RenderPipeline(pipeline, add_ref=False),
+            StringView(cdata=message, parent=None),
+            DataPtr(userdata1, size),
+        )
+
+
+class CreateRenderPipelineAsyncCallback:
+    def __init__(
+        self,
+        callback: Callable[
+            ["CreatePipelineAsyncStatus", "RenderPipeline", "StringView", DataPtr], None
+        ],
+    ):
+        self.index = _callback_map_CreateRenderPipelineAsyncCallback.add(callback)
+        # Yes, we're just storing ints into pointers.
+        self._userdata = ffi.cast("void *", self.index)
+        self._ptr = lib._raw_callback_CreateRenderPipelineAsyncCallback
+
+    def remove(self) -> None:
+        _callback_map_CreateRenderPipelineAsyncCallback.remove(self.index)
+
+
 _callback_map_DeviceLostCallback = CBMap()
 
 
 @ffi.def_extern()
-def _raw_callback_DeviceLostCallback(reason, message, userdata):  # noqa
+def _raw_callback_DeviceLostCallback(device, reason, message, userdata1, userdata2):  # noqa
     idx = _cast_userdata(userdata)
     cb = _callback_map_DeviceLostCallback.get(idx)
     if cb is not None:
-        cb(DeviceLostReason(reason), _ffi_string(message))
+        cb(
+            Device(device, add_ref=False),
+            DeviceLostReason(reason),
+            StringView(cdata=message, parent=None),
+            DataPtr(userdata1, size),
+        )
 
 
 class DeviceLostCallback:
-    def __init__(self, callback: Callable[["DeviceLostReason", str], None]):
+    def __init__(
+        self,
+        callback: Callable[["Device", "DeviceLostReason", "StringView", DataPtr], None],
+    ):
         self.index = _callback_map_DeviceLostCallback.add(callback)
         # Yes, we're just storing ints into pointers.
         self._userdata = ffi.cast("void *", self.index)
@@ -8680,216 +9398,151 @@ class DeviceLostCallback:
         _callback_map_DeviceLostCallback.remove(self.index)
 
 
-_callback_map_ErrorCallback = CBMap()
+_callback_map_PopErrorScopeCallback = CBMap()
 
 
 @ffi.def_extern()
-def _raw_callback_ErrorCallback(type, message, userdata):  # noqa
+def _raw_callback_PopErrorScopeCallback(status, type, message, userdata1, userdata2):  # noqa
     idx = _cast_userdata(userdata)
-    cb = _callback_map_ErrorCallback.get(idx)
-    if cb is not None:
-        cb(ErrorType(type), _ffi_string(message))
-
-
-class ErrorCallback:
-    def __init__(self, callback: Callable[["ErrorType", str], None]):
-        self.index = _callback_map_ErrorCallback.add(callback)
-        # Yes, we're just storing ints into pointers.
-        self._userdata = ffi.cast("void *", self.index)
-        self._ptr = lib._raw_callback_ErrorCallback
-
-    def remove(self) -> None:
-        _callback_map_ErrorCallback.remove(self.index)
-
-
-_callback_map_AdapterRequestDeviceCallback = CBMap()
-
-
-@ffi.def_extern()
-def _raw_callback_AdapterRequestDeviceCallback(status, device, message, userdata):  # noqa
-    idx = _cast_userdata(userdata)
-    cb = _callback_map_AdapterRequestDeviceCallback.get(idx)
+    cb = _callback_map_PopErrorScopeCallback.get(idx)
     if cb is not None:
         cb(
-            RequestDeviceStatus(status),
-            Device(device, add_ref=False),
-            _ffi_string(message),
+            PopErrorScopeStatus(status),
+            ErrorType(type),
+            StringView(cdata=message, parent=None),
+            DataPtr(userdata1, size),
         )
 
 
-class AdapterRequestDeviceCallback:
-    def __init__(self, callback: Callable[["RequestDeviceStatus", "Device", str], None]):
-        self.index = _callback_map_AdapterRequestDeviceCallback.add(callback)
-        # Yes, we're just storing ints into pointers.
-        self._userdata = ffi.cast("void *", self.index)
-        self._ptr = lib._raw_callback_AdapterRequestDeviceCallback
-
-    def remove(self) -> None:
-        _callback_map_AdapterRequestDeviceCallback.remove(self.index)
-
-
-_callback_map_BufferMapAsyncCallback = CBMap()
-
-
-@ffi.def_extern()
-def _raw_callback_BufferMapAsyncCallback(status, userdata):  # noqa
-    idx = _cast_userdata(userdata)
-    cb = _callback_map_BufferMapAsyncCallback.get(idx)
-    if cb is not None:
-        cb(BufferMapAsyncStatus(status))
-
-
-class BufferMapAsyncCallback:
-    def __init__(self, callback: Callable[["BufferMapAsyncStatus"], None]):
-        self.index = _callback_map_BufferMapAsyncCallback.add(callback)
-        # Yes, we're just storing ints into pointers.
-        self._userdata = ffi.cast("void *", self.index)
-        self._ptr = lib._raw_callback_BufferMapAsyncCallback
-
-    def remove(self) -> None:
-        _callback_map_BufferMapAsyncCallback.remove(self.index)
-
-
-_callback_map_DeviceCreateComputePipelineAsyncCallback = CBMap()
-
-
-@ffi.def_extern()
-def _raw_callback_DeviceCreateComputePipelineAsyncCallback(
-    status, pipeline, message, userdata
-):
-    idx = _cast_userdata(userdata)
-    cb = _callback_map_DeviceCreateComputePipelineAsyncCallback.get(idx)
-    if cb is not None:
-        cb(
-            CreatePipelineAsyncStatus(status),
-            ComputePipeline(pipeline, add_ref=False),
-            _ffi_string(message),
-        )
-
-
-class DeviceCreateComputePipelineAsyncCallback:
+class PopErrorScopeCallback:
     def __init__(
         self,
-        callback: Callable[["CreatePipelineAsyncStatus", "ComputePipeline", str], None],
+        callback: Callable[
+            ["PopErrorScopeStatus", "ErrorType", "StringView", DataPtr], None
+        ],
     ):
-        self.index = _callback_map_DeviceCreateComputePipelineAsyncCallback.add(callback)
+        self.index = _callback_map_PopErrorScopeCallback.add(callback)
         # Yes, we're just storing ints into pointers.
         self._userdata = ffi.cast("void *", self.index)
-        self._ptr = lib._raw_callback_DeviceCreateComputePipelineAsyncCallback
+        self._ptr = lib._raw_callback_PopErrorScopeCallback
 
     def remove(self) -> None:
-        _callback_map_DeviceCreateComputePipelineAsyncCallback.remove(self.index)
+        _callback_map_PopErrorScopeCallback.remove(self.index)
 
 
-_callback_map_DeviceCreateRenderPipelineAsyncCallback = CBMap()
+_callback_map_QueueWorkDoneCallback = CBMap()
 
 
 @ffi.def_extern()
-def _raw_callback_DeviceCreateRenderPipelineAsyncCallback(
-    status, pipeline, message, userdata
-):
+def _raw_callback_QueueWorkDoneCallback(status, userdata1, userdata2):  # noqa
     idx = _cast_userdata(userdata)
-    cb = _callback_map_DeviceCreateRenderPipelineAsyncCallback.get(idx)
+    cb = _callback_map_QueueWorkDoneCallback.get(idx)
     if cb is not None:
-        cb(
-            CreatePipelineAsyncStatus(status),
-            RenderPipeline(pipeline, add_ref=False),
-            _ffi_string(message),
-        )
+        cb(QueueWorkDoneStatus(status), DataPtr(userdata1, size))
 
 
-class DeviceCreateRenderPipelineAsyncCallback:
-    def __init__(
-        self,
-        callback: Callable[["CreatePipelineAsyncStatus", "RenderPipeline", str], None],
-    ):
-        self.index = _callback_map_DeviceCreateRenderPipelineAsyncCallback.add(callback)
+class QueueWorkDoneCallback:
+    def __init__(self, callback: Callable[["QueueWorkDoneStatus", DataPtr], None]):
+        self.index = _callback_map_QueueWorkDoneCallback.add(callback)
         # Yes, we're just storing ints into pointers.
         self._userdata = ffi.cast("void *", self.index)
-        self._ptr = lib._raw_callback_DeviceCreateRenderPipelineAsyncCallback
+        self._ptr = lib._raw_callback_QueueWorkDoneCallback
 
     def remove(self) -> None:
-        _callback_map_DeviceCreateRenderPipelineAsyncCallback.remove(self.index)
+        _callback_map_QueueWorkDoneCallback.remove(self.index)
 
 
-_callback_map_InstanceRequestAdapterCallback = CBMap()
+_callback_map_RequestAdapterCallback = CBMap()
 
 
 @ffi.def_extern()
-def _raw_callback_InstanceRequestAdapterCallback(status, adapter, message, userdata):  # noqa
+def _raw_callback_RequestAdapterCallback(status, adapter, message, userdata1, userdata2):  # noqa
     idx = _cast_userdata(userdata)
-    cb = _callback_map_InstanceRequestAdapterCallback.get(idx)
+    cb = _callback_map_RequestAdapterCallback.get(idx)
     if cb is not None:
         cb(
             RequestAdapterStatus(status),
             Adapter(adapter, add_ref=False),
-            _ffi_string(message),
+            StringView(cdata=message, parent=None),
+            DataPtr(userdata1, size),
         )
 
 
-class InstanceRequestAdapterCallback:
-    def __init__(
-        self, callback: Callable[["RequestAdapterStatus", "Adapter", str], None]
-    ):
-        self.index = _callback_map_InstanceRequestAdapterCallback.add(callback)
-        # Yes, we're just storing ints into pointers.
-        self._userdata = ffi.cast("void *", self.index)
-        self._ptr = lib._raw_callback_InstanceRequestAdapterCallback
-
-    def remove(self) -> None:
-        _callback_map_InstanceRequestAdapterCallback.remove(self.index)
-
-
-_callback_map_QueueOnSubmittedWorkDoneCallback = CBMap()
-
-
-@ffi.def_extern()
-def _raw_callback_QueueOnSubmittedWorkDoneCallback(status, userdata):  # noqa
-    idx = _cast_userdata(userdata)
-    cb = _callback_map_QueueOnSubmittedWorkDoneCallback.get(idx)
-    if cb is not None:
-        cb(QueueWorkDoneStatus(status))
-
-
-class QueueOnSubmittedWorkDoneCallback:
-    def __init__(self, callback: Callable[["QueueWorkDoneStatus"], None]):
-        self.index = _callback_map_QueueOnSubmittedWorkDoneCallback.add(callback)
-        # Yes, we're just storing ints into pointers.
-        self._userdata = ffi.cast("void *", self.index)
-        self._ptr = lib._raw_callback_QueueOnSubmittedWorkDoneCallback
-
-    def remove(self) -> None:
-        _callback_map_QueueOnSubmittedWorkDoneCallback.remove(self.index)
-
-
-_callback_map_ShaderModuleGetCompilationInfoCallback = CBMap()
-
-
-@ffi.def_extern()
-def _raw_callback_ShaderModuleGetCompilationInfoCallback(
-    status, compilationInfo, userdata
-):
-    idx = _cast_userdata(userdata)
-    cb = _callback_map_ShaderModuleGetCompilationInfoCallback.get(idx)
-    if cb is not None:
-        cb(
-            CompilationInfoRequestStatus(status),
-            CompilationInfo(cdata=compilationInfo, parent=None),
-        )
-
-
-class ShaderModuleGetCompilationInfoCallback:
+class RequestAdapterCallback:
     def __init__(
         self,
-        callback: Callable[["CompilationInfoRequestStatus", "CompilationInfo"], None],
+        callback: Callable[
+            ["RequestAdapterStatus", "Adapter", "StringView", DataPtr], None
+        ],
     ):
-        self.index = _callback_map_ShaderModuleGetCompilationInfoCallback.add(callback)
+        self.index = _callback_map_RequestAdapterCallback.add(callback)
         # Yes, we're just storing ints into pointers.
         self._userdata = ffi.cast("void *", self.index)
-        self._ptr = lib._raw_callback_ShaderModuleGetCompilationInfoCallback
+        self._ptr = lib._raw_callback_RequestAdapterCallback
 
     def remove(self) -> None:
-        _callback_map_ShaderModuleGetCompilationInfoCallback.remove(self.index)
+        _callback_map_RequestAdapterCallback.remove(self.index)
+
+
+_callback_map_RequestDeviceCallback = CBMap()
+
+
+@ffi.def_extern()
+def _raw_callback_RequestDeviceCallback(status, device, message, userdata1, userdata2):  # noqa
+    idx = _cast_userdata(userdata)
+    cb = _callback_map_RequestDeviceCallback.get(idx)
+    if cb is not None:
+        cb(
+            RequestDeviceStatus(status),
+            Device(device, add_ref=False),
+            StringView(cdata=message, parent=None),
+            DataPtr(userdata1, size),
+        )
+
+
+class RequestDeviceCallback:
+    def __init__(
+        self,
+        callback: Callable[
+            ["RequestDeviceStatus", "Device", "StringView", DataPtr], None
+        ],
+    ):
+        self.index = _callback_map_RequestDeviceCallback.add(callback)
+        # Yes, we're just storing ints into pointers.
+        self._userdata = ffi.cast("void *", self.index)
+        self._ptr = lib._raw_callback_RequestDeviceCallback
+
+    def remove(self) -> None:
+        _callback_map_RequestDeviceCallback.remove(self.index)
+
+
+_callback_map_UncapturedErrorCallback = CBMap()
+
+
+@ffi.def_extern()
+def _raw_callback_UncapturedErrorCallback(device, type, message, userdata1, userdata2):  # noqa
+    idx = _cast_userdata(userdata)
+    cb = _callback_map_UncapturedErrorCallback.get(idx)
+    if cb is not None:
+        cb(
+            Device(device, add_ref=False),
+            ErrorType(type),
+            StringView(cdata=message, parent=None),
+            DataPtr(userdata1, size),
+        )
+
+
+class UncapturedErrorCallback:
+    def __init__(
+        self, callback: Callable[["Device", "ErrorType", "StringView", DataPtr], None]
+    ):
+        self.index = _callback_map_UncapturedErrorCallback.add(callback)
+        # Yes, we're just storing ints into pointers.
+        self._userdata = ffi.cast("void *", self.index)
+        self._ptr = lib._raw_callback_UncapturedErrorCallback
+
+    def remove(self) -> None:
+        _callback_map_UncapturedErrorCallback.remove(self.index)
 
 
 _callback_map_LogCallback = CBMap()
@@ -8900,11 +9553,11 @@ def _raw_callback_LogCallback(level, message, userdata):  # noqa
     idx = _cast_userdata(userdata)
     cb = _callback_map_LogCallback.get(idx)
     if cb is not None:
-        cb(LogLevel(level), _ffi_string(message))
+        cb(LogLevel(level), StringView(cdata=message, parent=None))
 
 
 class LogCallback:
-    def __init__(self, callback: Callable[["LogLevel", str], None]):
+    def __init__(self, callback: Callable[["LogLevel", "StringView"], None]):
         self.index = _callback_map_LogCallback.add(callback)
         # Yes, we're just storing ints into pointers.
         self._userdata = ffi.cast("void *", self.index)
@@ -8928,6 +9581,24 @@ class TextureFormatList:
         self._stashed = items
         self._count = max(len(items), count)
         self._ptr = _ffi_new("WGPUTextureFormat[]", self._count)
+        for idx, item in enumerate(items):
+            self._ptr[idx] = int(item)
+
+
+class FeatureNameList:
+    def __init__(self, items: List["FeatureName"], count: int = 0):
+        self._stashed = items
+        self._count = max(len(items), count)
+        self._ptr = _ffi_new("WGPUFeatureName[]", self._count)
+        for idx, item in enumerate(items):
+            self._ptr[idx] = int(item)
+
+
+class WGSLLanguageFeatureNameList:
+    def __init__(self, items: List["WGSLLanguageFeatureName"], count: int = 0):
+        self._stashed = items
+        self._count = max(len(items), count)
+        self._ptr = _ffi_new("WGPUWGSLLanguageFeatureName[]", self._count)
         for idx, item in enumerate(items):
             self._ptr[idx] = int(item)
 
@@ -8977,15 +9648,6 @@ class ConstantEntryList:
             self._ptr[idx] = _ffi_deref(item._cdata)
 
 
-class ShaderModuleCompilationHintList:
-    def __init__(self, items: List["ShaderModuleCompilationHint"], count: int = 0):
-        self._stashed = items
-        self._count = max(len(items), count)
-        self._ptr = _ffi_new("WGPUShaderModuleCompilationHint[]", self._count)
-        for idx, item in enumerate(items):
-            self._ptr[idx] = _ffi_deref(item._cdata)
-
-
 class VertexAttributeList:
     def __init__(self, items: List["VertexAttribute"], count: int = 0):
         self._stashed = items
@@ -9002,15 +9664,6 @@ class BindGroupLayoutEntryList:
         self._ptr = _ffi_new("WGPUBindGroupLayoutEntry[]", self._count)
         for idx, item in enumerate(items):
             self._ptr[idx] = _ffi_deref(item._cdata)
-
-
-class FeatureNameList:
-    def __init__(self, items: List["FeatureName"], count: int = 0):
-        self._stashed = items
-        self._count = max(len(items), count)
-        self._ptr = _ffi_new("WGPUFeatureName[]", self._count)
-        for idx, item in enumerate(items):
-            self._ptr[idx] = int(item)
 
 
 class RenderPassColorAttachmentList:
@@ -9092,6 +9745,15 @@ class IntList:
         self._ptr = _ffi_new("uint32_t[]", self._count)
         for idx, item in enumerate(items):
             self._ptr[idx] = item
+
+
+class FutureWaitInfoList:
+    def __init__(self, items: List["FutureWaitInfo"], count: int = 0):
+        self._stashed = items
+        self._count = max(len(items), count)
+        self._ptr = _ffi_new("WGPUFutureWaitInfo[]", self._count)
+        for idx, item in enumerate(items):
+            self._ptr[idx] = _ffi_deref(item._cdata)
 
 
 class CommandBufferList:

@@ -89,7 +89,7 @@ def fix_arch(name: str) -> str:
 
 
 BASE_URL = "https://github.com/gfx-rs/wgpu-native/releases/download/"
-VERSION = "22.1.0.5"
+VERSION = "24.0.0.1"
 
 SYSNAME = uname().system.lower()
 IS_WINDOWS = SYSNAME == "windows" or ("microsoft" in uname().release.lower())
@@ -129,7 +129,7 @@ LIBS = [
 
 COPIES = [
     (f"{UNZIP_PATH}/include/webgpu/webgpu.h", f"{INCLUDE_PATH}/webgpu.h"),
-    (f"{UNZIP_PATH}/include/wgpu/wgpu.h", f"{INCLUDE_PATH}/wgpu.h"),
+    (f"{UNZIP_PATH}/include/webgpu/wgpu.h", f"{INCLUDE_PATH}/wgpu.h"),
     *LIBS,
 ]
 
