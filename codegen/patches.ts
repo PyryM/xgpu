@@ -28,8 +28,45 @@ class SurfaceCapabilities:
         self.alphaModes = alphaModes
 `.trim();
 
+const STRING_VIEW = `
+class StringView:
+    def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
+        self._parent = parent
+        self._cdata = _ffi_init("WGPUStringView *", cdata)
+
+    @property
+    def data(self) -> Optional[str]:
+        return _ffi_string(self._cdata.data, self._cdata.length)
+
+    @data.setter
+    def data(self, v: Optional[str]) -> None:
+        self._data = v
+        if v is None:
+            self._store_data = None
+            self._cdata.data = ffi.NULL
+            self._cdata.length = 0
+        else:
+            data, data_size = _ffi_unwrap_str(v)
+            self._store_data = data
+            self._cdata.data = data
+            self._cdata.length = data_size
+
+    @property
+    def length(self) -> int:
+        return self._cdata.length
+
+def wrap_string_view(s: str) -> StringView:
+    ret = StringView()
+    ret.data = s
+    return ret
+
+def unwrap_string_view(s: CData) -> str:
+    return _ffi_string(s.data, s.length)
+`.trim();
+
 export const PATCHED_CLASSES: Map<string, string> = new Map([
   ["WGPUSurfaceCapabilities", SURFACE_CAPS],
+  ["WGPUStringView", STRING_VIEW],
 ]);
 
 const SURFACE_GET_CAPS = `

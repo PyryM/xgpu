@@ -7,6 +7,11 @@ export function pyOptional(pyType: string): string {
   return IS_PY12 ? `${pyType} | None` : `Optional[${pyType}]`;
 }
 
+export function pyTuple(types: string[]): string {
+  const innerList = types.join(", ")
+  return IS_PY12 ? `tuple[${innerList}]` : `Tuple[${innerList}]`;
+}
+
 export function pyUnion(...args: string[]): string {
   return IS_PY12 ? args.join(" | ") : `Union[${args.join(", ")}]`;
 }

@@ -12,7 +12,7 @@ import {
 } from "./stringmanip";
 import { docs } from "./extract_docs";
 import { PATCHED_FUNCTIONS, FORCE_NULLABLE_ARGS, PATCHED_CLASSES } from "./patches";
-import { pyBool, toPyName, pyUnion, pyOptional, pyList } from "./pygen";
+import { pyBool, toPyName, pyUnion, pyOptional, pyList, pyTuple } from "./pygen";
 
 function readHeader(fn: string): string {
   let header = readFileSync(fn).toString("utf8");
@@ -424,6 +424,19 @@ class ApiInfo {
         target,
       ],
     });
+
+    this.types.set("WGPUStringView", {
+      cName: "WGPUStringView",
+      pyName: "str",
+      kind: "primitive",
+      pyAnnotation: () => "str",
+      wrap: (v) => `unwrap_string_view(${v})`,
+      unwrap: (v) => `wrap_string_view(${v})`,
+      preStore: (target, val) => [
+        `${target} = wrap_string_view(${val})`,
+        target,
+      ],
+    })
   }
 
   createWrapperOnce(name: string, create: () => Emittable) {
@@ -442,6 +455,14 @@ class ApiInfo {
       return this.UNKNOWN_TYPE;
     }
     return ret;
+  }
+
+  setType(name: string, ty: CType) {
+    if(this.types.has(name)) {
+      console.log(`Type '${name}' already set.`);
+      return;
+    }
+    this.types.set(name, ty);
   }
 
   findEnums(src: string) {
@@ -469,7 +490,7 @@ class ApiInfo {
         });
         stypeEnum.mergeValues(fixedEntries);
       } else {
-        this.types.set(cName, new CEnum(cName, toPyName(cName, true), entries));
+        this.setType(cName, new CEnum(cName, toPyName(cName, true), entries));
       }
     }
   }
@@ -477,7 +498,7 @@ class ApiInfo {
   findOpaquePointers(src: string) {
     const reg = /typedef struct ([a-zA-Z0-9]+)\s?\* ([a-zA-Z]+)([^;]*);/g;
     for (const [, , cName] of src.matchAll(reg)) {
-      this.types.set(cName, new COpaque(cName, toPyName(cName, true)));
+      this.setType(cName, new COpaque(cName, toPyName(cName, true)));
     }
   }
 
@@ -518,20 +539,13 @@ class ApiInfo {
         this.getListWrapper(innerCType);
         fields.push(new ArrayField(listField.name, countField.name, innerCType));
         fieldPos += 2;
-      } else if (
-        name.toLowerCase().endsWith("callback") &&
-        fieldPos + 1 < rawFields.length &&
-        rawFields[fieldPos + 1].name.toLowerCase().endsWith("userdata")
-      ) {
-        fields.push(new CallbackField(name, rawFields[fieldPos+1].name, this.getType(type)));
-        fieldPos += 2;
       } else {
         fields.push(this._createField(name, type, cName));
         ++fieldPos;
       }
     }
     const noEmit = SPECIAL_CLASSES.has(cName);
-    this.types.set(
+    this.setType(
       cName,
       new CStruct(cName, toPyName(cName, true), cdef, fields, noEmit)
     );
@@ -612,7 +626,7 @@ class ApiInfo {
     const ret = this._parseFuncReturn(returnType);
     const fpointer = new CFuncPointer(name, toPyName(name, true), argStr, ret);
 
-    this.types.set(name, fpointer);
+    this.setType(name, fpointer);
     this.wrappers.set(`_cbwrap_${name}`, new CallbackWrapper(fpointer));
   }
 
@@ -648,8 +662,8 @@ class ApiInfo {
 
       const etype = new CEnum(`__fake_flags_${cname}`, `${pyName}Flags`, []);
       etypes[cname] = etype;
-      this.types.set(`__fake_flags_${cname}`, etype);
-      this.types.set(cname, new CFlags(cname, pyName, etype));
+      this.setType(`__fake_flags_${cname}`, etype);
+      this.setType(cname, new CFlags(cname, pyName, etype));
     }
 
     const val_reg = /static\s+const\s+([A-Za-z0-9]*)\s+[A-Za-z0-9]*_([A-Za-z0-9]*)\s*=\s*([A-Za-z0-9]*)\s*;/g
@@ -700,14 +714,6 @@ class ApiInfo {
         pyArgs.push(`${arg.name}: DataPtr`);
         callArgs.push(`${arg.name}._ptr`);
         callArgs.push(`${arg.name}._size`);
-        idx += 2;
-      } else if (arg.name === "callback") {
-        // assume a (callback, userdata) combo
-        pyArgs.push(
-          `${arg.name}: ${arg.ctype.pyAnnotation(arg.explicitPointer, false)}`
-        );
-        callArgs.push(`${arg.name}._ptr`);
-        callArgs.push(`${arg.name}._userdata`);
         idx += 2;
       } else if (
         arg.nullable &&
@@ -903,7 +909,7 @@ class PointerField implements CStructField {
   constructor(
     public name: string,
     public ctype: CType,
-    public nullable: boolean
+    public nullable: boolean,
   ) {}
 
   argtype(): string {
@@ -1176,10 +1182,10 @@ class CallbackWrapper implements Emittable {
     const [args, ret] = this.resolveArgs(api);
     const rawArglist = args.map((arg) => arg.name);
     const arglist = args
-      .slice(0, args.length - 1)
+      .slice(0, args.length - 2)
       .map((arg) => arg.ctype.pyAnnotation(arg.explicitPointer, false));
     const unpackList = args
-      .slice(0, args.length - 1)
+      .slice(0, args.length - 2)
       .map((arg) => arg.ctype.wrap(arg.name, arg.explicitPointer));
     const pytype = `Callable[[${arglist}], ${ret.ctype.pyAnnotation(
       ret.explicitPointer,
@@ -1192,7 +1198,7 @@ ${mapName} = CBMap()
 
 @ffi.def_extern()
 def ${this.rawName()}(${rawArglist.join(", ")}): # noqa
-    idx = _cast_userdata(userdata)
+    idx = _cast_userdata(userdata1)
     cb = ${mapName}.get(idx)
     if cb is not None:
         cb(${unpackList.join(", ")})
@@ -1429,7 +1435,7 @@ if __name__ == "__main__":
 const pylibOutput = `# AUTOGENERATED
 from abc import ABC, abstractmethod
 from enum import IntEnum
-from typing import Any, Iterator, Callable, Optional, Union, List
+from typing import Any, Iterator, Callable, Optional, Union, List, Tuple
 
 from ._wgpu_native_cffi import ffi, lib
 
@@ -1461,15 +1467,16 @@ def _ffi_unwrap_optional(val: ${pyOptional("Any")}) -> CData:
     else:
         return val._cdata
 
-def _ffi_unwrap_str(val: ${pyOptional("str")}) -> CData:
+def _ffi_unwrap_str(val: ${pyOptional("str")}) -> ${pyTuple(["CData", "int"])}:
     if val is None:
         val = ""
-    return ffi.new("char[]", val.encode("utf8"))
+    byte_data = val.encode("utf8")
+    return ffi.new("char[]", byte_data), len(byte_data)
 
-def _ffi_string(val: CData) -> str:
+def _ffi_string(val: CData, size: ${pyOptional("int")}=None) -> str:
     if val == ffi.NULL:
         return ""
-    ret = ffi.string(val)
+    ret = ffi.string(val, size)
     if isinstance(ret, bytes):
         return ret.decode("utf8")
     elif isinstance(ret, str):
