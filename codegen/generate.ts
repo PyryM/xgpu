@@ -1219,7 +1219,7 @@ class ${this.func.pyName}:
         self.index = ${mapName}.add(callback)
         self._cdata = _ffi_init("${this.func.cName}Info *", None)
         # Yes, we're just storing ints into pointers.
-        self._userdata = ffi.cast("void *", self.index)
+        self._cdata.userdata1 = ffi.cast("void *", self.index)
         self._ptr = lib.${this.rawName()}
 
     def remove(self) -> None:
