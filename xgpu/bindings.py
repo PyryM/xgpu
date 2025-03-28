@@ -1158,7 +1158,7 @@ class Adapter:
     def requestDevice(
         self,
         descriptor: Optional["DeviceDescriptor"],
-        callbackInfo: "RequestDeviceCallbackInfo",
+        callbackInfo: "RequestDeviceCallback",
     ) -> "Future":
         return Future(
             cdata=lib.wgpuAdapterRequestDevice(
@@ -1312,7 +1312,7 @@ class Buffer:
         mode: Union["MapMode", "MapModeFlags", int],
         offset: int,
         size: int,
-        callbackInfo: "BufferMapCallbackInfo",
+        callbackInfo: "BufferMapCallback",
     ) -> "Future":
         return Future(
             cdata=lib.wgpuBufferMapAsync(
@@ -1866,7 +1866,7 @@ class Device:
     def createComputePipelineAsync(
         self,
         descriptor: "ComputePipelineDescriptor",
-        callbackInfo: "CreateComputePipelineAsyncCallbackInfo",
+        callbackInfo: "CreateComputePipelineAsyncCallback",
     ) -> "Future":
         return Future(
             cdata=lib.wgpuDeviceCreateComputePipelineAsync(
@@ -1982,7 +1982,7 @@ class Device:
     def createRenderPipelineAsync(
         self,
         descriptor: "RenderPipelineDescriptor",
-        callbackInfo: "CreateRenderPipelineAsyncCallbackInfo",
+        callbackInfo: "CreateRenderPipelineAsyncCallback",
     ) -> "Future":
         return Future(
             cdata=lib.wgpuDeviceCreateRenderPipelineAsync(
@@ -2100,7 +2100,7 @@ class Device:
     def hasFeature(self, feature: "FeatureName") -> bool:
         return lib.wgpuDeviceHasFeature(self._cdata, int(feature))
 
-    def popErrorScope(self, callbackInfo: "PopErrorScopeCallbackInfo") -> "Future":
+    def popErrorScope(self, callbackInfo: "PopErrorScopeCallback") -> "Future":
         return Future(
             cdata=lib.wgpuDevicePopErrorScope(
                 self._cdata, _ffi_deref(callbackInfo._cdata)
@@ -2193,7 +2193,7 @@ class Instance:
     def requestAdapter(
         self,
         options: Optional["RequestAdapterOptions"],
-        callbackInfo: "RequestAdapterCallbackInfo",
+        callbackInfo: "RequestAdapterCallback",
     ) -> "Future":
         return Future(
             cdata=lib.wgpuInstanceRequestAdapter(
@@ -2356,7 +2356,7 @@ class Queue:
     def isValid(self) -> None:
         return self._cdata != ffi.NULL
 
-    def onSubmittedWorkDone(self, callbackInfo: "QueueWorkDoneCallbackInfo") -> "Future":
+    def onSubmittedWorkDone(self, callbackInfo: "QueueWorkDoneCallback") -> "Future":
         return Future(
             cdata=lib.wgpuQueueOnSubmittedWorkDone(
                 self._cdata, _ffi_deref(callbackInfo._cdata)
@@ -2951,7 +2951,7 @@ class ShaderModule:
     def isValid(self) -> None:
         return self._cdata != ffi.NULL
 
-    def getCompilationInfo(self, callbackInfo: "CompilationInfoCallbackInfo") -> "Future":
+    def getCompilationInfo(self, callbackInfo: "CompilationInfoCallback") -> "Future":
         return Future(
             cdata=lib.wgpuShaderModuleGetCompilationInfo(
                 self._cdata, _ffi_deref(callbackInfo._cdata)
@@ -3215,756 +3215,16 @@ class TextureView:
 
 # ChainedStruct is specially defined elsewhere
 # ChainedStructOut is specially defined elsewhere
-
-
-class BufferMapCallbackInfo:
-    def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
-        self._parent = parent
-        self._cdata = _ffi_init("WGPUBufferMapCallbackInfo *", cdata)
-
-    @property
-    def nextInChain(self) -> Optional["ChainedStruct"]:
-        return self._nextInChain
-
-    @nextInChain.setter
-    def nextInChain(self, v: Optional["ChainedStruct"]) -> None:
-        self._nextInChain = v
-        if v is None:
-            self._cdata.nextInChain = ffi.NULL
-        else:
-            self._cdata.nextInChain = v._cdata
-
-    @property
-    def mode(self) -> "CallbackMode":
-        return CallbackMode(self._cdata.mode)
-
-    @mode.setter
-    def mode(self, v: "CallbackMode") -> None:
-        self._cdata.mode = int(v)
-
-    @property
-    def callback(self) -> "BufferMapCallback":
-        return self._cdata.callback
-
-    @callback.setter
-    def callback(self, v: "BufferMapCallback") -> None:
-        self._callback = v
-        self._cdata.callback = v
-
-    @property
-    def userdata1(self) -> Optional[VoidPtr]:
-        return self._userdata1
-
-    @userdata1.setter
-    def userdata1(self, v: Optional[VoidPtr]) -> None:
-        self._userdata1 = v
-        if v is None:
-            self._cdata.userdata1 = ffi.NULL
-        else:
-            self._cdata.userdata1 = v._ptr
-
-    @property
-    def userdata2(self) -> Optional[VoidPtr]:
-        return self._userdata2
-
-    @userdata2.setter
-    def userdata2(self, v: Optional[VoidPtr]) -> None:
-        self._userdata2 = v
-        if v is None:
-            self._cdata.userdata2 = ffi.NULL
-        else:
-            self._cdata.userdata2 = v._ptr
-
-
-def bufferMapCallbackInfo(
-    *,
-    nextInChain: Optional["ChainedStruct"] = None,
-    mode: "CallbackMode",
-    callback: "BufferMapCallback",
-    userdata1: Optional[VoidPtr] = None,
-    userdata2: Optional[VoidPtr] = None,
-) -> BufferMapCallbackInfo:
-    ret = BufferMapCallbackInfo(cdata=None, parent=None)
-    ret.nextInChain = nextInChain
-    ret.mode = mode
-    ret.callback = callback
-    ret.userdata1 = userdata1
-    ret.userdata2 = userdata2
-    return ret
-
-
-class CompilationInfoCallbackInfo:
-    def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
-        self._parent = parent
-        self._cdata = _ffi_init("WGPUCompilationInfoCallbackInfo *", cdata)
-
-    @property
-    def nextInChain(self) -> Optional["ChainedStruct"]:
-        return self._nextInChain
-
-    @nextInChain.setter
-    def nextInChain(self, v: Optional["ChainedStruct"]) -> None:
-        self._nextInChain = v
-        if v is None:
-            self._cdata.nextInChain = ffi.NULL
-        else:
-            self._cdata.nextInChain = v._cdata
-
-    @property
-    def mode(self) -> "CallbackMode":
-        return CallbackMode(self._cdata.mode)
-
-    @mode.setter
-    def mode(self, v: "CallbackMode") -> None:
-        self._cdata.mode = int(v)
-
-    @property
-    def callback(self) -> "CompilationInfoCallback":
-        return self._cdata.callback
-
-    @callback.setter
-    def callback(self, v: "CompilationInfoCallback") -> None:
-        self._callback = v
-        self._cdata.callback = v
-
-    @property
-    def userdata1(self) -> Optional[VoidPtr]:
-        return self._userdata1
-
-    @userdata1.setter
-    def userdata1(self, v: Optional[VoidPtr]) -> None:
-        self._userdata1 = v
-        if v is None:
-            self._cdata.userdata1 = ffi.NULL
-        else:
-            self._cdata.userdata1 = v._ptr
-
-    @property
-    def userdata2(self) -> Optional[VoidPtr]:
-        return self._userdata2
-
-    @userdata2.setter
-    def userdata2(self, v: Optional[VoidPtr]) -> None:
-        self._userdata2 = v
-        if v is None:
-            self._cdata.userdata2 = ffi.NULL
-        else:
-            self._cdata.userdata2 = v._ptr
-
-
-def compilationInfoCallbackInfo(
-    *,
-    nextInChain: Optional["ChainedStruct"] = None,
-    mode: "CallbackMode",
-    callback: "CompilationInfoCallback",
-    userdata1: Optional[VoidPtr] = None,
-    userdata2: Optional[VoidPtr] = None,
-) -> CompilationInfoCallbackInfo:
-    ret = CompilationInfoCallbackInfo(cdata=None, parent=None)
-    ret.nextInChain = nextInChain
-    ret.mode = mode
-    ret.callback = callback
-    ret.userdata1 = userdata1
-    ret.userdata2 = userdata2
-    return ret
-
-
-class CreateComputePipelineAsyncCallbackInfo:
-    def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
-        self._parent = parent
-        self._cdata = _ffi_init("WGPUCreateComputePipelineAsyncCallbackInfo *", cdata)
-
-    @property
-    def nextInChain(self) -> Optional["ChainedStruct"]:
-        return self._nextInChain
-
-    @nextInChain.setter
-    def nextInChain(self, v: Optional["ChainedStruct"]) -> None:
-        self._nextInChain = v
-        if v is None:
-            self._cdata.nextInChain = ffi.NULL
-        else:
-            self._cdata.nextInChain = v._cdata
-
-    @property
-    def mode(self) -> "CallbackMode":
-        return CallbackMode(self._cdata.mode)
-
-    @mode.setter
-    def mode(self, v: "CallbackMode") -> None:
-        self._cdata.mode = int(v)
-
-    @property
-    def callback(self) -> "CreateComputePipelineAsyncCallback":
-        return self._cdata.callback
-
-    @callback.setter
-    def callback(self, v: "CreateComputePipelineAsyncCallback") -> None:
-        self._callback = v
-        self._cdata.callback = v
-
-    @property
-    def userdata1(self) -> Optional[VoidPtr]:
-        return self._userdata1
-
-    @userdata1.setter
-    def userdata1(self, v: Optional[VoidPtr]) -> None:
-        self._userdata1 = v
-        if v is None:
-            self._cdata.userdata1 = ffi.NULL
-        else:
-            self._cdata.userdata1 = v._ptr
-
-    @property
-    def userdata2(self) -> Optional[VoidPtr]:
-        return self._userdata2
-
-    @userdata2.setter
-    def userdata2(self, v: Optional[VoidPtr]) -> None:
-        self._userdata2 = v
-        if v is None:
-            self._cdata.userdata2 = ffi.NULL
-        else:
-            self._cdata.userdata2 = v._ptr
-
-
-def createComputePipelineAsyncCallbackInfo(
-    *,
-    nextInChain: Optional["ChainedStruct"] = None,
-    mode: "CallbackMode",
-    callback: "CreateComputePipelineAsyncCallback",
-    userdata1: Optional[VoidPtr] = None,
-    userdata2: Optional[VoidPtr] = None,
-) -> CreateComputePipelineAsyncCallbackInfo:
-    ret = CreateComputePipelineAsyncCallbackInfo(cdata=None, parent=None)
-    ret.nextInChain = nextInChain
-    ret.mode = mode
-    ret.callback = callback
-    ret.userdata1 = userdata1
-    ret.userdata2 = userdata2
-    return ret
-
-
-class CreateRenderPipelineAsyncCallbackInfo:
-    def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
-        self._parent = parent
-        self._cdata = _ffi_init("WGPUCreateRenderPipelineAsyncCallbackInfo *", cdata)
-
-    @property
-    def nextInChain(self) -> Optional["ChainedStruct"]:
-        return self._nextInChain
-
-    @nextInChain.setter
-    def nextInChain(self, v: Optional["ChainedStruct"]) -> None:
-        self._nextInChain = v
-        if v is None:
-            self._cdata.nextInChain = ffi.NULL
-        else:
-            self._cdata.nextInChain = v._cdata
-
-    @property
-    def mode(self) -> "CallbackMode":
-        return CallbackMode(self._cdata.mode)
-
-    @mode.setter
-    def mode(self, v: "CallbackMode") -> None:
-        self._cdata.mode = int(v)
-
-    @property
-    def callback(self) -> "CreateRenderPipelineAsyncCallback":
-        return self._cdata.callback
-
-    @callback.setter
-    def callback(self, v: "CreateRenderPipelineAsyncCallback") -> None:
-        self._callback = v
-        self._cdata.callback = v
-
-    @property
-    def userdata1(self) -> Optional[VoidPtr]:
-        return self._userdata1
-
-    @userdata1.setter
-    def userdata1(self, v: Optional[VoidPtr]) -> None:
-        self._userdata1 = v
-        if v is None:
-            self._cdata.userdata1 = ffi.NULL
-        else:
-            self._cdata.userdata1 = v._ptr
-
-    @property
-    def userdata2(self) -> Optional[VoidPtr]:
-        return self._userdata2
-
-    @userdata2.setter
-    def userdata2(self, v: Optional[VoidPtr]) -> None:
-        self._userdata2 = v
-        if v is None:
-            self._cdata.userdata2 = ffi.NULL
-        else:
-            self._cdata.userdata2 = v._ptr
-
-
-def createRenderPipelineAsyncCallbackInfo(
-    *,
-    nextInChain: Optional["ChainedStruct"] = None,
-    mode: "CallbackMode",
-    callback: "CreateRenderPipelineAsyncCallback",
-    userdata1: Optional[VoidPtr] = None,
-    userdata2: Optional[VoidPtr] = None,
-) -> CreateRenderPipelineAsyncCallbackInfo:
-    ret = CreateRenderPipelineAsyncCallbackInfo(cdata=None, parent=None)
-    ret.nextInChain = nextInChain
-    ret.mode = mode
-    ret.callback = callback
-    ret.userdata1 = userdata1
-    ret.userdata2 = userdata2
-    return ret
-
-
-class DeviceLostCallbackInfo:
-    def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
-        self._parent = parent
-        self._cdata = _ffi_init("WGPUDeviceLostCallbackInfo *", cdata)
-
-    @property
-    def nextInChain(self) -> Optional["ChainedStruct"]:
-        return self._nextInChain
-
-    @nextInChain.setter
-    def nextInChain(self, v: Optional["ChainedStruct"]) -> None:
-        self._nextInChain = v
-        if v is None:
-            self._cdata.nextInChain = ffi.NULL
-        else:
-            self._cdata.nextInChain = v._cdata
-
-    @property
-    def mode(self) -> "CallbackMode":
-        return CallbackMode(self._cdata.mode)
-
-    @mode.setter
-    def mode(self, v: "CallbackMode") -> None:
-        self._cdata.mode = int(v)
-
-    @property
-    def callback(self) -> "DeviceLostCallback":
-        return self._cdata.callback
-
-    @callback.setter
-    def callback(self, v: "DeviceLostCallback") -> None:
-        self._callback = v
-        self._cdata.callback = v
-
-    @property
-    def userdata1(self) -> Optional[VoidPtr]:
-        return self._userdata1
-
-    @userdata1.setter
-    def userdata1(self, v: Optional[VoidPtr]) -> None:
-        self._userdata1 = v
-        if v is None:
-            self._cdata.userdata1 = ffi.NULL
-        else:
-            self._cdata.userdata1 = v._ptr
-
-    @property
-    def userdata2(self) -> Optional[VoidPtr]:
-        return self._userdata2
-
-    @userdata2.setter
-    def userdata2(self, v: Optional[VoidPtr]) -> None:
-        self._userdata2 = v
-        if v is None:
-            self._cdata.userdata2 = ffi.NULL
-        else:
-            self._cdata.userdata2 = v._ptr
-
-
-def deviceLostCallbackInfo(
-    *,
-    nextInChain: Optional["ChainedStruct"] = None,
-    mode: "CallbackMode",
-    callback: "DeviceLostCallback",
-    userdata1: Optional[VoidPtr] = None,
-    userdata2: Optional[VoidPtr] = None,
-) -> DeviceLostCallbackInfo:
-    ret = DeviceLostCallbackInfo(cdata=None, parent=None)
-    ret.nextInChain = nextInChain
-    ret.mode = mode
-    ret.callback = callback
-    ret.userdata1 = userdata1
-    ret.userdata2 = userdata2
-    return ret
-
-
-class PopErrorScopeCallbackInfo:
-    def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
-        self._parent = parent
-        self._cdata = _ffi_init("WGPUPopErrorScopeCallbackInfo *", cdata)
-
-    @property
-    def nextInChain(self) -> Optional["ChainedStruct"]:
-        return self._nextInChain
-
-    @nextInChain.setter
-    def nextInChain(self, v: Optional["ChainedStruct"]) -> None:
-        self._nextInChain = v
-        if v is None:
-            self._cdata.nextInChain = ffi.NULL
-        else:
-            self._cdata.nextInChain = v._cdata
-
-    @property
-    def mode(self) -> "CallbackMode":
-        return CallbackMode(self._cdata.mode)
-
-    @mode.setter
-    def mode(self, v: "CallbackMode") -> None:
-        self._cdata.mode = int(v)
-
-    @property
-    def callback(self) -> "PopErrorScopeCallback":
-        return self._cdata.callback
-
-    @callback.setter
-    def callback(self, v: "PopErrorScopeCallback") -> None:
-        self._callback = v
-        self._cdata.callback = v
-
-    @property
-    def userdata1(self) -> Optional[VoidPtr]:
-        return self._userdata1
-
-    @userdata1.setter
-    def userdata1(self, v: Optional[VoidPtr]) -> None:
-        self._userdata1 = v
-        if v is None:
-            self._cdata.userdata1 = ffi.NULL
-        else:
-            self._cdata.userdata1 = v._ptr
-
-    @property
-    def userdata2(self) -> Optional[VoidPtr]:
-        return self._userdata2
-
-    @userdata2.setter
-    def userdata2(self, v: Optional[VoidPtr]) -> None:
-        self._userdata2 = v
-        if v is None:
-            self._cdata.userdata2 = ffi.NULL
-        else:
-            self._cdata.userdata2 = v._ptr
-
-
-def popErrorScopeCallbackInfo(
-    *,
-    nextInChain: Optional["ChainedStruct"] = None,
-    mode: "CallbackMode",
-    callback: "PopErrorScopeCallback",
-    userdata1: Optional[VoidPtr] = None,
-    userdata2: Optional[VoidPtr] = None,
-) -> PopErrorScopeCallbackInfo:
-    ret = PopErrorScopeCallbackInfo(cdata=None, parent=None)
-    ret.nextInChain = nextInChain
-    ret.mode = mode
-    ret.callback = callback
-    ret.userdata1 = userdata1
-    ret.userdata2 = userdata2
-    return ret
-
-
-class QueueWorkDoneCallbackInfo:
-    def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
-        self._parent = parent
-        self._cdata = _ffi_init("WGPUQueueWorkDoneCallbackInfo *", cdata)
-
-    @property
-    def nextInChain(self) -> Optional["ChainedStruct"]:
-        return self._nextInChain
-
-    @nextInChain.setter
-    def nextInChain(self, v: Optional["ChainedStruct"]) -> None:
-        self._nextInChain = v
-        if v is None:
-            self._cdata.nextInChain = ffi.NULL
-        else:
-            self._cdata.nextInChain = v._cdata
-
-    @property
-    def mode(self) -> "CallbackMode":
-        return CallbackMode(self._cdata.mode)
-
-    @mode.setter
-    def mode(self, v: "CallbackMode") -> None:
-        self._cdata.mode = int(v)
-
-    @property
-    def callback(self) -> "QueueWorkDoneCallback":
-        return self._cdata.callback
-
-    @callback.setter
-    def callback(self, v: "QueueWorkDoneCallback") -> None:
-        self._callback = v
-        self._cdata.callback = v
-
-    @property
-    def userdata1(self) -> Optional[VoidPtr]:
-        return self._userdata1
-
-    @userdata1.setter
-    def userdata1(self, v: Optional[VoidPtr]) -> None:
-        self._userdata1 = v
-        if v is None:
-            self._cdata.userdata1 = ffi.NULL
-        else:
-            self._cdata.userdata1 = v._ptr
-
-    @property
-    def userdata2(self) -> Optional[VoidPtr]:
-        return self._userdata2
-
-    @userdata2.setter
-    def userdata2(self, v: Optional[VoidPtr]) -> None:
-        self._userdata2 = v
-        if v is None:
-            self._cdata.userdata2 = ffi.NULL
-        else:
-            self._cdata.userdata2 = v._ptr
-
-
-def queueWorkDoneCallbackInfo(
-    *,
-    nextInChain: Optional["ChainedStruct"] = None,
-    mode: "CallbackMode",
-    callback: "QueueWorkDoneCallback",
-    userdata1: Optional[VoidPtr] = None,
-    userdata2: Optional[VoidPtr] = None,
-) -> QueueWorkDoneCallbackInfo:
-    ret = QueueWorkDoneCallbackInfo(cdata=None, parent=None)
-    ret.nextInChain = nextInChain
-    ret.mode = mode
-    ret.callback = callback
-    ret.userdata1 = userdata1
-    ret.userdata2 = userdata2
-    return ret
-
-
-class RequestAdapterCallbackInfo:
-    def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
-        self._parent = parent
-        self._cdata = _ffi_init("WGPURequestAdapterCallbackInfo *", cdata)
-
-    @property
-    def nextInChain(self) -> Optional["ChainedStruct"]:
-        return self._nextInChain
-
-    @nextInChain.setter
-    def nextInChain(self, v: Optional["ChainedStruct"]) -> None:
-        self._nextInChain = v
-        if v is None:
-            self._cdata.nextInChain = ffi.NULL
-        else:
-            self._cdata.nextInChain = v._cdata
-
-    @property
-    def mode(self) -> "CallbackMode":
-        return CallbackMode(self._cdata.mode)
-
-    @mode.setter
-    def mode(self, v: "CallbackMode") -> None:
-        self._cdata.mode = int(v)
-
-    @property
-    def callback(self) -> "RequestAdapterCallback":
-        return self._cdata.callback
-
-    @callback.setter
-    def callback(self, v: "RequestAdapterCallback") -> None:
-        self._callback = v
-        self._cdata.callback = v
-
-    @property
-    def userdata1(self) -> Optional[VoidPtr]:
-        return self._userdata1
-
-    @userdata1.setter
-    def userdata1(self, v: Optional[VoidPtr]) -> None:
-        self._userdata1 = v
-        if v is None:
-            self._cdata.userdata1 = ffi.NULL
-        else:
-            self._cdata.userdata1 = v._ptr
-
-    @property
-    def userdata2(self) -> Optional[VoidPtr]:
-        return self._userdata2
-
-    @userdata2.setter
-    def userdata2(self, v: Optional[VoidPtr]) -> None:
-        self._userdata2 = v
-        if v is None:
-            self._cdata.userdata2 = ffi.NULL
-        else:
-            self._cdata.userdata2 = v._ptr
-
-
-def requestAdapterCallbackInfo(
-    *,
-    nextInChain: Optional["ChainedStruct"] = None,
-    mode: "CallbackMode",
-    callback: "RequestAdapterCallback",
-    userdata1: Optional[VoidPtr] = None,
-    userdata2: Optional[VoidPtr] = None,
-) -> RequestAdapterCallbackInfo:
-    ret = RequestAdapterCallbackInfo(cdata=None, parent=None)
-    ret.nextInChain = nextInChain
-    ret.mode = mode
-    ret.callback = callback
-    ret.userdata1 = userdata1
-    ret.userdata2 = userdata2
-    return ret
-
-
-class RequestDeviceCallbackInfo:
-    def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
-        self._parent = parent
-        self._cdata = _ffi_init("WGPURequestDeviceCallbackInfo *", cdata)
-
-    @property
-    def nextInChain(self) -> Optional["ChainedStruct"]:
-        return self._nextInChain
-
-    @nextInChain.setter
-    def nextInChain(self, v: Optional["ChainedStruct"]) -> None:
-        self._nextInChain = v
-        if v is None:
-            self._cdata.nextInChain = ffi.NULL
-        else:
-            self._cdata.nextInChain = v._cdata
-
-    @property
-    def mode(self) -> "CallbackMode":
-        return CallbackMode(self._cdata.mode)
-
-    @mode.setter
-    def mode(self, v: "CallbackMode") -> None:
-        self._cdata.mode = int(v)
-
-    @property
-    def callback(self) -> "RequestDeviceCallback":
-        return self._cdata.callback
-
-    @callback.setter
-    def callback(self, v: "RequestDeviceCallback") -> None:
-        self._callback = v
-        self._cdata.callback = v
-
-    @property
-    def userdata1(self) -> Optional[VoidPtr]:
-        return self._userdata1
-
-    @userdata1.setter
-    def userdata1(self, v: Optional[VoidPtr]) -> None:
-        self._userdata1 = v
-        if v is None:
-            self._cdata.userdata1 = ffi.NULL
-        else:
-            self._cdata.userdata1 = v._ptr
-
-    @property
-    def userdata2(self) -> Optional[VoidPtr]:
-        return self._userdata2
-
-    @userdata2.setter
-    def userdata2(self, v: Optional[VoidPtr]) -> None:
-        self._userdata2 = v
-        if v is None:
-            self._cdata.userdata2 = ffi.NULL
-        else:
-            self._cdata.userdata2 = v._ptr
-
-
-def requestDeviceCallbackInfo(
-    *,
-    nextInChain: Optional["ChainedStruct"] = None,
-    mode: "CallbackMode",
-    callback: "RequestDeviceCallback",
-    userdata1: Optional[VoidPtr] = None,
-    userdata2: Optional[VoidPtr] = None,
-) -> RequestDeviceCallbackInfo:
-    ret = RequestDeviceCallbackInfo(cdata=None, parent=None)
-    ret.nextInChain = nextInChain
-    ret.mode = mode
-    ret.callback = callback
-    ret.userdata1 = userdata1
-    ret.userdata2 = userdata2
-    return ret
-
-
-class UncapturedErrorCallbackInfo:
-    def __init__(self, *, cdata: Optional[CData] = None, parent: Optional[Any] = None):
-        self._parent = parent
-        self._cdata = _ffi_init("WGPUUncapturedErrorCallbackInfo *", cdata)
-
-    @property
-    def nextInChain(self) -> Optional["ChainedStruct"]:
-        return self._nextInChain
-
-    @nextInChain.setter
-    def nextInChain(self, v: Optional["ChainedStruct"]) -> None:
-        self._nextInChain = v
-        if v is None:
-            self._cdata.nextInChain = ffi.NULL
-        else:
-            self._cdata.nextInChain = v._cdata
-
-    @property
-    def callback(self) -> "UncapturedErrorCallback":
-        return self._cdata.callback
-
-    @callback.setter
-    def callback(self, v: "UncapturedErrorCallback") -> None:
-        self._callback = v
-        self._cdata.callback = v
-
-    @property
-    def userdata1(self) -> Optional[VoidPtr]:
-        return self._userdata1
-
-    @userdata1.setter
-    def userdata1(self, v: Optional[VoidPtr]) -> None:
-        self._userdata1 = v
-        if v is None:
-            self._cdata.userdata1 = ffi.NULL
-        else:
-            self._cdata.userdata1 = v._ptr
-
-    @property
-    def userdata2(self) -> Optional[VoidPtr]:
-        return self._userdata2
-
-    @userdata2.setter
-    def userdata2(self, v: Optional[VoidPtr]) -> None:
-        self._userdata2 = v
-        if v is None:
-            self._cdata.userdata2 = ffi.NULL
-        else:
-            self._cdata.userdata2 = v._ptr
-
-
-def uncapturedErrorCallbackInfo(
-    *,
-    nextInChain: Optional["ChainedStruct"] = None,
-    callback: "UncapturedErrorCallback",
-    userdata1: Optional[VoidPtr] = None,
-    userdata2: Optional[VoidPtr] = None,
-) -> UncapturedErrorCallbackInfo:
-    ret = UncapturedErrorCallbackInfo(cdata=None, parent=None)
-    ret.nextInChain = nextInChain
-    ret.callback = callback
-    ret.userdata1 = userdata1
-    ret.userdata2 = userdata2
-    return ret
+# BufferMapCallback is specially defined elsewhere
+# CompilationInfoCallback is specially defined elsewhere
+# CreateComputePipelineAsyncCallback is specially defined elsewhere
+# CreateRenderPipelineAsyncCallback is specially defined elsewhere
+# DeviceLostCallback is specially defined elsewhere
+# PopErrorScopeCallback is specially defined elsewhere
+# QueueWorkDoneCallback is specially defined elsewhere
+# RequestAdapterCallback is specially defined elsewhere
+# RequestDeviceCallback is specially defined elsewhere
+# UncapturedErrorCallback is specially defined elsewhere
 
 
 class AdapterInfo:
@@ -7334,24 +6594,22 @@ class DeviceDescriptor:
         self._cdata.defaultQueue = _ffi_deref(v._cdata)
 
     @property
-    def deviceLostCallbackInfo(self) -> "DeviceLostCallbackInfo":
-        return DeviceLostCallbackInfo(
-            cdata=self._cdata.deviceLostCallbackInfo, parent=self
-        )
+    def deviceLostCallback(self) -> "DeviceLostCallback":
+        return self._deviceLostCallback
 
-    @deviceLostCallbackInfo.setter
-    def deviceLostCallbackInfo(self, v: "DeviceLostCallbackInfo") -> None:
-        self._cdata.deviceLostCallbackInfo = _ffi_deref(v._cdata)
+    @deviceLostCallback.setter
+    def deviceLostCallback(self, v: "DeviceLostCallback") -> None:
+        self._deviceLostCallback = v
+        self._cdata.deviceLostCallbackInfo = v._cdata
 
     @property
-    def uncapturedErrorCallbackInfo(self) -> "UncapturedErrorCallbackInfo":
-        return UncapturedErrorCallbackInfo(
-            cdata=self._cdata.uncapturedErrorCallbackInfo, parent=self
-        )
+    def uncapturedErrorCallback(self) -> "UncapturedErrorCallback":
+        return self._uncapturedErrorCallback
 
-    @uncapturedErrorCallbackInfo.setter
-    def uncapturedErrorCallbackInfo(self, v: "UncapturedErrorCallbackInfo") -> None:
-        self._cdata.uncapturedErrorCallbackInfo = _ffi_deref(v._cdata)
+    @uncapturedErrorCallback.setter
+    def uncapturedErrorCallback(self, v: "UncapturedErrorCallback") -> None:
+        self._uncapturedErrorCallback = v
+        self._cdata.uncapturedErrorCallbackInfo = v._cdata
 
 
 def deviceDescriptor(
@@ -7361,8 +6619,8 @@ def deviceDescriptor(
     requiredFeatures: Union["FeatureNameList", List["FeatureName"]],
     requiredLimits: Optional["Limits"] = None,
     defaultQueue: "QueueDescriptor",
-    deviceLostCallbackInfo: "DeviceLostCallbackInfo",
-    uncapturedErrorCallbackInfo: "UncapturedErrorCallbackInfo",
+    deviceLostCallback: "DeviceLostCallback",
+    uncapturedErrorCallback: "UncapturedErrorCallback",
 ) -> DeviceDescriptor:
     ret = DeviceDescriptor(cdata=None, parent=None)
     ret.nextInChain = nextInChain
@@ -7370,8 +6628,8 @@ def deviceDescriptor(
     ret.requiredFeatures = requiredFeatures
     ret.requiredLimits = requiredLimits
     ret.defaultQueue = defaultQueue
-    ret.deviceLostCallbackInfo = deviceLostCallbackInfo
-    ret.uncapturedErrorCallbackInfo = uncapturedErrorCallbackInfo
+    ret.deviceLostCallback = deviceLostCallback
+    ret.uncapturedErrorCallback = uncapturedErrorCallback
     return ret
 
 
@@ -9259,6 +8517,7 @@ def _raw_callback_BufferMapCallback(status, message, userdata1, userdata2):  # n
 class BufferMapCallback:
     def __init__(self, callback: Callable[["MapAsyncStatus", str], None]):
         self.index = _callback_map_BufferMapCallback.add(callback)
+        self._cdata = _ffi_init("WGPUBufferMapCallbackInfo *", None)
         # Yes, we're just storing ints into pointers.
         self._userdata = ffi.cast("void *", self.index)
         self._ptr = lib._raw_callback_BufferMapCallback
@@ -9287,6 +8546,7 @@ class CompilationInfoCallback:
         callback: Callable[["CompilationInfoRequestStatus", "CompilationInfo"], None],
     ):
         self.index = _callback_map_CompilationInfoCallback.add(callback)
+        self._cdata = _ffi_init("WGPUCompilationInfoCallbackInfo *", None)
         # Yes, we're just storing ints into pointers.
         self._userdata = ffi.cast("void *", self.index)
         self._ptr = lib._raw_callback_CompilationInfoCallback
@@ -9318,6 +8578,7 @@ class CreateComputePipelineAsyncCallback:
         callback: Callable[["CreatePipelineAsyncStatus", "ComputePipeline", str], None],
     ):
         self.index = _callback_map_CreateComputePipelineAsyncCallback.add(callback)
+        self._cdata = _ffi_init("WGPUCreateComputePipelineAsyncCallbackInfo *", None)
         # Yes, we're just storing ints into pointers.
         self._userdata = ffi.cast("void *", self.index)
         self._ptr = lib._raw_callback_CreateComputePipelineAsyncCallback
@@ -9349,6 +8610,7 @@ class CreateRenderPipelineAsyncCallback:
         callback: Callable[["CreatePipelineAsyncStatus", "RenderPipeline", str], None],
     ):
         self.index = _callback_map_CreateRenderPipelineAsyncCallback.add(callback)
+        self._cdata = _ffi_init("WGPUCreateRenderPipelineAsyncCallbackInfo *", None)
         # Yes, we're just storing ints into pointers.
         self._userdata = ffi.cast("void *", self.index)
         self._ptr = lib._raw_callback_CreateRenderPipelineAsyncCallback
@@ -9375,6 +8637,7 @@ def _raw_callback_DeviceLostCallback(device, reason, message, userdata1, userdat
 class DeviceLostCallback:
     def __init__(self, callback: Callable[["Device", "DeviceLostReason", str], None]):
         self.index = _callback_map_DeviceLostCallback.add(callback)
+        self._cdata = _ffi_init("WGPUDeviceLostCallbackInfo *", None)
         # Yes, we're just storing ints into pointers.
         self._userdata = ffi.cast("void *", self.index)
         self._ptr = lib._raw_callback_DeviceLostCallback
@@ -9399,6 +8662,7 @@ class PopErrorScopeCallback:
         self, callback: Callable[["PopErrorScopeStatus", "ErrorType", str], None]
     ):
         self.index = _callback_map_PopErrorScopeCallback.add(callback)
+        self._cdata = _ffi_init("WGPUPopErrorScopeCallbackInfo *", None)
         # Yes, we're just storing ints into pointers.
         self._userdata = ffi.cast("void *", self.index)
         self._ptr = lib._raw_callback_PopErrorScopeCallback
@@ -9421,6 +8685,7 @@ def _raw_callback_QueueWorkDoneCallback(status, userdata1, userdata2):  # noqa
 class QueueWorkDoneCallback:
     def __init__(self, callback: Callable[["QueueWorkDoneStatus"], None]):
         self.index = _callback_map_QueueWorkDoneCallback.add(callback)
+        self._cdata = _ffi_init("WGPUQueueWorkDoneCallbackInfo *", None)
         # Yes, we're just storing ints into pointers.
         self._userdata = ffi.cast("void *", self.index)
         self._ptr = lib._raw_callback_QueueWorkDoneCallback
@@ -9449,6 +8714,7 @@ class RequestAdapterCallback:
         self, callback: Callable[["RequestAdapterStatus", "Adapter", str], None]
     ):
         self.index = _callback_map_RequestAdapterCallback.add(callback)
+        self._cdata = _ffi_init("WGPURequestAdapterCallbackInfo *", None)
         # Yes, we're just storing ints into pointers.
         self._userdata = ffi.cast("void *", self.index)
         self._ptr = lib._raw_callback_RequestAdapterCallback
@@ -9475,6 +8741,7 @@ def _raw_callback_RequestDeviceCallback(status, device, message, userdata1, user
 class RequestDeviceCallback:
     def __init__(self, callback: Callable[["RequestDeviceStatus", "Device", str], None]):
         self.index = _callback_map_RequestDeviceCallback.add(callback)
+        self._cdata = _ffi_init("WGPURequestDeviceCallbackInfo *", None)
         # Yes, we're just storing ints into pointers.
         self._userdata = ffi.cast("void *", self.index)
         self._ptr = lib._raw_callback_RequestDeviceCallback
@@ -9497,6 +8764,7 @@ def _raw_callback_UncapturedErrorCallback(device, type, message, userdata1, user
 class UncapturedErrorCallback:
     def __init__(self, callback: Callable[["Device", "ErrorType", str], None]):
         self.index = _callback_map_UncapturedErrorCallback.add(callback)
+        self._cdata = _ffi_init("WGPUUncapturedErrorCallbackInfo *", None)
         # Yes, we're just storing ints into pointers.
         self._userdata = ffi.cast("void *", self.index)
         self._ptr = lib._raw_callback_UncapturedErrorCallback
@@ -9519,6 +8787,7 @@ def _raw_callback_LogCallback(level, message, userdata):  # noqa
 class LogCallback:
     def __init__(self, callback: Callable[["LogLevel"], None]):
         self.index = _callback_map_LogCallback.add(callback)
+        self._cdata = _ffi_init("WGPULogCallbackInfo *", None)
         # Yes, we're just storing ints into pointers.
         self._userdata = ffi.cast("void *", self.index)
         self._ptr = lib._raw_callback_LogCallback

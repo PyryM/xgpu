@@ -504,7 +504,9 @@ class ApiInfo {
 
   _createField(name: string, ref: Refinfo, parent: string): CStructField {
     const type = this.getType(ref);
-    if (ref.explicitPointer || type.kind === "opaque") {
+    if (type.cName.endsWith("CallbackInfo")) {
+      return new CallbackField(name, type);
+    } else if (ref.explicitPointer || type.kind === "opaque") {
       return new PointerField(name, type, ref.nullable ?? false);
     } else {
       return new ValueField(name, type, parent);
@@ -544,10 +546,16 @@ class ApiInfo {
         ++fieldPos;
       }
     }
-    const noEmit = SPECIAL_CLASSES.has(cName);
+    const noEmit = SPECIAL_CLASSES.has(cName) || cName.endsWith("CallbackInfo");
+
+    let pyName = toPyName(cName, true);
+    if(cName.endsWith("CallbackInfo")) {
+      pyName = pyName.replaceAll("CallbackInfo", "Callback");
+    }
+
     this.setType(
       cName,
-      new CStruct(cName, toPyName(cName, true), cdef, fields, noEmit)
+      new CStruct(cName, pyName, cdef, fields, noEmit)
     );
   }
 
@@ -822,7 +830,11 @@ def ${this.name}(self, v: ${this.argType()}) -> None:
 // hate that I have to special case for like one struct that
 // has embedded callbacks!
 class CallbackField implements CStructField {
-  constructor(public name: string, public userdataName: string, public ctype: CType) {}
+  name: string
+
+  constructor(public rawName: string, public ctype: CType) {
+    this.name = rawName.replaceAll("CallbackInfo", "Callback");
+  }
 
   arg(): string {
     return `${this.name}: ${this.ctype.pyAnnotation(false, false)}`;
@@ -837,8 +849,7 @@ def ${this.name}(self) -> ${this.ctype.pyAnnotation(false, true)}:
 @${this.name}.setter
 def ${this.name}(self, v: ${this.ctype.pyAnnotation(false, false)}) -> None:
     self._${this.name} = v
-    self._cdata.${this.name} = v._ptr
-    self._cdata.${this.userdataName} = v._userdata
+    self._cdata.${this.rawName} = ${this.ctype.unwrap("v", true)}
     `;
   }
 }
@@ -1206,6 +1217,7 @@ def ${this.rawName()}(${rawArglist.join(", ")}): # noqa
 class ${this.func.pyName}:
     def __init__(self, callback: ${pytype}):
         self.index = ${mapName}.add(callback)
+        self._cdata = _ffi_init("${this.func.cName}Info *", None)
         # Yes, we're just storing ints into pointers.
         self._userdata = ffi.cast("void *", self.index)
         self._ptr = lib.${this.rawName()}
